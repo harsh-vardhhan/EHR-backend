@@ -1,0 +1,1 @@
+{"version":3,"file":"annotations.module.js","sourceRoot":"","sources":["../../src/annotations/annotations.module.ts"],"names":[],"mappings":";;;;;;;;;AAAA,2CAAwC;AACxC,qEAAiE;AACjE,+DAA2D;AAMpD,IAAM,iBAAiB,GAAvB,MAAM,iBAAiB;CAAG,CAAA;AAApB,8CAAiB;4BAAjB,iBAAiB;IAJ7B,IAAA,eAAM,EAAC;QACN,WAAW,EAAE,CAAC,8CAAqB,CAAC;QACpC,SAAS,EAAE,CAAC,wCAAkB,CAAC;KAChC,CAAC;GACW,iBAAiB,CAAG"}
