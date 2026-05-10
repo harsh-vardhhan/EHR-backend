@@ -2,6 +2,10 @@
 
 Enterprise-grade serverless backend for clinical document annotation, built with NestJS and deployed on AWS.
 
+## 🔗 Repository Links
+- **Backend**: [https://github.com/harsh-vardhhan/EHR-backend](https://github.com/harsh-vardhhan/EHR-backend)
+- **Frontend**: [https://github.com/harsh-vardhhan/EHR-frontend](https://github.com/harsh-vardhhan/EHR-frontend)
+
 ## 🏗 AWS Architecture
 
 The backend follows a highly scalable, serverless architecture designed for clinical data residency and high availability.
