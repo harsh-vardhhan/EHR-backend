@@ -5,7 +5,6 @@ import {
   DynamoDBDocumentClient,
   QueryCommand,
   PutCommand,
-  DeleteCommand,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 
@@ -119,22 +118,4 @@ export class AnnotationsService {
     }
   }
 
-  async deleteAnnotation(annotationId: string): Promise<void> {
-    const tableName = process.env.ANNOTATIONS_TABLE_NAME;
-    if (!tableName) return;
-
-    const command = new DeleteCommand({
-      TableName: tableName,
-      Key: { annotationId },
-    });
-
-    try {
-      await this.docClient.send(command);
-    } catch (error) {
-      console.error('Error deleting annotation', error);
-      throw new NotFoundException(
-        `Annotation with id ${annotationId} not found`,
-      );
-    }
-  }
 }

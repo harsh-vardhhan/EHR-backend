@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Param,
   Patch,
@@ -34,12 +33,6 @@ export class AnnotationsController {
     },
   ) {
     return this.annotationsService.createAnnotation(body);
-  }
-
-  @Delete(':id')
-  async deleteAnnotation(@Param('id') id: string) {
-    await this.annotationsService.deleteAnnotation(id);
-    return { success: true };
   }
 
   @Patch(':id')
