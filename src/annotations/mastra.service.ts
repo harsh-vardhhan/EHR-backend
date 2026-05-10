@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
 import { Injectable, Logger } from '@nestjs/common';
 import { AnnotationsService } from './annotations.service';
 
@@ -108,7 +107,10 @@ Text: "${text}"`,
 
         if (extractedText !== entity.text) {
           // Escape special regex characters, then replace spaces with \s+ to match across newlines
-          const escapedText = entity.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const escapedText = entity.text.replace(
+            /[.*+?^${}()|[\]\\]/g,
+            '\\$&',
+          );
           const regexPattern = escapedText.replace(/\\s\+|\\n|\s+/g, '\\s+');
           const regex = new RegExp(regexPattern, 'i');
           const match = text.match(regex);

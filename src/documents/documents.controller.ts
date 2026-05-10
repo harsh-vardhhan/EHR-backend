@@ -23,7 +23,10 @@ export class DocumentsController {
   async analyzeDocument(@Param('id') id: string) {
     // This might be deprecated in Phase 3, but keeping for compatibility if needed.
     const doc = await this.documentsService.getDocument(id);
-    this.mastraService.analyzeDocumentBackground(doc.id as string, doc.text || '');
+    this.mastraService.analyzeDocumentBackground(
+      doc.id as string,
+      doc.text || '',
+    );
     return { success: true, message: 'Analysis started' };
   }
 }

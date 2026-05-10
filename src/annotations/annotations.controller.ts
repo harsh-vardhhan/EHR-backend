@@ -47,7 +47,6 @@ export class AnnotationsController {
     @Param('id') id: string,
     @Body() updates: Partial<{ label: string; status: string; text: string }>,
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return this.annotationsService.updateAnnotation(id, updates as any);
   }
 }

@@ -1,7 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, QueryCommand, PutCommand, DeleteCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import {
+  DynamoDBDocumentClient,
+  QueryCommand,
+  PutCommand,
+  DeleteCommand,
+  UpdateCommand,
+} from '@aws-sdk/lib-dynamodb';
 
 export interface Annotation {
   annotationId: string;
@@ -48,9 +54,11 @@ export class AnnotationsService {
     }
   }
 
-  async createAnnotation(data: Omit<Annotation, 'annotationId' | 'createdAt'>): Promise<Annotation> {
+  async createAnnotation(
+    data: Omit<Annotation, 'annotationId' | 'createdAt'>,
+  ): Promise<Annotation> {
     const tableName = process.env.ANNOTATIONS_TABLE_NAME;
-    
+
     const newAnnotation: Annotation = {
       ...data,
       annotationId: randomUUID(),
@@ -68,7 +76,10 @@ export class AnnotationsService {
     return newAnnotation;
   }
 
-  async updateAnnotation(annotationId: string, updates: Partial<Annotation>): Promise<Annotation> {
+  async updateAnnotation(
+    annotationId: string,
+    updates: Partial<Annotation>,
+  ): Promise<Annotation> {
     const tableName = process.env.ANNOTATIONS_TABLE_NAME;
     if (!tableName) throw new NotFoundException('Table not configured');
 
@@ -102,7 +113,9 @@ export class AnnotationsService {
       return response.Attributes as Annotation;
     } catch (error) {
       console.error('Error updating annotation', error);
-      throw new NotFoundException(`Annotation with id ${annotationId} not found`);
+      throw new NotFoundException(
+        `Annotation with id ${annotationId} not found`,
+      );
     }
   }
 
@@ -119,7 +132,9 @@ export class AnnotationsService {
       await this.docClient.send(command);
     } catch (error) {
       console.error('Error deleting annotation', error);
-      throw new NotFoundException(`Annotation with id ${annotationId} not found`);
+      throw new NotFoundException(
+        `Annotation with id ${annotationId} not found`,
+      );
     }
   }
 }
