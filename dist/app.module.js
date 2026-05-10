@@ -19,7 +19,7 @@ exports.AppModule = AppModule = __decorate([
         imports: [
             config_1.ConfigModule.forRoot({ isGlobal: true }),
             documents_module_1.DocumentsModule,
-            annotations_module_1.AnnotationsModule
+            annotations_module_1.AnnotationsModule,
         ],
     })
 ], AppModule);

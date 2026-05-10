@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { AnnotationsService } from './annotations.service';
 
 @Controller('annotations')
@@ -38,6 +47,7 @@ export class AnnotationsController {
     @Param('id') id: string,
     @Body() updates: Partial<{ label: string; status: string; text: string }>,
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return this.annotationsService.updateAnnotation(id, updates as any);
   }
 }

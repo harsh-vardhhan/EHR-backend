@@ -19,14 +19,14 @@ let MastraService = MastraService_1 = class MastraService {
     constructor(annotationsService) {
         this.annotationsService = annotationsService;
     }
-    async analyzeDocumentBackground(documentId, text) {
-        this.runAnalysis(documentId, text).catch(err => {
+    analyzeDocumentBackground(documentId, text) {
+        void this.runAnalysis(documentId, text).catch((err) => {
             this.logger.error('Failed to run LLM analysis', err);
         });
     }
     async runAnalysis(documentId, text) {
         this.logger.log(`Starting LLM pre-labelling for document ${documentId}`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         try {
             if (!process.env.GROQ_API_KEY) {
                 throw new Error('GROQ_API_KEY not set, falling back to mock data');
@@ -34,8 +34,8 @@ let MastraService = MastraService_1 = class MastraService {
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-                    'Content-Type': 'application/json'
+                    Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     model: 'openai/gpt-oss-120b',
@@ -43,7 +43,7 @@ let MastraService = MastraService_1 = class MastraService {
                     messages: [
                         {
                             role: 'system',
-                            content: 'You are a clinical NLP system.'
+                            content: 'You are a clinical NLP system.',
                         },
                         {
                             role: 'user',
@@ -67,10 +67,10 @@ Example output:
 
 Do not include any markdown formatting, backticks, or conversational text. Return only the JSON object. Do not over-reason. Output the final JSON immediately.
 
-Text: "${text}"`
-                        }
-                    ]
-                })
+Text: "${text}"`,
+                        },
+                    ],
+                }),
             });
             if (!response.ok) {
                 const errorText = await response.text();
@@ -93,10 +93,10 @@ Text: "${text}"`
             this.logger.log(`✅ SUCCESS: LLM API (gpt-oss-120b) responded successfully!`);
             this.logger.log(`LLM returned ${object.entities.length} entities`);
             this.logger.log(`=========================================`);
-            object.entities.forEach(entity => {
+            object.entities.forEach((entity) => {
                 let actualStart = entity.startOffset;
                 let actualEnd = entity.endOffset;
-                let extractedText = text.substring(actualStart, actualEnd);
+                const extractedText = text.substring(actualStart, actualEnd);
                 if (extractedText !== entity.text) {
                     const index = text.indexOf(entity.text);
                     if (index !== -1) {
@@ -140,9 +140,9 @@ Text: "${text}"`
             { text: 'furosemide', label: 'Medication', confidence: 94 },
             { text: 'pulmonary oedema', label: 'Condition', confidence: 75 },
             { text: 'echocardiogram', label: 'Procedure', confidence: 55 },
-            { text: 'heart failure', label: 'Condition', confidence: 80 }
+            { text: 'heart failure', label: 'Condition', confidence: 80 },
         ];
-        mockEntities.forEach(ent => {
+        mockEntities.forEach((ent) => {
             const index = text.indexOf(ent.text);
             if (index !== -1) {
                 this.annotationsService.createAnnotation({

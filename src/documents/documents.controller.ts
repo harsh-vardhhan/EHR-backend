@@ -6,7 +6,7 @@ import { MastraService } from '../annotations/mastra.service';
 export class DocumentsController {
   constructor(
     private readonly documentsService: DocumentsService,
-    private readonly mastraService: MastraService
+    private readonly mastraService: MastraService,
   ) {}
 
   @Get(':id')

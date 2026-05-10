@@ -3,7 +3,7 @@ export declare class MastraService {
     private annotationsService;
     private readonly logger;
     constructor(annotationsService: AnnotationsService);
-    analyzeDocumentBackground(documentId: string, text: string): Promise<void>;
+    analyzeDocumentBackground(documentId: string, text: string): void;
     private runAnalysis;
     private fallbackMock;
 }

@@ -1,7 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
 import { Injectable, Logger } from '@nestjs/common';
-import { generateText } from 'ai';
-import { groq } from '@ai-sdk/groq';
-import { z } from 'zod';
 import { AnnotationsService } from './annotations.service';
 
 @Injectable()
@@ -10,9 +8,9 @@ export class MastraService {
 
   constructor(private annotationsService: AnnotationsService) {}
 
-  async analyzeDocumentBackground(documentId: string, text: string) {
+  analyzeDocumentBackground(documentId: string, text: string) {
     // Fire and forget, run async without awaiting in the caller
-    this.runAnalysis(documentId, text).catch(err => {
+    void this.runAnalysis(documentId, text).catch((err) => {
       this.logger.error('Failed to run LLM analysis', err);
     });
   }
@@ -21,30 +19,32 @@ export class MastraService {
     this.logger.log(`Starting LLM pre-labelling for document ${documentId}`);
 
     // Wait for 2 seconds to simulate "2-3 seconds" wait time
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     try {
       if (!process.env.GROQ_API_KEY) {
         throw new Error('GROQ_API_KEY not set, falling back to mock data');
       }
 
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'openai/gpt-oss-120b',
-          max_tokens: 4096,
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a clinical NLP system.'
-            },
-            {
-              role: 'user',
-              content: `Extract medical entities from the following text and classify them strictly into one of these labels: Condition, Medication, Symptom, or Procedure.
+      const response = await fetch(
+        'https://api.groq.com/openai/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-oss-120b',
+            max_tokens: 4096,
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a clinical NLP system.',
+              },
+              {
+                role: 'user',
+                content: `Extract medical entities from the following text and classify them strictly into one of these labels: Condition, Medication, Symptom, or Procedure.
 
 Important: You must output your response as a valid JSON object matching this schema:
 {
@@ -64,11 +64,12 @@ Example output:
 
 Do not include any markdown formatting, backticks, or conversational text. Return only the JSON object. Do not over-reason. Output the final JSON immediately.
 
-Text: "${text}"`
-            }
-          ]
-        })
-      });
+Text: "${text}"`,
+              },
+            ],
+          }),
+        },
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -77,29 +78,33 @@ Text: "${text}"`
 
       const data = await response.json();
       let generatedText = data.choices[0].message.content || '';
-      
+
       // Robust JSON extraction to handle markdown or conversational wrappers
       const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         generatedText = jsonMatch[0];
       }
-      
+
       let object;
       try {
         object = JSON.parse(generatedText);
       } catch (e) {
-        throw new Error(`Failed to parse JSON. Raw text was: ${generatedText}. Error: ${e.message}`);
+        throw new Error(
+          `Failed to parse JSON. Raw text was: ${generatedText}. Error: ${e.message}`,
+        );
       }
 
       this.logger.log(`=========================================`);
-      this.logger.log(`✅ SUCCESS: LLM API (gpt-oss-120b) responded successfully!`);
+      this.logger.log(
+        `✅ SUCCESS: LLM API (gpt-oss-120b) responded successfully!`,
+      );
       this.logger.log(`LLM returned ${object.entities.length} entities`);
       this.logger.log(`=========================================`);
 
-      object.entities.forEach(entity => {
+      object.entities.forEach((entity) => {
         let actualStart = entity.startOffset;
         let actualEnd = entity.endOffset;
-        let extractedText = text.substring(actualStart, actualEnd);
+        const extractedText = text.substring(actualStart, actualEnd);
 
         if (extractedText !== entity.text) {
           const index = text.indexOf(entity.text);
@@ -107,7 +112,9 @@ Text: "${text}"`
             actualStart = index;
             actualEnd = index + entity.text.length;
           } else {
-            this.logger.warn(`Entity text not found in document: ${entity.text}`);
+            this.logger.warn(
+              `Entity text not found in document: ${entity.text}`,
+            );
             return;
           }
         }
@@ -123,7 +130,6 @@ Text: "${text}"`
           confidence: entity.confidence,
         });
       });
-
     } catch (error) {
       this.logger.error('Error calling Groq / AI SDK', error);
       this.fallbackMock(documentId, text);
@@ -145,10 +151,10 @@ Text: "${text}"`
       { text: 'furosemide', label: 'Medication', confidence: 94 },
       { text: 'pulmonary oedema', label: 'Condition', confidence: 75 },
       { text: 'echocardiogram', label: 'Procedure', confidence: 55 },
-      { text: 'heart failure', label: 'Condition', confidence: 80 }
+      { text: 'heart failure', label: 'Condition', confidence: 80 },
     ];
 
-    mockEntities.forEach(ent => {
+    mockEntities.forEach((ent) => {
       const index = text.indexOf(ent.text);
       if (index !== -1) {
         this.annotationsService.createAnnotation({

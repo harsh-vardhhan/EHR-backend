@@ -6,8 +6,8 @@ import { AnnotationsModule } from './annotations/annotations.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    DocumentsModule, 
-    AnnotationsModule
+    DocumentsModule,
+    AnnotationsModule,
   ],
 })
 export class AppModule {}
