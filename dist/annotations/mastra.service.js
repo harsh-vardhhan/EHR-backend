@@ -12,9 +12,6 @@ var MastraService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MastraService = void 0;
 const common_1 = require("@nestjs/common");
-const ai_1 = require("ai");
-const groq_1 = require("@ai-sdk/groq");
-const zod_1 = require("zod");
 const annotations_service_1 = require("./annotations.service");
 let MastraService = MastraService_1 = class MastraService {
     annotationsService;
@@ -34,20 +31,68 @@ let MastraService = MastraService_1 = class MastraService {
             if (!process.env.GROQ_API_KEY) {
                 throw new Error('GROQ_API_KEY not set, falling back to mock data');
             }
-            const { object } = await (0, ai_1.generateObject)({
-                model: (0, groq_1.groq)('llama-3.3-70b-versatile'),
-                schema: zod_1.z.object({
-                    entities: zod_1.z.array(zod_1.z.object({
-                        text: zod_1.z.string(),
-                        label: zod_1.z.enum(['Condition', 'Medication', 'Symptom', 'Procedure']),
-                        confidence: zod_1.z.number().min(0).max(100),
-                        startOffset: zod_1.z.number(),
-                        endOffset: zod_1.z.number(),
-                    }))
-                }),
-                prompt: `You are a clinical NLP system. Extract medical entities from the following text and classify them into Condition, Medication, Symptom, or Procedure. Return exact start and end character offsets. Text: "${text}"`,
+            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'openai/gpt-oss-120b',
+                    max_tokens: 4096,
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'You are a clinical NLP system.'
+                        },
+                        {
+                            role: 'user',
+                            content: `Extract medical entities from the following text and classify them strictly into one of these labels: Condition, Medication, Symptom, or Procedure.
+
+Important: You must output your response as a valid JSON object matching this schema:
+{
+  "entities": [
+    { "text": string, "label": "Condition" | "Medication" | "Symptom" | "Procedure", "confidence": number, "startOffset": number, "endOffset": number }
+  ]
+}
+
+Note: Do not calculate exact character offsets. Always set startOffset and endOffset to 0 for every entity. Our backend will handle the exact offset calculation.
+
+Example output:
+{
+  "entities": [
+    { "text": "chest pain", "label": "Symptom", "confidence": 95, "startOffset": 0, "endOffset": 0 }
+  ]
+}
+
+Do not include any markdown formatting, backticks, or conversational text. Return only the JSON object. Do not over-reason. Output the final JSON immediately.
+
+Text: "${text}"`
+                        }
+                    ]
+                })
             });
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Groq API error: ${errorText}`);
+            }
+            const data = await response.json();
+            let generatedText = data.choices[0].message.content || '';
+            const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                generatedText = jsonMatch[0];
+            }
+            let object;
+            try {
+                object = JSON.parse(generatedText);
+            }
+            catch (e) {
+                throw new Error(`Failed to parse JSON. Raw text was: ${generatedText}. Error: ${e.message}`);
+            }
+            this.logger.log(`=========================================`);
+            this.logger.log(`✅ SUCCESS: LLM API (gpt-oss-120b) responded successfully!`);
             this.logger.log(`LLM returned ${object.entities.length} entities`);
+            this.logger.log(`=========================================`);
             object.entities.forEach(entity => {
                 let actualStart = entity.startOffset;
                 let actualEnd = entity.endOffset;
@@ -81,6 +126,9 @@ let MastraService = MastraService_1 = class MastraService {
         }
     }
     fallbackMock(documentId, text) {
+        this.logger.warn(`=========================================`);
+        this.logger.warn(`⚠️ FALLBACK ENGAGED: Using hardcoded mock data!`);
+        this.logger.warn(`=========================================`);
         const mockEntities = [
             { text: 'chest pain', label: 'Symptom', confidence: 95 },
             { text: 'shortness of breath', label: 'Symptom', confidence: 85 },

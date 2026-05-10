@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
 const documents_module_1 = require("./documents/documents.module");
 const annotations_module_1 = require("./annotations/annotations.module");
 let AppModule = class AppModule {
@@ -15,7 +16,11 @@ let AppModule = class AppModule {
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [documents_module_1.DocumentsModule, annotations_module_1.AnnotationsModule],
+        imports: [
+            config_1.ConfigModule.forRoot({ isGlobal: true }),
+            documents_module_1.DocumentsModule,
+            annotations_module_1.AnnotationsModule
+        ],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map
