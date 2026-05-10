@@ -1,0 +1,120 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: EHR Annotation Tool Backend SAM Template
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: nodejs20.x
+    Architectures:
+      - x86_64
+
+Parameters:
+  DocumentsBucketName:
+    Type: String
+    Description: Name of the S3 bucket for documents
+  DocumentsTableName:
+    Type: String
+    Description: Name of the DynamoDB table for documents
+  AnnotationsTableName:
+    Type: String
+    Description: Name of the DynamoDB table for annotations
+  GroqApiKey:
+    Type: String
+    Description: Groq API Key
+
+Resources:
+  EhrApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'*'"
+        AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+      MethodSettings:
+        - HttpMethod: '*'
+          ResourcePath: '/*'
+          ThrottlingBurstLimit: 50
+          ThrottlingRateLimit: 100
+
+  EhrBackendFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: dist/serverless.handler
+      Events:
+        ProxyApiRoot:
+          Type: Api
+          Properties:
+            RestApiId: !Ref EhrApiGateway
+            Path: /
+            Method: ANY
+        ProxyApiGreedy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref EhrApiGateway
+            Path: /{proxy+}
+            Method: ANY
+      Environment:
+        Variables:
+          GROQ_API_KEY: !Ref GroqApiKey
+          DOCUMENTS_TABLE_NAME: !Ref DocumentsTableName
+          ANNOTATIONS_TABLE_NAME: !Ref AnnotationsTableName
+          DOCUMENTS_BUCKET_NAME: !Ref DocumentsBucketName
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref DocumentsBucketName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DocumentsTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AnnotationsTableName
+
+  DocumentsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref DocumentsTableName
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  AnnotationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref AnnotationsTableName
+      AttributeDefinitions:
+        - AttributeName: annotationId
+          AttributeType: S
+        - AttributeName: documentId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: annotationId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: DocumentIdIndex
+          KeySchema:
+            - AttributeName: documentId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST
+
+  DocumentsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref DocumentsBucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+Outputs:
+  ApiEndpoint:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${EhrApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod/"

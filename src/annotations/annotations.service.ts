@@ -1,8 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import {
+  DynamoDBDocumentClient,
+  QueryCommand,
+  PutCommand,
+  DeleteCommand,
+  UpdateCommand,
+} from '@aws-sdk/lib-dynamodb';
 
 export interface Annotation {
-  id: string;
+  annotationId: string;
   documentId: string;
   text: string;
   label: 'Condition' | 'Medication' | 'Symptom' | 'Procedure';
@@ -16,36 +24,117 @@ export interface Annotation {
 
 @Injectable()
 export class AnnotationsService {
-  private annotations: Annotation[] = [];
+  private ddbClient: DynamoDBClient;
+  private docClient: DynamoDBDocumentClient;
 
-  getAnnotationsByDocument(documentId: string): Annotation[] {
-    return this.annotations.filter((a) => a.documentId === documentId);
+  constructor() {
+    this.ddbClient = new DynamoDBClient({});
+    this.docClient = DynamoDBDocumentClient.from(this.ddbClient);
   }
 
-  createAnnotation(data: Omit<Annotation, 'id' | 'createdAt'>): Annotation {
+  async getAnnotationsByDocument(documentId: string): Promise<Annotation[]> {
+    const tableName = process.env.ANNOTATIONS_TABLE_NAME;
+    if (!tableName) return [];
+
+    const command = new QueryCommand({
+      TableName: tableName,
+      IndexName: 'DocumentIdIndex',
+      KeyConditionExpression: 'documentId = :docId',
+      ExpressionAttributeValues: {
+        ':docId': documentId,
+      },
+    });
+
+    try {
+      const response = await this.docClient.send(command);
+      return (response.Items as Annotation[]) || [];
+    } catch (error) {
+      console.error('Error fetching annotations', error);
+      return [];
+    }
+  }
+
+  async createAnnotation(
+    data: Omit<Annotation, 'annotationId' | 'createdAt'>,
+  ): Promise<Annotation> {
+    const tableName = process.env.ANNOTATIONS_TABLE_NAME;
+
     const newAnnotation: Annotation = {
       ...data,
-      id: randomUUID(),
+      annotationId: randomUUID(),
       createdAt: new Date().toISOString(),
     };
-    this.annotations.push(newAnnotation);
+
+    if (!tableName) return newAnnotation;
+
+    const command = new PutCommand({
+      TableName: tableName,
+      Item: newAnnotation,
+    });
+
+    await this.docClient.send(command);
     return newAnnotation;
   }
 
-  updateAnnotation(id: string, updates: Partial<Annotation>): Annotation {
-    const index = this.annotations.findIndex((a) => a.id === id);
-    if (index === -1) {
-      throw new NotFoundException(`Annotation with id ${id} not found`);
+  async updateAnnotation(
+    annotationId: string,
+    updates: Partial<Annotation>,
+  ): Promise<Annotation> {
+    const tableName = process.env.ANNOTATIONS_TABLE_NAME;
+    if (!tableName) throw new NotFoundException('Table not configured');
+
+    const updateExpressions: string[] = [];
+    const expressionAttributeNames: Record<string, string> = {};
+    const expressionAttributeValues: Record<string, any> = {};
+
+    for (const [key, value] of Object.entries(updates)) {
+      if (key !== 'annotationId' && key !== 'documentId') {
+        updateExpressions.push(`#${key} = :${key}`);
+        expressionAttributeNames[`#${key}`] = key;
+        expressionAttributeValues[`:${key}`] = value;
+      }
     }
-    this.annotations[index] = { ...this.annotations[index], ...updates };
-    return this.annotations[index];
+
+    if (updateExpressions.length === 0) {
+      return {} as Annotation; // Or fetch it
+    }
+
+    const command = new UpdateCommand({
+      TableName: tableName,
+      Key: { annotationId },
+      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
+      ExpressionAttributeNames: expressionAttributeNames,
+      ExpressionAttributeValues: expressionAttributeValues,
+      ReturnValues: 'ALL_NEW',
+    });
+
+    try {
+      const response = await this.docClient.send(command);
+      return response.Attributes as Annotation;
+    } catch (error) {
+      console.error('Error updating annotation', error);
+      throw new NotFoundException(
+        `Annotation with id ${annotationId} not found`,
+      );
+    }
   }
 
-  deleteAnnotation(id: string): void {
-    const index = this.annotations.findIndex((a) => a.id === id);
-    if (index === -1) {
-      throw new NotFoundException(`Annotation with id ${id} not found`);
+  async deleteAnnotation(annotationId: string): Promise<void> {
+    const tableName = process.env.ANNOTATIONS_TABLE_NAME;
+    if (!tableName) return;
+
+    const command = new DeleteCommand({
+      TableName: tableName,
+      Key: { annotationId },
+    });
+
+    try {
+      await this.docClient.send(command);
+    } catch (error) {
+      console.error('Error deleting annotation', error);
+      throw new NotFoundException(
+        `Annotation with id ${annotationId} not found`,
+      );
     }
-    this.annotations.splice(index, 1);
   }
 }
