@@ -107,10 +107,15 @@ Text: "${text}"`,
         const extractedText = text.substring(actualStart, actualEnd);
 
         if (extractedText !== entity.text) {
-          const index = text.indexOf(entity.text);
-          if (index !== -1) {
-            actualStart = index;
-            actualEnd = index + entity.text.length;
+          // Escape special regex characters, then replace spaces with \s+ to match across newlines
+          const escapedText = entity.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const regexPattern = escapedText.replace(/\\s\+|\\n|\s+/g, '\\s+');
+          const regex = new RegExp(regexPattern, 'i');
+          const match = text.match(regex);
+
+          if (match && match.index !== undefined) {
+            actualStart = match.index;
+            actualEnd = match.index + match[0].length;
           } else {
             this.logger.warn(
               `Entity text not found in document: ${entity.text}`,
@@ -155,14 +160,18 @@ Text: "${text}"`,
     ];
 
     mockEntities.forEach((ent) => {
-      const index = text.indexOf(ent.text);
-      if (index !== -1) {
+      const escapedText = ent.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regexPattern = escapedText.replace(/\\s\+|\\n|\s+/g, '\\s+');
+      const regex = new RegExp(regexPattern, 'i');
+      const match = text.match(regex);
+
+      if (match && match.index !== undefined) {
         this.annotationsService.createAnnotation({
           documentId,
           text: ent.text,
           label: ent.label as any,
-          startOffset: index,
-          endOffset: index + ent.text.length,
+          startOffset: match.index,
+          endOffset: match.index + match[0].length,
           source: 'llm',
           status: 'suggested',
           confidence: ent.confidence,
