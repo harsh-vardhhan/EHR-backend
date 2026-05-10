@@ -1,0 +1,56 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: SAM Build
+        run: sam build
+
+      - name: SAM Deploy
+        run: |
+          sam deploy --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --stack-name ehr-annotation-backend \
+            --capabilities CAPABILITY_IAM \
+            --resolve-s3 \
+            --parameter-overrides \
+              DocumentsBucketName=${{ secrets.DOCUMENTS_BUCKET_NAME }} \
+              FrontendBucketName=${{ secrets.FRONTEND_BUCKET_NAME }} \
+              DocumentsTableName=${{ secrets.DOCUMENTS_TABLE_NAME }} \
+              AnnotationsTableName=${{ secrets.ANNOTATIONS_TABLE_NAME }} \
+              GroqApiKey=${{ secrets.GROQ_API_KEY }}
+
+      - name: Run Seeding Script
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          DOCUMENTS_BUCKET_NAME: ${{ secrets.DOCUMENTS_BUCKET_NAME }}
+          DOCUMENTS_TABLE_NAME: ${{ secrets.DOCUMENTS_TABLE_NAME }}
+          ANNOTATIONS_TABLE_NAME: ${{ secrets.ANNOTATIONS_TABLE_NAME }}
+        run: npm run seed
