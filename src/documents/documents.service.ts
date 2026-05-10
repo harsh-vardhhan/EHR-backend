@@ -1,32 +1,79 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-
-const MOCK_NOTE = `Patient is a 67-year-old male presenting with chest pain and 
-shortness of breath for the past 3 days. He has a known history 
-of hypertension and type 2 diabetes mellitus. Current medications 
-include lisinopril 10mg daily, metformin 500mg twice daily, and 
-aspirin 81mg daily.
-
-On examination, blood pressure was 158/94 mmHg and oxygen 
-saturation was 94% on room air. Chest X-ray revealed pulmonary 
-oedema consistent with acute decompensated heart failure.
-
-Plan: Start furosemide 40mg intravenously, cardiology consult 
-requested, repeat echocardiogram ordered.`;
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, ScanCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class DocumentsService {
-  private documents = [
-    {
-      id: 'doc-1',
-      text: MOCK_NOTE,
-    },
-  ];
+  private ddbClient: DynamoDBClient;
+  private docClient: DynamoDBDocumentClient;
+  private s3Client: S3Client;
 
-  getDocument(id: string) {
-    const doc = this.documents.find((d) => d.id === id);
-    if (!doc) {
+  constructor() {
+    this.ddbClient = new DynamoDBClient({});
+    this.docClient = DynamoDBDocumentClient.from(this.ddbClient);
+    this.s3Client = new S3Client({});
+  }
+
+  async getDocuments() {
+    const tableName = process.env.DOCUMENTS_TABLE_NAME;
+    if (!tableName) {
+      return []; // Fallback or mock list if not configured
+    }
+
+    const command = new ScanCommand({
+      TableName: tableName,
+    });
+
+    try {
+      const response = await this.docClient.send(command);
+      return response.Items || [];
+    } catch (error) {
+      console.error('Error fetching documents from DDB', error);
+      return [];
+    }
+  }
+
+  async getDocument(id: string) {
+    const tableName = process.env.DOCUMENTS_TABLE_NAME;
+    const bucketName = process.env.DOCUMENTS_BUCKET_NAME;
+
+    if (!tableName || !bucketName) {
+      // Mock fallback
+      if (id === 'doc-001') {
+        return { id: 'doc-001', text: 'Mock text', status: 'ready_for_review' };
+      }
       throw new NotFoundException(`Document with id ${id} not found`);
     }
-    return doc;
+
+    const getDdbCommand = new GetCommand({
+      TableName: tableName,
+      Key: { id },
+    });
+
+    const ddbResponse = await this.docClient.send(getDdbCommand);
+    const metadata = ddbResponse.Item;
+
+    if (!metadata) {
+      throw new NotFoundException(`Document with id ${id} not found`);
+    }
+
+    const getS3Command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: metadata.s3Key,
+    });
+
+    try {
+      const s3Response = await this.s3Client.send(getS3Command);
+      const text = await s3Response.Body?.transformToString();
+
+      return {
+        ...metadata,
+        text,
+      };
+    } catch (error) {
+      console.error('Error fetching from S3', error);
+      throw new NotFoundException(`Document text for ${id} not found in S3`);
+    }
   }
 }

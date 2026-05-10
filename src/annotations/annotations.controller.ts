@@ -15,12 +15,12 @@ export class AnnotationsController {
   constructor(private readonly annotationsService: AnnotationsService) {}
 
   @Get()
-  getAnnotations(@Query('documentId') documentId: string) {
+  async getAnnotations(@Query('documentId') documentId: string) {
     return this.annotationsService.getAnnotationsByDocument(documentId);
   }
 
   @Post()
-  createAnnotation(
+  async createAnnotation(
     @Body()
     body: {
       documentId: string;
@@ -37,13 +37,13 @@ export class AnnotationsController {
   }
 
   @Delete(':id')
-  deleteAnnotation(@Param('id') id: string) {
-    this.annotationsService.deleteAnnotation(id);
+  async deleteAnnotation(@Param('id') id: string) {
+    await this.annotationsService.deleteAnnotation(id);
     return { success: true };
   }
 
   @Patch(':id')
-  updateAnnotation(
+  async updateAnnotation(
     @Param('id') id: string,
     @Body() updates: Partial<{ label: string; status: string; text: string }>,
   ) {
