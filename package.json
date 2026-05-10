@@ -24,6 +24,7 @@
     "@mastra/core": "^1.32.1",
     "@mastra/engine": "^0.1.0-alpha.84",
     "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "ai": "^6.0.177",
