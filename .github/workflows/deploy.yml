@@ -31,7 +31,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: SAM Build
-        run: sam build
+        run: npm install -g esbuild && sam build
 
       - name: SAM Deploy
         run: |
