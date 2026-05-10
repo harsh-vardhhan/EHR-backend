@@ -36,8 +36,8 @@ Resources:
       MethodSettings:
         - HttpMethod: '*'
           ResourcePath: '/*'
-          ThrottlingBurstLimit: 50
-          ThrottlingRateLimit: 100
+          ThrottlingBurstLimit: 2
+          ThrottlingRateLimit: 5
 
   EhrBackendFunction:
     Type: AWS::Serverless::Function
