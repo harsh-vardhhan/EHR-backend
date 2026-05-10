@@ -32,7 +32,7 @@ async function analyzeDocument(text: string) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama3-8b-8192', // Using a fast, widely available model, or use what was there: openai/gpt-oss-120b but the prompt used earlier might be custom. Let's use llama-3.1-8b-instant
+        model: 'openai/gpt-oss-120b',
         max_tokens: 1024,
         messages: [
           {
