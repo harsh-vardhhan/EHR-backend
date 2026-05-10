@@ -91,7 +91,10 @@ Text: "${text}"`
         throw new Error(`Failed to parse JSON. Raw text was: ${generatedText}. Error: ${e.message}`);
       }
 
+      this.logger.log(`=========================================`);
+      this.logger.log(`✅ SUCCESS: LLM API (gpt-oss-120b) responded successfully!`);
       this.logger.log(`LLM returned ${object.entities.length} entities`);
+      this.logger.log(`=========================================`);
 
       object.entities.forEach(entity => {
         let actualStart = entity.startOffset;
@@ -128,6 +131,9 @@ Text: "${text}"`
   }
 
   private fallbackMock(documentId: string, text: string) {
+    this.logger.warn(`=========================================`);
+    this.logger.warn(`⚠️ FALLBACK ENGAGED: Using hardcoded mock data!`);
+    this.logger.warn(`=========================================`);
     const mockEntities = [
       { text: 'chest pain', label: 'Symptom', confidence: 95 },
       { text: 'shortness of breath', label: 'Symptom', confidence: 85 },
