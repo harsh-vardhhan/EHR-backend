@@ -42,8 +42,8 @@ Resources:
   EhrBackendFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: .
-      Handler: serverless.handler
+      CodeUri: dist/
+      Handler: serverless-bundle.handler
       Events:
         ProxyApiRoot:
           Type: Api
@@ -70,20 +70,6 @@ Resources:
             TableName: !Ref DocumentsTableName
         - DynamoDBCrudPolicy:
             TableName: !Ref AnnotationsTableName
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints: 
-        - src/serverless.ts
-        External:
-          - class-transformer
-          - class-validator
-          - "@nestjs/microservices"
-          - "@nestjs/websockets"
-          - cache-manager
 
   DocumentsTable:
     Type: AWS::DynamoDB::Table
