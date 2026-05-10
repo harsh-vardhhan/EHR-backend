@@ -9,6 +9,9 @@ export interface Annotation {
   startOffset: number;
   endOffset: number;
   createdAt: string;
+  source: 'human' | 'llm';
+  status?: 'suggested' | 'accepted' | 'rejected' | 'corrected';
+  confidence?: number;
 }
 
 @Injectable()
@@ -27,6 +30,15 @@ export class AnnotationsService {
     };
     this.annotations.push(newAnnotation);
     return newAnnotation;
+  }
+
+  updateAnnotation(id: string, updates: Partial<Annotation>): Annotation {
+    const index = this.annotations.findIndex((a) => a.id === id);
+    if (index === -1) {
+      throw new NotFoundException(`Annotation with id ${id} not found`);
+    }
+    this.annotations[index] = { ...this.annotations[index], ...updates };
+    return this.annotations[index];
   }
 
   deleteAnnotation(id: string): void {

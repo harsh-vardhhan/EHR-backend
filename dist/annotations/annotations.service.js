@@ -23,6 +23,14 @@ let AnnotationsService = class AnnotationsService {
         this.annotations.push(newAnnotation);
         return newAnnotation;
     }
+    updateAnnotation(id, updates) {
+        const index = this.annotations.findIndex((a) => a.id === id);
+        if (index === -1) {
+            throw new common_1.NotFoundException(`Annotation with id ${id} not found`);
+        }
+        this.annotations[index] = { ...this.annotations[index], ...updates };
+        return this.annotations[index];
+    }
     deleteAnnotation(id) {
         const index = this.annotations.findIndex((a) => a.id === id);
         if (index === -1) {
