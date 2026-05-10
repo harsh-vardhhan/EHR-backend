@@ -42,7 +42,6 @@ jobs:
             --resolve-s3 \
             --parameter-overrides \
               DocumentsBucketName=${{ secrets.DOCUMENTS_BUCKET_NAME }} \
-              FrontendBucketName=${{ secrets.FRONTEND_BUCKET_NAME }} \
               DocumentsTableName=${{ secrets.DOCUMENTS_TABLE_NAME }} \
               AnnotationsTableName=${{ secrets.ANNOTATIONS_TABLE_NAME }} \
               GroqApiKey=${{ secrets.GROQ_API_KEY }}

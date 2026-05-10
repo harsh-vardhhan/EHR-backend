@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: EHR Annotation Tool SAM Template
+Description: EHR Annotation Tool Backend SAM Template
 
 Globals:
   Function:
@@ -14,9 +14,6 @@ Parameters:
   DocumentsBucketName:
     Type: String
     Description: Name of the S3 bucket for documents
-  FrontendBucketName:
-    Type: String
-    Description: Name of the S3 bucket for frontend
   DocumentsTableName:
     Type: String
     Description: Name of the DynamoDB table for documents
@@ -117,82 +114,7 @@ Resources:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
 
-  FrontendBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Ref FrontendBucketName
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-
-  CloudFrontOriginAccessControl:
-    Type: AWS::CloudFront::OriginAccessControl
-    Properties:
-      OriginAccessControlConfig:
-        Name: FrontendOAC
-        OriginAccessControlOriginType: s3
-        SigningBehavior: always
-        SigningProtocol: sigv4
-
-  FrontendBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref FrontendBucket
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: cloudfront.amazonaws.com
-            Action: 's3:GetObject'
-            Resource: !Sub 'arn:aws:s3:::${FrontendBucket}/*'
-            Condition:
-              StringEquals:
-                'AWS:SourceArn': !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}'
-
-  CloudFrontDistribution:
-    Type: AWS::CloudFront::Distribution
-    Properties:
-      DistributionConfig:
-        Enabled: true
-        DefaultRootObject: index.html
-        Origins:
-          - DomainName: !GetAtt FrontendBucket.RegionalDomainName
-            Id: FrontendOrigin
-            S3OriginConfig:
-              OriginAccessIdentity: ""
-            OriginAccessControlId: !GetAtt CloudFrontOriginAccessControl.Id
-        DefaultCacheBehavior:
-          TargetOriginId: FrontendOrigin
-          ViewerProtocolPolicy: redirect-to-https
-          AllowedMethods:
-            - GET
-            - HEAD
-            - OPTIONS
-          CachedMethods:
-            - GET
-            - HEAD
-          ForwardedValues:
-            QueryString: false
-            Cookies:
-              Forward: none
-        CustomErrorResponses:
-          - ErrorCode: 403
-            ResponseCode: 200
-            ResponsePagePath: /index.html
-          - ErrorCode: 404
-            ResponseCode: 200
-            ResponsePagePath: /index.html
-
 Outputs:
   ApiEndpoint:
     Description: "API Gateway endpoint URL"
     Value: !Sub "https://${EhrApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod/"
-  CloudFrontUrl:
-    Description: "CloudFront Distribution Domain Name"
-    Value: !GetAtt CloudFrontDistribution.DomainName
-  CloudFrontDistributionId:
-    Description: "CloudFront Distribution ID"
-    Value: !Ref CloudFrontDistribution
