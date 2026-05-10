@@ -51,10 +51,3 @@ jobs:
               AnnotationsTableName=${{ secrets.ANNOTATIONS_TABLE_NAME }} \
               GroqApiKey=${{ secrets.GROQ_API_KEY }}
 
-      - name: Run Seeding Script
-        env:
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          DOCUMENTS_BUCKET_NAME: ${{ secrets.DOCUMENTS_BUCKET_NAME }}
-          DOCUMENTS_TABLE_NAME: ${{ secrets.DOCUMENTS_TABLE_NAME }}
-          ANNOTATIONS_TABLE_NAME: ${{ secrets.ANNOTATIONS_TABLE_NAME }}
-        run: npm run seed
