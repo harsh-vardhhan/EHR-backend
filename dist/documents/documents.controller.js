@@ -15,13 +15,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DocumentsController = void 0;
 const common_1 = require("@nestjs/common");
 const documents_service_1 = require("./documents.service");
+const mastra_service_1 = require("../annotations/mastra.service");
 let DocumentsController = class DocumentsController {
     documentsService;
-    constructor(documentsService) {
+    mastraService;
+    constructor(documentsService, mastraService) {
         this.documentsService = documentsService;
+        this.mastraService = mastraService;
     }
     getDocument(id) {
         return this.documentsService.getDocument(id);
+    }
+    analyzeDocument(id) {
+        const doc = this.documentsService.getDocument(id);
+        this.mastraService.analyzeDocumentBackground(doc.id, doc.text);
+        return { success: true, message: 'Analysis started' };
     }
 };
 exports.DocumentsController = DocumentsController;
@@ -32,8 +40,16 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], DocumentsController.prototype, "getDocument", null);
+__decorate([
+    (0, common_1.Post)(':id/analyze'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], DocumentsController.prototype, "analyzeDocument", null);
 exports.DocumentsController = DocumentsController = __decorate([
     (0, common_1.Controller)('documents'),
-    __metadata("design:paramtypes", [documents_service_1.DocumentsService])
+    __metadata("design:paramtypes", [documents_service_1.DocumentsService,
+        mastra_service_1.MastraService])
 ], DocumentsController);
 //# sourceMappingURL=documents.controller.js.map

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { AnnotationsService } from './annotations.service';
 
 @Controller('annotations')
@@ -19,6 +19,9 @@ export class AnnotationsController {
       label: 'Condition' | 'Medication' | 'Symptom' | 'Procedure';
       startOffset: number;
       endOffset: number;
+      source: 'human' | 'llm';
+      status?: 'suggested' | 'accepted' | 'rejected' | 'corrected';
+      confidence?: number;
     },
   ) {
     return this.annotationsService.createAnnotation(body);
@@ -28,5 +31,13 @@ export class AnnotationsController {
   deleteAnnotation(@Param('id') id: string) {
     this.annotationsService.deleteAnnotation(id);
     return { success: true };
+  }
+
+  @Patch(':id')
+  updateAnnotation(
+    @Param('id') id: string,
+    @Body() updates: Partial<{ label: string; status: string; text: string }>,
+  ) {
+    return this.annotationsService.updateAnnotation(id, updates as any);
   }
 }

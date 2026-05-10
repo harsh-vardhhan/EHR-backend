@@ -30,6 +30,9 @@ let AnnotationsController = class AnnotationsController {
         this.annotationsService.deleteAnnotation(id);
         return { success: true };
     }
+    updateAnnotation(id, updates) {
+        return this.annotationsService.updateAnnotation(id, updates);
+    }
 };
 exports.AnnotationsController = AnnotationsController;
 __decorate([
@@ -53,6 +56,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], AnnotationsController.prototype, "deleteAnnotation", null);
+__decorate([
+    (0, common_1.Patch)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], AnnotationsController.prototype, "updateAnnotation", null);
 exports.AnnotationsController = AnnotationsController = __decorate([
     (0, common_1.Controller)('annotations'),
     __metadata("design:paramtypes", [annotations_service_1.AnnotationsService])
