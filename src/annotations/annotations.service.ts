@@ -12,7 +12,7 @@ export interface Annotation {
   annotationId: string;
   documentId: string;
   text: string;
-  label: 'Condition' | 'Medication' | 'Symptom' | 'Procedure';
+  label: 'Clinical Condition' | 'Medication Statement' | 'Clinical Finding' | 'Medical Procedure';
   startOffset: number;
   endOffset: number;
   createdAt: string;
@@ -20,6 +20,7 @@ export interface Annotation {
   status?: 'suggested' | 'accepted' | 'rejected' | 'corrected';
   confidence?: number;
 }
+
 
 @Injectable()
 export class AnnotationsService {
