@@ -51,3 +51,14 @@ jobs:
               AnnotationsTableName=${{ secrets.ANNOTATIONS_TABLE_NAME }} \
               GroqApiKey=${{ secrets.GROQ_API_KEY }}
 
+      - name: Seed environment
+        run: npm run seed
+        env:
+          DOCUMENTS_BUCKET_NAME: ${{ secrets.DOCUMENTS_BUCKET_NAME }}
+          DOCUMENTS_TABLE_NAME: ${{ secrets.DOCUMENTS_TABLE_NAME }}
+          ANNOTATIONS_TABLE_NAME: ${{ secrets.ANNOTATIONS_TABLE_NAME }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
