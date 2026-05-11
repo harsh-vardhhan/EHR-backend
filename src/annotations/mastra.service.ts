@@ -43,12 +43,12 @@ export class MastraService {
               },
               {
                 role: 'user',
-                content: `Extract medical entities from the following text and classify them strictly into one of these labels: Condition, Medication, Symptom, or Procedure.
+                content: `Extract medical entities from the following text and classify them strictly into one of these professional healthcare labels: Clinical Condition, Medication Statement, Clinical Finding, or Medical Procedure.
 
 Important: You must output your response as a valid JSON object matching this schema:
 {
   "entities": [
-    { "text": string, "label": "Condition" | "Medication" | "Symptom" | "Procedure", "confidence": number, "startOffset": number, "endOffset": number }
+    { "text": string, "label": "Clinical Condition" | "Medication Statement" | "Clinical Finding" | "Medical Procedure", "confidence": number, "startOffset": number, "endOffset": number }
   ]
 }
 
@@ -57,7 +57,7 @@ Note: Do not calculate exact character offsets. Always set startOffset and endOf
 Example output:
 {
   "entities": [
-    { "text": "chest pain", "label": "Symptom", "confidence": 95, "startOffset": 0, "endOffset": 0 }
+    { "text": "chest pain", "label": "Clinical Finding", "confidence": 95, "startOffset": 0, "endOffset": 0 }
   ]
 }
 
@@ -100,7 +100,7 @@ Text: "${text}"`,
       this.logger.log(`LLM returned ${object.entities.length} entities`);
       this.logger.log(`=========================================`);
 
-      object.entities.forEach((entity) => {
+      for (const entity of object.entities) {
         let actualStart = entity.startOffset;
         let actualEnd = entity.endOffset;
         const extractedText = text.substring(actualStart, actualEnd);
@@ -122,11 +122,11 @@ Text: "${text}"`,
             this.logger.warn(
               `Entity text not found in document: ${entity.text}`,
             );
-            return;
+            continue;
           }
         }
 
-        this.annotationsService.createAnnotation({
+        await this.annotationsService.createAnnotation({
           documentId,
           text: entity.text,
           label: entity.label,
@@ -136,39 +136,48 @@ Text: "${text}"`,
           status: 'suggested',
           confidence: entity.confidence,
         });
-      });
+      }
     } catch (error) {
       this.logger.error('Error calling Groq / AI SDK', error);
       this.fallbackMock(documentId, text);
     }
   }
 
-  private fallbackMock(documentId: string, text: string) {
+  private async fallbackMock(documentId: string, text: string) {
+
     this.logger.warn(`=========================================`);
     this.logger.warn(`⚠️ FALLBACK ENGAGED: Using hardcoded mock data!`);
     this.logger.warn(`=========================================`);
     const mockEntities = [
-      { text: 'chest pain', label: 'Symptom', confidence: 95 },
-      { text: 'shortness of breath', label: 'Symptom', confidence: 85 },
-      { text: 'hypertension', label: 'Condition', confidence: 98 },
-      { text: 'type 2 diabetes mellitus', label: 'Condition', confidence: 99 },
-      { text: 'lisinopril', label: 'Medication', confidence: 96 },
-      { text: 'metformin', label: 'Medication', confidence: 95 },
-      { text: 'aspirin', label: 'Medication', confidence: 97 },
-      { text: 'furosemide', label: 'Medication', confidence: 94 },
-      { text: 'pulmonary oedema', label: 'Condition', confidence: 75 },
-      { text: 'echocardiogram', label: 'Procedure', confidence: 55 },
-      { text: 'heart failure', label: 'Condition', confidence: 80 },
+      { text: 'chest pain', label: 'Clinical Finding', confidence: 95 },
+      {
+        text: 'shortness of breath',
+        label: 'Clinical Finding',
+        confidence: 85,
+      },
+      { text: 'hypertension', label: 'Clinical Condition', confidence: 98 },
+      {
+        text: 'type 2 diabetes mellitus',
+        label: 'Clinical Condition',
+        confidence: 99,
+      },
+      { text: 'lisinopril', label: 'Medication Statement', confidence: 96 },
+      { text: 'metformin', label: 'Medication Statement', confidence: 95 },
+      { text: 'aspirin', label: 'Medication Statement', confidence: 97 },
+      { text: 'furosemide', label: 'Medication Statement', confidence: 94 },
+      { text: 'pulmonary oedema', label: 'Clinical Condition', confidence: 75 },
+      { text: 'echocardiogram', label: 'Medical Procedure', confidence: 55 },
+      { text: 'heart failure', label: 'Clinical Condition', confidence: 80 },
     ];
 
-    mockEntities.forEach((ent) => {
+    for (const ent of mockEntities) {
       const escapedText = ent.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regexPattern = escapedText.replace(/\\s\+|\\n|\s+/g, '\\s+');
       const regex = new RegExp(regexPattern, 'i');
       const match = text.match(regex);
 
       if (match && match.index !== undefined) {
-        this.annotationsService.createAnnotation({
+        await this.annotationsService.createAnnotation({
           documentId,
           text: ent.text,
           label: ent.label as any,
@@ -179,6 +188,6 @@ Text: "${text}"`,
           confidence: ent.confidence,
         });
       }
-    });
+    }
   }
 }

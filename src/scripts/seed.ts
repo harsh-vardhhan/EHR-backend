@@ -1,6 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  ListObjectsV2Command,
+} from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { randomUUID } from 'crypto';
@@ -41,12 +45,12 @@ async function analyzeDocument(text: string) {
           },
           {
             role: 'user',
-            content: `Extract medical entities from the following text and classify them strictly into one of these labels: Condition, Medication, Symptom, or Procedure.
+            content: `Extract medical entities from the following text and classify them strictly into one of these professional healthcare labels: Clinical Condition, Medication Statement, Clinical Finding, or Medical Procedure.
 
 Important: You must output your response as a valid JSON object matching this schema:
 {
   "entities": [
-    { "text": string, "label": "Condition" | "Medication" | "Symptom" | "Procedure", "confidence": number, "startOffset": number, "endOffset": number }
+    { "text": string, "label": "Clinical Condition" | "Medication Statement" | "Clinical Finding" | "Medical Procedure", "confidence": number, "startOffset": number, "endOffset": number }
   ]
 }
 
@@ -55,7 +59,7 @@ Note: Do not calculate exact character offsets. Always set startOffset and endOf
 Example output:
 {
   "entities": [
-    { "text": "chest pain", "label": "Symptom", "confidence": 95, "startOffset": 0, "endOffset": 0 }
+    { "text": "chest pain", "label": "Clinical Finding", "confidence": 95, "startOffset": 0, "endOffset": 0 }
   ]
 }
 
@@ -83,12 +87,39 @@ Text: "${text}"`,
   return JSON.parse(generatedText);
 }
 
+async function isS3Seeded() {
+  if (!BUCKET_NAME) return false;
+
+  const command = new ListObjectsV2Command({
+    Bucket: BUCKET_NAME,
+    Prefix: 'documents/',
+    MaxKeys: 1,
+  });
+
+  try {
+    const response = await s3Client.send(command);
+    return (response.Contents?.length || 0) > 0;
+  } catch (error) {
+    console.warn('Error checking S3 status, assuming not seeded:', error);
+    return false;
+  }
+}
+
 async function seed() {
   if (!BUCKET_NAME || !DOC_TABLE_NAME || !ANN_TABLE_NAME) {
     console.error(
       'Missing AWS environment variables. Ensure BUCKET_NAME, DOC_TABLE_NAME, ANN_TABLE_NAME are set.',
     );
     process.exit(1);
+  }
+
+  // Check if already seeded
+  console.log('Checking if S3 already has data...');
+  if (await isS3Seeded()) {
+    console.log(
+      'S3 already contains documents. Skipping seeding to prevent duplicates.',
+    );
+    return;
   }
 
   const notesPath = path.join(__dirname, 'notes.json');
@@ -132,14 +163,8 @@ async function seed() {
         let actualStart = 0;
         let actualEnd = 0;
 
-        const escapedText = entity.text.replace(
-          /[.*+?^${}()|[\\]\\\\]/g,
-          '\\\\$&',
-        );
-        const regexPattern = escapedText.replace(
-          /\\\\s\\+|\\\\n|\\s+/g,
-          '\\\\s+',
-        );
+        const escapedText = entity.text.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
+        const regexPattern = escapedText.replace(/\\s+|\\n/g, '\\s+');
         const regex = new RegExp(regexPattern, 'i');
         const match = note.text.match(regex);
 
