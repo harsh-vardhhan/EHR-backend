@@ -51,7 +51,7 @@ async function analyzeDocument(text: string) {
 Important: You must output your response as a valid JSON object matching this schema:
 {
   "entities": [
-    { "text": string, "label": "Clinical Condition" | "Medication Statement" | "Clinical Finding" | "Medical Procedure", "confidence": number, "startOffset": number, "endOffset": number }
+    { "text": string, "label": "Clinical Condition" | "Medication Statement" | "Clinical Finding" | "Medical Procedure", "confidence": number (decimal 0-1), "startOffset": number, "endOffset": number }
   ]
 }
 
@@ -60,7 +60,7 @@ Note: Do not calculate exact character offsets. Always set startOffset and endOf
 Example output:
 {
   "entities": [
-    { "text": "chest pain", "label": "Clinical Finding", "confidence": 95, "startOffset": 0, "endOffset": 0 }
+    { "text": "chest pain", "label": "Clinical Finding", "confidence": 0.95, "startOffset": 0, "endOffset": 0 }
   ]
 }
 
