@@ -48,7 +48,7 @@ export class MastraService {
 Important: You must output your response as a valid JSON object matching this schema:
 {
   "entities": [
-    { "text": string, "label": "Clinical Condition" | "Medication Statement" | "Clinical Finding" | "Medical Procedure", "confidence": number, "startOffset": number, "endOffset": number }
+    { "text": string, "label": "Clinical Condition" | "Medication Statement" | "Clinical Finding" | "Medical Procedure", "confidence": number (decimal 0-1), "startOffset": number, "endOffset": number }
   ]
 }
 
@@ -57,7 +57,7 @@ Note: Do not calculate exact character offsets. Always set startOffset and endOf
 Example output:
 {
   "entities": [
-    { "text": "chest pain", "label": "Clinical Finding", "confidence": 95, "startOffset": 0, "endOffset": 0 }
+    { "text": "chest pain", "label": "Clinical Finding", "confidence": 0.95, "startOffset": 0, "endOffset": 0 }
   ]
 }
 
@@ -149,25 +149,25 @@ Text: "${text}"`,
     this.logger.warn(`⚠️ FALLBACK ENGAGED: Using hardcoded mock data!`);
     this.logger.warn(`=========================================`);
     const mockEntities = [
-      { text: 'chest pain', label: 'Clinical Finding', confidence: 95 },
+      { text: 'chest pain', label: 'Clinical Finding', confidence: 0.95 },
       {
         text: 'shortness of breath',
         label: 'Clinical Finding',
-        confidence: 85,
+        confidence: 0.85,
       },
-      { text: 'hypertension', label: 'Clinical Condition', confidence: 98 },
+      { text: 'hypertension', label: 'Clinical Condition', confidence: 0.95 },
       {
         text: 'type 2 diabetes mellitus',
         label: 'Clinical Condition',
-        confidence: 99,
+        confidence: 0.99,
       },
-      { text: 'lisinopril', label: 'Medication Statement', confidence: 96 },
-      { text: 'metformin', label: 'Medication Statement', confidence: 95 },
-      { text: 'aspirin', label: 'Medication Statement', confidence: 97 },
-      { text: 'furosemide', label: 'Medication Statement', confidence: 94 },
-      { text: 'pulmonary oedema', label: 'Clinical Condition', confidence: 75 },
-      { text: 'echocardiogram', label: 'Medical Procedure', confidence: 55 },
-      { text: 'heart failure', label: 'Clinical Condition', confidence: 80 },
+      { text: 'lisinopril', label: 'Medication Statement', confidence: 0.96 },
+      { text: 'atorvastatin', label: 'Medication Statement', confidence: 0.99 },
+      { text: 'aspirin', label: 'Medication Statement', confidence: 0.97 },
+      { text: 'furosemide', label: 'Medication Statement', confidence: 0.94 },
+      { text: 'pulmonary oedema', label: 'Clinical Condition', confidence: 0.75 },
+      { text: 'echocardiogram', label: 'Medical Procedure', confidence: 0.55 },
+      { text: 'heart failure', label: 'Clinical Condition', confidence: 0.80 },
     ];
 
     for (const ent of mockEntities) {
