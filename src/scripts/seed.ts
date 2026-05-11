@@ -1,6 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { S3Client, PutObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  ListObjectsV2Command,
+} from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { randomUUID } from 'crypto';
@@ -85,7 +89,7 @@ Text: "${text}"`,
 
 async function isS3Seeded() {
   if (!BUCKET_NAME) return false;
-  
+
   const command = new ListObjectsV2Command({
     Bucket: BUCKET_NAME,
     Prefix: 'documents/',
@@ -112,7 +116,9 @@ async function seed() {
   // Check if already seeded
   console.log('Checking if S3 already has data...');
   if (await isS3Seeded()) {
-    console.log('S3 already contains documents. Skipping seeding to prevent duplicates.');
+    console.log(
+      'S3 already contains documents. Skipping seeding to prevent duplicates.',
+    );
     return;
   }
 
@@ -157,14 +163,8 @@ async function seed() {
         let actualStart = 0;
         let actualEnd = 0;
 
-        const escapedText = entity.text.replace(
-          /[.*+?^${}()|[\\]\\]/g,
-          '\\$&',
-        );
-        const regexPattern = escapedText.replace(
-          /\\s+|\\n/g,
-          '\\s+',
-        );
+        const escapedText = entity.text.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
+        const regexPattern = escapedText.replace(/\\s+|\\n/g, '\\s+');
         const regex = new RegExp(regexPattern, 'i');
         const match = note.text.match(regex);
 
@@ -203,6 +203,5 @@ async function seed() {
 
   console.log('Seeding complete!');
 }
-
 
 seed().catch(console.error);

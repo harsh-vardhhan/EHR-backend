@@ -24,7 +24,11 @@ export class AnnotationsController {
     body: {
       documentId: string;
       text: string;
-      label: 'Condition' | 'Medication' | 'Symptom' | 'Procedure';
+      label:
+        | 'Clinical Condition'
+        | 'Medication Statement'
+        | 'Clinical Finding'
+        | 'Medical Procedure';
       startOffset: number;
       endOffset: number;
       source: 'human' | 'llm';
