@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import 'dotenv/config';
 import {
   S3Client,
   PutObjectCommand,
@@ -36,7 +37,7 @@ async function analyzeDocument(text: string) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'openai/gpt-oss-120b',
+        model: 'llama-3.3-70b-versatile',
         max_tokens: 1024,
         messages: [
           {
@@ -77,14 +78,24 @@ Text: "${text}"`,
   }
 
   const data = await response.json();
-  let generatedText = data.choices[0].message.content || '';
+  let generatedText = data.choices[0]?.message?.content || '';
+
+  if (!generatedText) {
+    console.error('LLM returned an empty response. Full response:', JSON.stringify(data, null, 2));
+    throw new Error('LLM returned an empty response');
+  }
 
   const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
     generatedText = jsonMatch[0];
   }
 
-  return JSON.parse(generatedText);
+  try {
+    return JSON.parse(generatedText);
+  } catch (err) {
+    console.error('Failed to parse JSON from LLM. Raw content was:', generatedText);
+    throw err;
+  }
 }
 
 async function isS3Seeded() {
