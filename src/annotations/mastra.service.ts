@@ -14,7 +14,11 @@ export class MastraService {
     });
   }
 
-  private async runAnalysis(documentId: string, text: string) {
+  /**
+   * The core clinical extraction logic. 
+   * Exposed as public for use by the background SQS worker.
+   */
+  async runAnalysis(documentId: string, text: string) {
     this.logger.log(`Starting LLM pre-labelling for document ${documentId}`);
 
     // Wait for 2 seconds to simulate "2-3 seconds" wait time
