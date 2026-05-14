@@ -15,7 +15,7 @@ export class MastraService {
   }
 
   /**
-   * The core clinical extraction logic. 
+   * The core clinical extraction logic.
    * Exposed as public for use by the background SQS worker.
    */
   async runAnalysis(documentId: string, text: string) {
@@ -143,12 +143,11 @@ Text: "${text}"`,
       }
     } catch (error) {
       this.logger.error('Error calling Groq / AI SDK', error);
-      this.fallbackMock(documentId, text);
+      void this.fallbackMock(documentId, text);
     }
   }
 
   private async fallbackMock(documentId: string, text: string) {
-
     this.logger.warn(`=========================================`);
     this.logger.warn(`⚠️ FALLBACK ENGAGED: Using hardcoded mock data!`);
     this.logger.warn(`=========================================`);
@@ -169,9 +168,13 @@ Text: "${text}"`,
       { text: 'atorvastatin', label: 'Medication Statement', confidence: 0.99 },
       { text: 'aspirin', label: 'Medication Statement', confidence: 0.97 },
       { text: 'furosemide', label: 'Medication Statement', confidence: 0.94 },
-      { text: 'pulmonary oedema', label: 'Clinical Condition', confidence: 0.75 },
+      {
+        text: 'pulmonary oedema',
+        label: 'Clinical Condition',
+        confidence: 0.75,
+      },
       { text: 'echocardiogram', label: 'Medical Procedure', confidence: 0.55 },
-      { text: 'heart failure', label: 'Clinical Condition', confidence: 0.80 },
+      { text: 'heart failure', label: 'Clinical Condition', confidence: 0.8 },
     ];
 
     for (const ent of mockEntities) {

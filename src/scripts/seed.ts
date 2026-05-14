@@ -8,12 +8,10 @@ import {
 } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
-import { randomUUID } from 'crypto';
 
 const BUCKET_NAME = process.env.DOCUMENTS_BUCKET_NAME;
 const DOC_TABLE_NAME = process.env.DOCUMENTS_TABLE_NAME;
 const ANN_TABLE_NAME = process.env.ANNOTATIONS_TABLE_NAME;
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 const s3Client = new S3Client({});
 const ddbClient = new DynamoDBClient({});
@@ -22,8 +20,6 @@ const docClient = DynamoDBDocumentClient.from(ddbClient);
 async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-
-
 
 async function isS3Seeded() {
   if (!BUCKET_NAME) return false;
@@ -93,7 +89,6 @@ async function seed() {
     );
 
     console.log(`Seeded ${note.id}. Pipeline will trigger for analysis.`);
-
 
     // Minimal delay for S3 throughput stability
     await sleep(200);
