@@ -119,12 +119,30 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: s3.amazonaws.com
+              Service: events.amazonaws.com
             Action: sqs:SendMessage
             Resource: !GetAtt EhrAnnotationQueue.Arn
-            Condition:
-              ArnLike:
-                aws:SourceArn: !Sub "arn:aws:s3:::${DocumentsBucketName}"
+
+  EhrAnnotationBusRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Routes S3 ObjectCreated events to the Annotation Queue"
+      EventPattern:
+        source:
+          - aws.s3
+        detail-type:
+          - Object Created
+        detail:
+          bucket:
+            name:
+              - !Ref DocumentsBucketName
+          object:
+            key:
+              - prefix: "documents/"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt EhrAnnotationQueue.Arn
+          Id: "EhrAnnotationQueueTarget"
 
   DocumentsTable:
     Type: AWS::DynamoDB::Table
@@ -161,18 +179,11 @@ Resources:
 
   DocumentsBucket:
     Type: AWS::S3::Bucket
-    DependsOn: EhrAnnotationQueuePolicy
     Properties:
       BucketName: !Ref DocumentsBucketName
       NotificationConfiguration:
-        QueueConfigurations:
-          - Event: s3:ObjectCreated:*
-            Queue: !GetAtt EhrAnnotationQueue.Arn
-            Filter:
-              S3Key:
-                Rules:
-                  - Name: prefix
-                    Value: documents/
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true

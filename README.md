@@ -14,10 +14,12 @@ The backend follows a highly scalable, serverless architecture designed for clin
 graph TD
     User((Clinician)) -->|API Request| APIGateway[AWS API Gateway]
     APIGateway -->|Trigger| LambdaAPI[AWS Lambda - API]
-    LambdaAPI -->|Store/Retrieve| DynamoDB[(Amazon DynamoDB)]
-    LambdaAPI -->|Read| S3[(Amazon S3 - Medical Notes)]
+    LambdaAPI -->|Read/Write| DynamoDB[(Amazon DynamoDB)]
+    LambdaAPI -->|Upload| S3[(Amazon S3 - Medical Notes)]
+    LambdaAPI -->|Manual Trigger| SQS[AWS SQS - Annotation Queue]
 
-    S3 -->|ObjectCreated Event| SQS[AWS SQS - Annotation Queue]
+    S3 -->|Emit Event| EB[Amazon EventBridge - Bus]
+    EB -->|Route Rule| SQS[AWS SQS - Annotation Queue]
     SQS -->|Trigger| LambdaWorker[AWS Lambda - NLP Worker]
     SQS -.->|Failures| DLQ[AWS SQS - Dead Letter Queue]
     
