@@ -19,7 +19,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed": "ts-node src/scripts/seed.ts",
-    "bundle": "esbuild dist/serverless.js --bundle --platform=node --target=node20 --outfile=dist/serverless-bundle.js --external:\"@nestjs/microservices\" --external:\"@nestjs/websockets\" --external:\"cache-manager\" --external:\"class-transformer\" --external:\"class-validator\" --external:\"@aws-sdk/*\" --external:\"aws-sdk\""
+    "bundle": "esbuild dist/serverless.js --bundle --platform=node --target=node20 --outfile=dist/serverless-bundle.js --external:\"@nestjs/microservices\" --external:\"@nestjs/websockets\" --external:\"cache-manager\" --external:\"class-transformer\" --external:\"class-validator\" --external:\"@aws-sdk/*\" --external:\"aws-sdk\" && esbuild dist/worker.js --bundle --platform=node --target=node20 --outfile=dist/worker-bundle.js --external:\"@nestjs/microservices\" --external:\"@nestjs/websockets\" --external:\"cache-manager\" --external:\"class-transformer\" --external:\"class-validator\" --external:\"@aws-sdk/*\" --external:\"aws-sdk\""
   },
   "dependencies": {
     "@ai-sdk/groq": "^3.0.39",
