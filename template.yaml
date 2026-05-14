@@ -183,3 +183,11 @@ Outputs:
   ApiEndpoint:
     Description: "API Gateway endpoint URL"
     Value: !Sub "https://${EhrApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod/"
+
+  EhrAnnotationQueueUrl:
+    Description: "URL of the Annotation SQS Queue"
+    Value: !Ref EhrAnnotationQueue
+
+  EhrAnnotationDLQUrl:
+    Description: "URL of the Dead Letter Queue"
+    Value: !Ref EhrAnnotationDLQ
