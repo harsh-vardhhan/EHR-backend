@@ -70,6 +70,61 @@ Resources:
             TableName: !Ref DocumentsTableName
         - DynamoDBCrudPolicy:
             TableName: !Ref AnnotationsTableName
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt EhrAnnotationQueue.QueueName
+
+  EhrAnnotationWorkerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: worker-bundle.handler
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt EhrAnnotationQueue.Arn
+            BatchSize: 5
+      Environment:
+        Variables:
+          GROQ_API_KEY: !Ref GroqApiKey
+          DOCUMENTS_TABLE_NAME: !Ref DocumentsTableName
+          ANNOTATIONS_TABLE_NAME: !Ref AnnotationsTableName
+          DOCUMENTS_BUCKET_NAME: !Ref DocumentsBucketName
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref DocumentsBucketName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DocumentsTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AnnotationsTableName
+
+  EhrAnnotationQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 180
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt EhrAnnotationDLQ.Arn
+        maxReceiveCount: 3
+
+  EhrAnnotationDLQ:
+    Type: AWS::SQS::Queue
+
+  EhrAnnotationQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref EhrAnnotationQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt EhrAnnotationQueue.Arn
+            Condition:
+              ArnLike:
+                aws:SourceArn: !Sub "arn:aws:s3:::${DocumentsBucketName}"
 
   DocumentsTable:
     Type: AWS::DynamoDB::Table
@@ -106,8 +161,18 @@ Resources:
 
   DocumentsBucket:
     Type: AWS::S3::Bucket
+    DependsOn: EhrAnnotationQueuePolicy
     Properties:
       BucketName: !Ref DocumentsBucketName
+      NotificationConfiguration:
+        QueueConfigurations:
+          - Event: s3:ObjectCreated:*
+            Queue: !GetAtt EhrAnnotationQueue.Arn
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: documents/
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -118,3 +183,11 @@ Outputs:
   ApiEndpoint:
     Description: "API Gateway endpoint URL"
     Value: !Sub "https://${EhrApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod/"
+
+  EhrAnnotationQueueUrl:
+    Description: "URL of the Annotation SQS Queue"
+    Value: !Ref EhrAnnotationQueue
+
+  EhrAnnotationDLQUrl:
+    Description: "URL of the Dead Letter Queue"
+    Value: !Ref EhrAnnotationDLQ

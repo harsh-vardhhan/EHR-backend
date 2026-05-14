@@ -13,16 +13,24 @@ The backend follows a highly scalable, serverless architecture designed for clin
 ```mermaid
 graph TD
     User((Clinician)) -->|API Request| APIGateway[AWS API Gateway]
-    APIGateway -->|Trigger| Lambda[AWS Lambda - NestJS]
-    Lambda -->|Store/Retrieve| DynamoDB[(Amazon DynamoDB)]
-    Lambda -->|Read/Write| S3[(Amazon S3 - Medical Notes)]
-    Lambda -->|Inference| Groq[Groq AI - LLM Inference]
+    APIGateway -->|Trigger| LambdaAPI[AWS Lambda - API]
+    LambdaAPI -->|Store/Retrieve| DynamoDB[(Amazon DynamoDB)]
+    LambdaAPI -->|Read| S3[(Amazon S3 - Medical Notes)]
+
+    S3 -->|ObjectCreated Event| SQS[AWS SQS - Annotation Queue]
+    SQS -->|Trigger| LambdaWorker[AWS Lambda - NLP Worker]
+    SQS -.->|Failures| DLQ[AWS SQS - Dead Letter Queue]
+    
+    LambdaWorker -->|Inference| Groq[Groq AI - LLM Inference]
+    LambdaWorker -->|Save Annotations| DynamoDB
 ```
 
 ### Infrastructure Components:
-- **AWS Lambda**: Executes the NestJS application in a serverless environment, scaling automatically with request volume.
+- **AWS Lambda (API)**: Executes the NestJS application for UI interactions and document management.
+- **AWS Lambda (NLP Worker)**: A dedicated asynchronous worker triggered by SQS for clinical entity extraction.
+- **Amazon SQS & DLQ**: The "Shock Absorber" of the system. Handles buffering and retries for LLM inference, with a Dead Letter Queue for auditing failed processing jobs.
 - **Amazon DynamoDB**: NoSQL database for ultra-low latency storage of annotation metadata and document status.
-- **Amazon S3**: Secure, encrypted storage for raw clinical document text.
+- **Amazon S3**: Secure, encrypted storage for raw clinical document text, serving as the event source for the ingestion pipeline.
 - **Amazon API Gateway**: Managed entry point for the frontend, handling routing and CORS.
 - **Groq AI Integration**: Powers the clinical entity recognition using high-performance LLM inference.
 
