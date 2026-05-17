@@ -44,6 +44,7 @@ Resources:
     Properties:
       CodeUri: dist/
       Handler: serverless-bundle.handler
+      ReservedConcurrentExecutions: 5 # Prevent run-away compute costs
       Events:
         ProxyApiRoot:
           Type: Api
@@ -78,6 +79,7 @@ Resources:
     Properties:
       CodeUri: dist/
       Handler: worker-bundle.handler
+      ReservedConcurrentExecutions: 2 # Hard cap on LLM parallel processing
       Events:
         SQSEvent:
           Type: SQS
@@ -154,7 +156,10 @@ Resources:
       KeySchema:
         - AttributeName: id
           KeyType: HASH
-      BillingMode: PAY_PER_REQUEST
+      BillingMode: PROVISIONED
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
 
   AnnotationsTable:
     Type: AWS::DynamoDB::Table
@@ -175,7 +180,13 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-      BillingMode: PAY_PER_REQUEST
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      BillingMode: PROVISIONED
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
 
   DocumentsBucket:
     Type: AWS::S3::Bucket
