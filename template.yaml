@@ -23,12 +23,21 @@ Parameters:
   GroqApiKey:
     Type: String
     Description: Groq API Key
+  NotificationEmail:
+    Type: String
+    Description: Email address to receive DDoS alert notifications
+  DdosRequestThreshold:
+    Type: Number
+    Default: 5000
+    Description: Number of API Gateway requests in 5 minutes to trigger the kill switch
 
 Resources:
   EhrApiGateway:
     Type: AWS::Serverless::Api
     Properties:
       StageName: prod
+      Auth:
+        ApiKeyRequired: true
       Cors:
         AllowMethods: "'*'"
         AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
@@ -201,6 +210,82 @@ Resources:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
 
+  EhrApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Enabled: true
+      GenerateDistinctId: true
+      Name: !Sub "EhrApiKey-${AWS::StackName}"
+
+  EhrUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      ApiStages:
+        - ApiId: !Ref EhrApiGateway
+          Stage: prod
+      UsagePlanName: !Sub "EhrUsagePlan-${AWS::StackName}"
+      Throttle:
+        BurstLimit: 10
+        RateLimit: 20
+
+  EhrUsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref EhrApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref EhrUsagePlan
+
+  EhrKillSwitchTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "EhrKillSwitchTopic-${AWS::StackName}"
+      Subscription:
+        - Endpoint: !Ref NotificationEmail
+          Protocol: email
+
+  EhrApiGatewayTrafficAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub "Triggered if API Gateway requests exceed ${DdosRequestThreshold} in 5 minutes. Triggers API Gateway Kill Switch."
+      Namespace: AWS/ApiGateway
+      MetricName: Count
+      Dimensions:
+        - Name: ApiId
+          Value: !Ref EhrApiGateway
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: !Ref DdosRequestThreshold
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref EhrKillSwitchTopic
+      TreatMissingData: notBreaching
+
+  EhrApiGatewayKillSwitchFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: kill-switch-bundle.handler
+      Runtime: nodejs20.x
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          API_GATEWAY_ID: !Ref EhrApiGateway
+          STAGE_NAME: prod
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - apigateway:DeleteStage
+              Resource: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${EhrApiGateway}/stages/prod"
+      Events:
+        SnsEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref EhrKillSwitchTopic
+
 Outputs:
   ApiEndpoint:
     Description: "API Gateway endpoint URL"
@@ -213,3 +298,7 @@ Outputs:
   EhrAnnotationDLQUrl:
     Description: "URL of the Dead Letter Queue"
     Value: !Ref EhrAnnotationDLQ
+
+  EhrApiKeyId:
+    Description: "API Key ID for API Gateway"
+    Value: !Ref EhrApiKey
