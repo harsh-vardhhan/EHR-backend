@@ -25,7 +25,10 @@
                 "s3:GetEncryptionConfiguration",
                 "s3:PutEncryptionConfiguration",
                 "s3:GetBucketNotification",
-                "s3:PutBucketNotification"
+                "s3:PutBucketNotification",
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:DeleteObject"
             ],
             "Resource": [
                 "arn:aws:s3:::ehr-demo-docs-bucket",
