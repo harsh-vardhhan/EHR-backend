@@ -157,6 +157,8 @@
                 "iam:DeleteRolePolicy",
                 "iam:AttachRolePolicy",
                 "iam:DetachRolePolicy",
+                "iam:TagRole",
+                "iam:UntagRole",
                 "iam:PassRole"
             ],
             "Resource": [
