@@ -142,7 +142,8 @@
                 "cloudfront:DeleteDistribution",
                 "cloudfront:CreateOriginAccessControl",
                 "cloudfront:GetOriginAccessControl",
-                "cloudfront:DeleteOriginAccessControl"
+                "cloudfront:DeleteOriginAccessControl",
+                "cloudfront:CreateInvalidation"
             ],
             "Resource": "*"
         },
