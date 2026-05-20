@@ -38,6 +38,7 @@ Resources:
       StageName: prod
       Auth:
         ApiKeyRequired: true
+        AddApiKeyRequiredToCorsPreflight: false
       Cors:
         AllowMethods: "'*'"
         AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
