@@ -10,7 +10,8 @@
             "Resource": [
                 "arn:aws:cloudformation:ap-south-1:479650866443:stack/ehr-annotation-backend/*",
                 "arn:aws:cloudformation:ap-south-1:479650866443:stack/ehr-annotation-frontend/*",
-                "arn:aws:cloudformation:ap-south-1:479650866443:stack/aws-sam-cli-managed-default/*"
+                "arn:aws:cloudformation:ap-south-1:479650866443:stack/aws-sam-cli-managed-default/*",
+                "arn:aws:cloudformation:*:aws:transform/*"
             ]
         },
         {
