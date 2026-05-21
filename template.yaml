@@ -5,7 +5,7 @@ Description: EHR Annotation Tool Backend SAM Template
 Globals:
   Function:
     Timeout: 30
-    MemorySize: 512
+    MemorySize: 256
     Runtime: nodejs20.x
     Architectures:
       - x86_64
@@ -269,7 +269,7 @@ Resources:
       Handler: kill-switch-bundle.handler
       Runtime: nodejs20.x
       Timeout: 30
-      MemorySize: 256
+      MemorySize: 128
       Environment:
         Variables:
           API_GATEWAY_ID: !Ref EhrApiGateway
