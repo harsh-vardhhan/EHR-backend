@@ -1,9 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
 import { AnnotationsService } from './annotations.service';
 
-@Injectable()
 export class MastraService {
-  private readonly logger = new Logger(MastraService.name);
+  private readonly logger = {
+    log: (msg: string) => console.log(`[MastraService] ${msg}`),
+    warn: (msg: string) => console.warn(`[MastraService] ${msg}`),
+    error: (msg: string, err?: any) => console.error(`[MastraService] ${msg}`, err || ''),
+  };
 
   constructor(private annotationsService: AnnotationsService) {}
 

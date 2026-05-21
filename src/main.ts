@@ -1,11 +1,11 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { serve } from '@hono/node-server';
+import { app } from './app';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.enableCors({
-    origin: process.env.FRONTEND_URL || '*',
-  });
-  await app.listen(process.env.PORT ?? 3000);
-}
-void bootstrap();
+const port = Number(process.env.PORT ?? 3000);
+
+console.log(`Server is running on port ${port}`);
+
+serve({
+  fetch: app.fetch,
+  port,
+});

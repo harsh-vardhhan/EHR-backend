@@ -1,10 +1,5 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { SQSEvent } from 'aws-lambda';
-import { MastraService } from './annotations/mastra.service';
-import { DocumentsService } from './documents/documents.service';
-
-let cachedApp: any;
+import { documentsService, mastraService } from './services';
 
 /**
  * Enterprise Worker Handler for Clinical Data Extraction.
@@ -12,15 +7,6 @@ let cachedApp: any;
  */
 export const handler = async (event: SQSEvent) => {
   console.log('Worker received event:', JSON.stringify(event, null, 2));
-
-  const app = cachedApp ?? (await NestFactory.create(AppModule));
-  if (!cachedApp) {
-    cachedApp = app;
-    await app.init();
-  }
-
-  const mastraService = app.get(MastraService);
-  const documentsService = app.get(DocumentsService);
 
   for (const record of event.Records) {
     try {
