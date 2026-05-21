@@ -1,4 +1,3 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
@@ -25,7 +24,6 @@ export interface Annotation {
   confidence?: number;
 }
 
-@Injectable()
 export class AnnotationsService {
   private ddbClient: DynamoDBClient;
   private docClient: DynamoDBDocumentClient;
@@ -84,7 +82,7 @@ export class AnnotationsService {
     updates: Partial<Annotation>,
   ): Promise<Annotation> {
     const tableName = process.env.ANNOTATIONS_TABLE_NAME;
-    if (!tableName) throw new NotFoundException('Table not configured');
+    if (!tableName) throw new Error('Table not configured');
 
     const updateExpressions: string[] = [];
     const expressionAttributeNames: Record<string, string> = {};
@@ -116,7 +114,7 @@ export class AnnotationsService {
       return response.Attributes as Annotation;
     } catch (error) {
       console.error('Error updating annotation', error);
-      throw new NotFoundException(
+      throw new Error(
         `Annotation with id ${annotationId} not found`,
       );
     }

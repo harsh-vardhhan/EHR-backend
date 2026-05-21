@@ -1,4 +1,3 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
   DynamoDBDocumentClient,
@@ -7,7 +6,6 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 
-@Injectable()
 export class DocumentsService {
   private ddbClient: DynamoDBClient;
   private docClient: DynamoDBDocumentClient;
@@ -47,7 +45,7 @@ export class DocumentsService {
       if (id === 'doc-001') {
         return { id: 'doc-001', text: 'Mock text', status: 'ready_for_review' };
       }
-      throw new NotFoundException(`Document with id ${id} not found`);
+      throw new Error(`Document with id ${id} not found`);
     }
 
     const getDdbCommand = new GetCommand({
@@ -59,7 +57,7 @@ export class DocumentsService {
     const metadata = ddbResponse.Item;
 
     if (!metadata) {
-      throw new NotFoundException(`Document with id ${id} not found`);
+      throw new Error(`Document with id ${id} not found`);
     }
 
     const getS3Command = new GetObjectCommand({
@@ -77,7 +75,7 @@ export class DocumentsService {
       };
     } catch (error) {
       console.error('Error fetching from S3', error);
-      throw new NotFoundException(`Document text for ${id} not found in S3`);
+      throw new Error(`Document text for ${id} not found in S3`);
     }
   }
 }
