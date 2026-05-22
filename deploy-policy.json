@@ -119,17 +119,44 @@
             ]
         },
         {
-            "Sid": "CloudWatchAlarmsAndLogs",
+            "Sid": "CloudWatchAlarms",
             "Effect": "Allow",
             "Action": [
                 "cloudwatch:PutMetricAlarm",
                 "cloudwatch:DeleteAlarms",
-                "cloudwatch:DescribeAlarms",
-                "logs:*"
+                "cloudwatch:DescribeAlarms"
             ],
             "Resource": [
-                "arn:aws:cloudwatch:ap-south-1:479650866443:alarm:*",
+                "arn:aws:cloudwatch:ap-south-1:479650866443:alarm:*"
+            ]
+        },
+        {
+            "Sid": "CloudWatchLogsDescribe",
+            "Effect": "Allow",
+            "Action": [
+                "logs:DescribeLogGroups",
+                "logs:DescribeLogStreams"
+            ],
+            "Resource": [
                 "arn:aws:logs:ap-south-1:479650866443:log-group:*"
+            ]
+        },
+        {
+            "Sid": "CloudWatchLogsManagement",
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:DeleteLogGroup",
+                "logs:PutRetentionPolicy",
+                "logs:PutLogEvents",
+                "logs:CreateLogStream",
+                "logs:DeleteLogStream",
+                "logs:PutSubscriptionFilter",
+                "logs:DeleteSubscriptionFilter"
+            ],
+            "Resource": [
+                "arn:aws:logs:ap-south-1:479650866443:log-group:/aws/lambda/ehr-annotation-backend-*",
+                "arn:aws:logs:ap-south-1:479650866443:log-group:API-Gateway-Execution-Logs_*"
             ]
         },
         {
