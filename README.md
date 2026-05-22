@@ -1,6 +1,6 @@
 # EHR Annotation Platform - Backend
 
-Enterprise-grade serverless backend for clinical document annotation, built with NestJS and deployed on AWS.
+Enterprise-grade serverless backend for clinical document annotation, built with Hono and deployed on AWS.
 
 ## 🔗 Repository Links
 - **Backend**: [https://github.com/harsh-vardhhan/EHR-backend](https://github.com/harsh-vardhhan/EHR-backend)
@@ -34,7 +34,7 @@ graph TD
 ```
 
 ### Infrastructure Components:
-- **AWS Lambda (API)**: Executes the NestJS application for UI interactions and document management.
+- **AWS Lambda (API)**: Executes the Hono application for UI interactions and document management.
 - **AWS Lambda (NLP Worker)**: A dedicated asynchronous worker triggered by SQS for clinical entity extraction.
 - **AWS Lambda (Kill Switch)**: Administrative helper function invoked by SNS to throttle the API Gateway stage to zero and disable CloudWatch logging/metrics under a DDoS traffic spike.
 - **Amazon SQS & DLQ**: The "Shock Absorber" of the system. Handles buffering and retries for LLM inference, with a Dead Letter Queue for auditing failed processing jobs.
@@ -54,7 +54,7 @@ The project uses GitHub Actions for an automated, zero-downtime deployment workf
 *Triggered on all Pull Requests to `main`.*
 
 ### Continuous Deployment (CD)
-- **Build & Bundle**: Compiles NestJS and uses `esbuild` for an optimized Lambda package.
+- **Build & Bundle**: Compiles TypeScript and uses `esbuild` for an optimized Lambda package.
 - **AWS SAM (Serverless Application Model)**: Manages infrastructure as code, deploying the CloudFormation stack automatically.
 - **Automatic Environment Sync**: Injects AWS secrets and environment variables during the build process.
 *Triggered on every push to `main`.*
