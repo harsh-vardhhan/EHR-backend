@@ -28,7 +28,7 @@ Parameters:
     Description: Email address to receive DDoS alert notifications
   DdosRequestThreshold:
     Type: Number
-    Default: 5000
+    Default: 1
     Description: Number of API Gateway requests in 5 minutes to trigger the kill switch
 
 Resources:
