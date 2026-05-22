@@ -1,6 +1,6 @@
 import {
   APIGatewayClient,
-  DeleteStageCommand,
+  UpdateStageCommand,
 } from '@aws-sdk/client-api-gateway';
 import { SNSEvent } from 'aws-lambda';
 
@@ -9,7 +9,7 @@ const client = new APIGatewayClient({});
 /**
  * DDoS Kill Switch Lambda Handler.
  * Triggered by a CloudWatch Alarm routing to an SNS Topic.
- * Deletes the API Gateway 'prod' stage to stop billing instantly.
+ * Throttles API Gateway requests to 0 and disables CloudWatch logging/metrics to stop billing.
  */
 export const handler = async (event: SNSEvent) => {
   console.log(
@@ -27,30 +27,57 @@ export const handler = async (event: SNSEvent) => {
   }
 
   console.log(
-    `[CIRCUIT BREAKER] Threat detected! Attempting to delete API Gateway Stage: "${stageName}" for API ID: "${restApiId}"`,
+    `[CIRCUIT BREAKER] Threat detected! Attempting to throttle API Gateway Stage: "${stageName}" to 0 and disable logging for API ID: "${restApiId}"`,
   );
 
   try {
-    const command = new DeleteStageCommand({
+    const command = new UpdateStageCommand({
       restApiId,
       stageName,
+      patchOperations: [
+        {
+          op: 'replace',
+          path: '/*/*/throttling/rateLimit',
+          value: '0',
+        },
+        {
+          op: 'replace',
+          path: '/*/*/throttling/burstLimit',
+          value: '0',
+        },
+        {
+          op: 'replace',
+          path: '/*/*/logging/loglevel',
+          value: 'OFF',
+        },
+        {
+          op: 'replace',
+          path: '/*/*/logging/dataTrace',
+          value: 'false',
+        },
+        {
+          op: 'replace',
+          path: '/*/*/metrics/enabled',
+          value: 'false',
+        },
+      ],
     });
 
     const response = await client.send(command);
     console.log(
-      '[CIRCUIT BREAKER] Stage deleted successfully. Response:',
+      '[CIRCUIT BREAKER] Stage settings updated successfully. Response:',
       JSON.stringify(response, null, 2),
     );
 
     return {
       statusCode: 200,
       body: JSON.stringify({
-        message: 'API Gateway stage deleted successfully.',
+        message: 'API Gateway stage throttled to 0 and logging disabled successfully.',
       }),
     };
   } catch (error: any) {
     console.error(
-      '[CIRCUIT BREAKER] Failed to delete API Gateway stage:',
+      '[CIRCUIT BREAKER] Failed to update API Gateway stage settings:',
       error,
     );
     throw error;
