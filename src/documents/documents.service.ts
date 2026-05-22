@@ -46,7 +46,12 @@ export class DocumentsService {
     if (!tableName || !bucketName) {
       // Mock fallback
       if (id === 'doc-001') {
-        return { id: 'doc-001', text: 'Mock text', status: 'ready_for_review', s3Key: 'mock-key' };
+        return {
+          id: 'doc-001',
+          text: 'Mock text',
+          status: 'ready_for_review',
+          s3Key: 'mock-key',
+        };
       }
       throw new Error(`Document with id ${id} not found`);
     }
@@ -87,7 +92,9 @@ export class DocumentsService {
     const bucketName = process.env.DOCUMENTS_BUCKET_NAME;
 
     if (!queueUrl || !bucketName) {
-      console.warn('Queue URL or Bucket Name not configured. Cannot queue analysis request.');
+      console.warn(
+        'Queue URL or Bucket Name not configured. Cannot queue analysis request.',
+      );
       return;
     }
 

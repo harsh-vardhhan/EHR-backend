@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
-import { documentsService, mastraService } from '../services';
+import { documentsService } from '../services';
 
 export const documentsApp = new Hono();
 
@@ -26,7 +26,7 @@ documentsApp.get('/:id', async (c) => {
 documentsApp.post('/:id/analyze', async (c) => {
   const id = c.req.param('id');
   try {
-    const doc = await documentsService.getDocument(id) as any;
+    const doc = (await documentsService.getDocument(id)) as any;
     await documentsService.triggerAnalysis(
       doc.id as string,
       doc.s3Key as string,

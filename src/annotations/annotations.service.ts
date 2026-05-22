@@ -114,9 +114,7 @@ export class AnnotationsService {
       return response.Attributes as Annotation;
     } catch (error) {
       console.error('Error updating annotation', error);
-      throw new Error(
-        `Annotation with id ${annotationId} not found`,
-      );
+      throw new Error(`Annotation with id ${annotationId} not found`);
     }
   }
 }

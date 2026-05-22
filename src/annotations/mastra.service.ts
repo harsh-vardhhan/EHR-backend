@@ -4,7 +4,8 @@ export class MastraService {
   private readonly logger = {
     log: (msg: string) => console.log(`[MastraService] ${msg}`),
     warn: (msg: string) => console.warn(`[MastraService] ${msg}`),
-    error: (msg: string, err?: any) => console.error(`[MastraService] ${msg}`, err || ''),
+    error: (msg: string, err?: any) =>
+      console.error(`[MastraService] ${msg}`, err || ''),
   };
 
   constructor(private annotationsService: AnnotationsService) {}
@@ -34,7 +35,9 @@ export class MastraService {
 
       const controller = new AbortController();
       timeoutId = setTimeout(() => {
-        this.logger.warn(`Groq API request timed out after 8 seconds. Aborting request.`);
+        this.logger.warn(
+          `Groq API request timed out after 8 seconds. Aborting request.`,
+        );
         controller.abort();
       }, 8000);
 
