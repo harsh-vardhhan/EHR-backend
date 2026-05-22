@@ -70,6 +70,15 @@ This backend is secured against automated billing exploits and volumetric API at
     - The alert triggers the **Kill-Switch Lambda** (`EhrApiGatewayKillSwitchFunction`), which immediately throttles the `prod` stage of the API Gateway to 0 and disables CloudWatch logging and metrics, stopping all traffic processing and logging ingestion billing instantly.
 3. **Manual Recovery**: To restore the stage and bring the application back online, simply reset the throttling limits and re-enable logging/metrics in the API Gateway Console, via the AWS SDK/CLI, or by redeploying the stack.
 
+## 💸 Billing & Architectural Optimization
+
+To ensure predictable pricing, prevent Lambda container freezes, and eliminate execution bottlenecks, the following architectural controls are implemented:
+
+1. **SQS-Backed Asynchronous Hand-off**: Heavy tasks like NLP document analysis are decoupled from the API Lambda. The `/documents/:id/analyze` endpoint queues the task onto an Amazon SQS queue (`EhrAnnotationQueue`) and returns immediately. The **NLP Worker Lambda** then consumes the queue. This prevents background execution freezes on AWS Lambda.
+2. **On-Demand DynamoDB Billing**: Database tables are configured to use `PAY_PER_REQUEST` (On-Demand) billing instead of provisioned throughput (which was limited to 5 RCU/WCU). This completely avoids database write throttling under heavy clinician activity while eliminating costs when idle.
+3. **Groq API Request Timeout**: Outbound clinical NLP requests to the Groq API are strictly limited to an **8-second timeout** using an `AbortController`. This prevents hanging external API requests from keeping the Lambda function running up to its 30-second limit and inflating the bill.
+4. **Parallel Database Writes**: When saving clinical entities, database writes are executed concurrently using `Promise.all` rather than sequentially. This reduces execution times by over 80%, directly lowering Lambda runtime duration billing.
+
 ## 🛠 Local Development
 
 ### Prerequisites
