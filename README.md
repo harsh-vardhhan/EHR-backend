@@ -61,14 +61,15 @@ The project uses GitHub Actions for an automated, zero-downtime deployment workf
 
 ## 🛡️ Security & DDoS Protection
 
-This backend is secured against automated billing exploits and volumetric API attacks using a hybrid protection system:
+This backend is secured against automated billing exploits and volumetric API attacks using a multi-layered protection system:
 
-1. **API Key Authentication**: All public endpoints require a valid `x-api-key` header verified by API Gateway. Unauthenticated requests are rejected at the AWS edge before invoking any compute (Lambda) resources.
-2. **Automated Traffic Circuit Breaker**:
+1. **Cloudflare Origin Protection (IP Whitelisting)**: The API Gateway restricts invocations strictly to Cloudflare's public IPv4 and IPv6 ranges via an API Gateway Resource Policy. Any attempt by attackers to bypass Cloudflare and invoke the raw AWS endpoint directly is blocked automatically at the edge (returning `403 Forbidden`).
+2. **API Key Authentication**: All public endpoints require a valid `x-api-key` header verified by API Gateway. Unauthenticated requests are rejected at the edge before invoking any compute (Lambda) resources.
+3. **Automated Traffic Circuit Breaker**:
    - A CloudWatch Alarm monitors the total API request volume.
    - If requests exceed `5000` within 5 minutes, the alarm triggers and sends an alert via SNS to your configured `NotificationEmail`.
-    - The alert triggers the **Kill-Switch Lambda** (`EhrApiGatewayKillSwitchFunction`), which immediately throttles the `prod` stage of the API Gateway to 0 and disables CloudWatch logging and metrics, stopping all traffic processing and logging ingestion billing instantly.
-3. **Manual Recovery**: To restore the stage and bring the application back online, simply reset the throttling limits and re-enable logging/metrics in the API Gateway Console, via the AWS SDK/CLI, or by redeploying the stack.
+   - The alert triggers the **Kill-Switch Lambda** (`EhrApiGatewayKillSwitchFunction`), which immediately throttles the `prod` stage of the API Gateway to 0 and disables CloudWatch logging and metrics, stopping all traffic processing and logging ingestion billing instantly.
+4. **Manual Recovery**: To restore the stage and bring the application back online, simply reset the throttling limits and re-enable logging/metrics in the API Gateway Console, via the AWS SDK/CLI, or by redeploying the stack.
 
 ## 🛠 Local Development
 
