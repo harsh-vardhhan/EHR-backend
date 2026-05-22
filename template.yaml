@@ -279,7 +279,7 @@ Resources:
           Statement:
             - Effect: Allow
               Action:
-                - apigateway:DeleteStage
+                - apigateway:PATCH
               Resource: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${EhrApiGateway}/stages/prod"
       Events:
         SnsEvent:
