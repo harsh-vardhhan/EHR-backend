@@ -28,7 +28,7 @@ Parameters:
     Description: Email address to receive DDoS alert notifications
   DdosRequestThreshold:
     Type: Number
-    Default: 1
+    Default: 5000
     Description: Number of API Gateway requests in 5 minutes to trigger the kill switch
 
 Resources:
@@ -251,8 +251,8 @@ Resources:
       Namespace: AWS/ApiGateway
       MetricName: Count
       Dimensions:
-        - Name: ApiId
-          Value: !Ref EhrApiGateway
+        - Name: ApiName
+          Value: !Ref AWS::StackName
       Statistic: Sum
       Period: 300
       EvaluationPeriods: 1
