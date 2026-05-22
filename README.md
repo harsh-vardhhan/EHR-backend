@@ -30,13 +30,13 @@ graph TD
     APIGateway -.->|Publishes Metrics| CWAlarm[CloudWatch Traffic Alarm]
     CWAlarm -->|Trigger if >5000 req/5m| SNS[SNS Topic]
     SNS -->|Invoke| LambdaKillSwitch[AWS Lambda - Kill Switch]
-    LambdaKillSwitch -->|Delete Stage| APIGateway
+    LambdaKillSwitch -->|Throttle & Disable Logs| APIGateway
 ```
 
 ### Infrastructure Components:
 - **AWS Lambda (API)**: Executes the NestJS application for UI interactions and document management.
 - **AWS Lambda (NLP Worker)**: A dedicated asynchronous worker triggered by SQS for clinical entity extraction.
-- **AWS Lambda (Kill Switch)**: Administrative helper function invoked by SNS to delete the `prod` stage under a DDoS traffic spike.
+- **AWS Lambda (Kill Switch)**: Administrative helper function invoked by SNS to throttle the API Gateway stage to zero and disable CloudWatch logging/metrics under a DDoS traffic spike.
 - **Amazon SQS & DLQ**: The "Shock Absorber" of the system. Handles buffering and retries for LLM inference, with a Dead Letter Queue for auditing failed processing jobs.
 - **Amazon DynamoDB**: NoSQL database for ultra-low latency storage of annotation metadata and document status.
 - **Amazon S3**: Secure, encrypted storage for raw clinical document text, serving as the event source for the ingestion pipeline.
@@ -67,8 +67,8 @@ This backend is secured against automated billing exploits and volumetric API at
 2. **Automated Traffic Circuit Breaker**:
    - A CloudWatch Alarm monitors the total API request volume.
    - If requests exceed `5000` within 5 minutes, the alarm triggers and sends an alert via SNS to your configured `NotificationEmail`.
-   - The alert triggers the **Kill-Switch Lambda** (`EhrApiGatewayKillSwitchFunction`), which immediately deletes the `prod` stage of the API Gateway, stopping all traffic and associated billing instantly.
-3. **Manual Recovery**: To restore the stage and bring the application back online after an incident, run `sam deploy` from your local terminal.
+    - The alert triggers the **Kill-Switch Lambda** (`EhrApiGatewayKillSwitchFunction`), which immediately throttles the `prod` stage of the API Gateway to 0 and disables CloudWatch logging and metrics, stopping all traffic processing and logging ingestion billing instantly.
+3. **Manual Recovery**: To restore the stage and bring the application back online, simply reset the throttling limits and re-enable logging/metrics in the API Gateway Console, via the AWS SDK/CLI, or by redeploying the stack.
 
 ## 🛠 Local Development
 
