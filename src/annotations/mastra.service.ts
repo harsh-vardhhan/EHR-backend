@@ -4,7 +4,8 @@ export class MastraService {
   private readonly logger = {
     log: (msg: string) => console.log(`[MastraService] ${msg}`),
     warn: (msg: string) => console.warn(`[MastraService] ${msg}`),
-    error: (msg: string, err?: any) => console.error(`[MastraService] ${msg}`, err || ''),
+    error: (msg: string, err?: any) =>
+      console.error(`[MastraService] ${msg}`, err || ''),
   };
 
   constructor(private annotationsService: AnnotationsService) {}
@@ -26,10 +27,19 @@ export class MastraService {
     // Wait for 2 seconds to simulate "2-3 seconds" wait time
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
+    let timeoutId: any = null;
     try {
       if (!process.env.GROQ_API_KEY) {
         throw new Error('GROQ_API_KEY not set, falling back to mock data');
       }
+
+      const controller = new AbortController();
+      timeoutId = setTimeout(() => {
+        this.logger.warn(
+          `Groq API request timed out after 8 seconds. Aborting request.`,
+        );
+        controller.abort();
+      }, 8000);
 
       const response = await fetch(
         'https://api.groq.com/openai/v1/chat/completions',
@@ -39,6 +49,7 @@ export class MastraService {
             Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
             'Content-Type': 'application/json',
           },
+          signal: controller.signal,
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
             max_tokens: 4096,
@@ -82,6 +93,12 @@ Text: "${text}"`,
       }
 
       const data = await response.json();
+
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+
       let generatedText = data.choices[0].message.content || '';
 
       // Robust JSON extraction to handle markdown or conversational wrappers
@@ -106,7 +123,7 @@ Text: "${text}"`,
       this.logger.log(`LLM returned ${object.entities.length} entities`);
       this.logger.log(`=========================================`);
 
-      for (const entity of object.entities) {
+      const writePromises = object.entities.map(async (entity: any) => {
         let actualStart = entity.startOffset;
         let actualEnd = entity.endOffset;
         const extractedText = text.substring(actualStart, actualEnd);
@@ -128,7 +145,7 @@ Text: "${text}"`,
             this.logger.warn(
               `Entity text not found in document: ${entity.text}`,
             );
-            continue;
+            return;
           }
         }
 
@@ -142,10 +159,16 @@ Text: "${text}"`,
           status: 'suggested',
           confidence: entity.confidence,
         });
-      }
+      });
+
+      await Promise.all(writePromises);
     } catch (error) {
       this.logger.error('Error calling Groq / AI SDK', error);
       void this.fallbackMock(documentId, text);
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     }
   }
 
@@ -179,7 +202,7 @@ Text: "${text}"`,
       { text: 'heart failure', label: 'Clinical Condition', confidence: 0.8 },
     ];
 
-    for (const ent of mockEntities) {
+    const writePromises = mockEntities.map(async (ent) => {
       const escapedText = ent.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regexPattern = escapedText.replace(/\\s\+|\\n|\s+/g, '\\s+');
       const regex = new RegExp(regexPattern, 'i');
@@ -197,6 +220,8 @@ Text: "${text}"`,
           confidence: ent.confidence,
         });
       }
-    }
+    });
+
+    await Promise.all(writePromises);
   }
 }

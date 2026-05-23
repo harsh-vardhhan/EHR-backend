@@ -72,7 +72,8 @@ export const handler = async (event: SNSEvent) => {
     return {
       statusCode: 200,
       body: JSON.stringify({
-        message: 'API Gateway stage throttled to 0 and logging disabled successfully.',
+        message:
+          'API Gateway stage throttled to 0 and logging disabled successfully.',
       }),
     };
   } catch (error: any) {

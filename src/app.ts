@@ -9,11 +9,20 @@ export const app = new Hono();
 
 // Global middleware
 app.use('*', logger());
-app.use('*', cors({
-  origin: process.env.FRONTEND_URL || '*',
-  allowHeaders: ['Content-Type', 'Authorization', 'X-Amz-Date', 'X-Api-Key', 'X-Amz-Security-Token'],
-  allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-}));
+app.use(
+  '*',
+  cors({
+    origin: process.env.FRONTEND_URL || '*',
+    allowHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Amz-Date',
+      'X-Api-Key',
+      'X-Amz-Security-Token',
+    ],
+    allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  }),
+);
 
 // Route registration
 app.route('/documents', documentsApp);

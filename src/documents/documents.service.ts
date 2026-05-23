@@ -5,16 +5,19 @@ import {
   GetCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 
 export class DocumentsService {
   private ddbClient: DynamoDBClient;
   private docClient: DynamoDBDocumentClient;
   private s3Client: S3Client;
+  private sqsClient: SQSClient;
 
   constructor() {
     this.ddbClient = new DynamoDBClient({});
     this.docClient = DynamoDBDocumentClient.from(this.ddbClient);
     this.s3Client = new S3Client({});
+    this.sqsClient = new SQSClient({});
   }
 
   async getDocuments() {
@@ -43,7 +46,12 @@ export class DocumentsService {
     if (!tableName || !bucketName) {
       // Mock fallback
       if (id === 'doc-001') {
-        return { id: 'doc-001', text: 'Mock text', status: 'ready_for_review' };
+        return {
+          id: 'doc-001',
+          text: 'Mock text',
+          status: 'ready_for_review',
+          s3Key: 'mock-key',
+        };
       }
       throw new Error(`Document with id ${id} not found`);
     }
@@ -77,5 +85,40 @@ export class DocumentsService {
       console.error('Error fetching from S3', error);
       throw new Error(`Document text for ${id} not found in S3`);
     }
+  }
+
+  async triggerAnalysis(docId: string, s3Key: string) {
+    const queueUrl = process.env.ANNOTATION_QUEUE_URL;
+    const bucketName = process.env.DOCUMENTS_BUCKET_NAME;
+
+    if (!queueUrl || !bucketName) {
+      console.warn(
+        'Queue URL or Bucket Name not configured. Cannot queue analysis request.',
+      );
+      return;
+    }
+
+    const messageBody = {
+      Records: [
+        {
+          s3: {
+            bucket: {
+              name: bucketName,
+            },
+            object: {
+              key: s3Key,
+            },
+          },
+        },
+      ],
+    };
+
+    const command = new SendMessageCommand({
+      QueueUrl: queueUrl,
+      MessageBody: JSON.stringify(messageBody),
+    });
+
+    console.log(`Queueing analysis request for Document: ${docId} on SQS...`);
+    await this.sqsClient.send(command);
   }
 }

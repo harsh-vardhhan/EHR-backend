@@ -7,7 +7,9 @@ export const annotationsApp = new Hono();
 annotationsApp.get('/', async (c) => {
   const documentId = c.req.query('documentId');
   try {
-    const annotations = await annotationsService.getAnnotationsByDocument(documentId || '');
+    const annotations = await annotationsService.getAnnotationsByDocument(
+      documentId || '',
+    );
     return c.json(annotations);
   } catch (error: any) {
     throw new HTTPException(500, { message: error.message });
@@ -28,7 +30,10 @@ annotationsApp.patch('/:id', async (c) => {
   const id = c.req.param('id');
   try {
     const body = await c.req.json();
-    const updatedAnnotation = await annotationsService.updateAnnotation(id, body);
+    const updatedAnnotation = await annotationsService.updateAnnotation(
+      id,
+      body,
+    );
     return c.json(updatedAnnotation);
   } catch (error: any) {
     throw new HTTPException(404, { message: error.message });

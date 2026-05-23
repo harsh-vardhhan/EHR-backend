@@ -74,6 +74,7 @@ Resources:
           DOCUMENTS_TABLE_NAME: !Ref DocumentsTableName
           ANNOTATIONS_TABLE_NAME: !Ref AnnotationsTableName
           DOCUMENTS_BUCKET_NAME: !Ref DocumentsBucketName
+          ANNOTATION_QUEUE_URL: !Ref EhrAnnotationQueue
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref DocumentsBucketName
@@ -166,10 +167,7 @@ Resources:
       KeySchema:
         - AttributeName: id
           KeyType: HASH
-      BillingMode: PROVISIONED
-      ProvisionedThroughput:
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
+      BillingMode: PAY_PER_REQUEST
 
   AnnotationsTable:
     Type: AWS::DynamoDB::Table
@@ -190,13 +188,7 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-          ProvisionedThroughput:
-            ReadCapacityUnits: 5
-            WriteCapacityUnits: 5
-      BillingMode: PROVISIONED
-      ProvisionedThroughput:
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
+      BillingMode: PAY_PER_REQUEST
 
   DocumentsBucket:
     Type: AWS::S3::Bucket
