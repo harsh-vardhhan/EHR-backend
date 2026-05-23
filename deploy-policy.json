@@ -49,7 +49,10 @@
                 "dynamodb:DescribeTable",
                 "dynamodb:UpdateTable",
                 "dynamodb:TagResource",
-                "dynamodb:UntagResource"
+                "dynamodb:UntagResource",
+                "dynamodb:Scan",
+                "dynamodb:DeleteItem",
+                "dynamodb:PutItem"
             ],
             "Resource": [
                 "arn:aws:dynamodb:ap-south-1:479650866443:table/ehr-documents",
