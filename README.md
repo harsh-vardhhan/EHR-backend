@@ -56,7 +56,8 @@ The project uses GitHub Actions for an automated, zero-downtime deployment workf
 ### Continuous Deployment (CD)
 - **Build & Bundle**: Compiles TypeScript and uses `esbuild` for an optimized Lambda package.
 - **AWS SAM (Serverless Application Model)**: Manages infrastructure as code, deploying the CloudFormation stack automatically.
-- **Automatic Environment Sync**: Injects AWS secrets and environment variables during the build process.
+- **Secure Authentication (OIDC)**: Authenticates to AWS using passwordless OpenID Connect federation, eliminating static AWS Access Keys in GitHub Secrets.
+- **Automatic Environment Sync**: Injects application secrets and environment variables during the build process.
 *Triggered on every push to `main`.*
 
 ## 🛡️ Security & DDoS Protection
@@ -83,7 +84,7 @@ To ensure predictable pricing, prevent Lambda container freezes, and eliminate e
 
 ### Prerequisites
 - Node.js 20+
-- AWS CLI (configured for local testing)
+- AWS CLI (configured via AWS IAM Identity Center/SSO profile e.g., `ehr-dev`)
 - SAM CLI (optional, for local Lambda emulation)
 
 ### Setup
