@@ -1,0 +1,214 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS OIDC and IAM Role configuration for GitHub Actions deployment of EHR project
+
+Parameters:
+  CreateOIDCProvider:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Set to 'true' if the GitHub OIDC Provider does not exist in your account. Set to 'false' if it already exists.
+
+  ExistingOIDCProviderArn:
+    Type: String
+    Default: ''
+    Description: The ARN of the existing GitHub OIDC Provider, required only if CreateOIDCProvider is 'false'.
+
+Conditions:
+  ShouldCreateOIDCProvider: !Equals [ !Ref CreateOIDCProvider, 'true' ]
+
+Resources:
+  GithubOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: ShouldCreateOIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 1c58a3a8518e8759bf075b76b750d4f2df264fcd
+
+  GitHubActionsDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: github-actions-deploy-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !If
+                - ShouldCreateOIDCProvider
+                - !Ref GithubOIDCProvider
+                - !Ref ExistingOIDCProviderArn
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub:
+                  - repo:harsh-vardhhan/EHR-backend:*
+                  - repo:harsh-vardhhan/EHR-frontend:*
+      Policies:
+        - PolicyName: GitHubActionsDeployPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: CloudFormationManagement
+                Effect: Allow
+                Action:
+                  - cloudformation:*
+                Resource:
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/ehr-annotation-backend/*"
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/ehr-annotation-frontend/*"
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/aws-sam-cli-managed-default/*"
+                  - !Sub "arn:aws:cloudformation:*:aws:transform/*"
+              - Sid: S3BucketAndObjectManagement
+                Effect: Allow
+                Action:
+                  - s3:CreateBucket
+                  - s3:DeleteBucket
+                  - s3:GetBucket*
+                  - s3:PutBucket*
+                  - s3:ListBucket
+                  - s3:GetEncryptionConfiguration
+                  - s3:PutEncryptionConfiguration
+                  - s3:GetBucketNotification
+                  - s3:PutBucketNotification
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub "arn:aws:s3:::ehr-demo-docs-bucket"
+                  - !Sub "arn:aws:s3:::ehr-demo-docs-bucket/*"
+                  - !Sub "arn:aws:s3:::*frontend*"
+                  - !Sub "arn:aws:s3:::*frontend*/*"
+                  - !Sub "arn:aws:s3:::aws-sam-cli-managed-default-*"
+                  - !Sub "arn:aws:s3:::aws-sam-cli-managed-default-*/*"
+              - Sid: DynamoDBTableManagement
+                Effect: Allow
+                Action:
+                  - dynamodb:CreateTable
+                  - dynamodb:DeleteTable
+                  - dynamodb:DescribeTable
+                  - dynamodb:UpdateTable
+                  - dynamodb:TagResource
+                  - dynamodb:UntagResource
+                  - dynamodb:Scan
+                  - dynamodb:DeleteItem
+                  - dynamodb:PutItem
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ehr-documents"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ehr-annotations"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ehr-annotations/index/*"
+              - Sid: LambdaFunctionManagement
+                Effect: Allow
+                Action:
+                  - lambda:CreateFunction
+                  - lambda:DeleteFunction
+                  - lambda:GetFunction
+                  - lambda:UpdateFunctionCode
+                  - lambda:UpdateFunctionConfiguration
+                  - lambda:AddPermission
+                  - lambda:RemovePermission
+                  - lambda:TagResource
+                  - lambda:PutFunctionConcurrency
+                Resource:
+                  - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:ehr-annotation-backend-*"
+              - Sid: APIGatewayAndKeyManagement
+                Effect: Allow
+                Action:
+                  - apigateway:GET
+                  - apigateway:POST
+                  - apigateway:PUT
+                  - apigateway:PATCH
+                  - apigateway:DELETE
+                Resource:
+                  - !Sub "arn:aws:apigateway:${AWS::Region}::/restapis*"
+                  - !Sub "arn:aws:apigateway:${AWS::Region}::/apikeys*"
+                  - !Sub "arn:aws:apigateway:${AWS::Region}::/usageplans*"
+              - Sid: SQSSNSAndEventsManagement
+                Effect: Allow
+                Action:
+                  - sqs:CreateQueue
+                  - sqs:DeleteQueue
+                  - sqs:GetQueueAttributes
+                  - sqs:SetQueueAttributes
+                  - sqs:TagQueue
+                  - sns:CreateTopic
+                  - sns:DeleteTopic
+                  - sns:GetTopicAttributes
+                  - sns:SetTopicAttributes
+                  - sns:Subscribe
+                  - sns:Unsubscribe
+                  - events:PutRule
+                  - events:DeleteRule
+                  - events:DescribeRule
+                  - events:PutTargets
+                  - events:RemoveTargets
+                Resource:
+                  - !Sub "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:ehr-annotation-backend-*"
+                  - !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:EhrKillSwitchTopic-*"
+                  - !Sub "arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/ehr-annotation-backend-*"
+              - Sid: CloudWatchAlarms
+                Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricAlarm
+                  - cloudwatch:DeleteAlarms
+                  - cloudwatch:DescribeAlarms
+                Resource:
+                  - !Sub "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*"
+              - Sid: CloudWatchLogsDescribe
+                Effect: Allow
+                Action:
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*"
+              - Sid: CloudWatchLogsManagement
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:DeleteLogGroup
+                  - logs:PutRetentionPolicy
+                  - logs:PutLogEvents
+                  - logs:CreateLogStream
+                  - logs:DeleteLogStream
+                  - logs:PutSubscriptionFilter
+                  - logs:DeleteSubscriptionFilter
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/ehr-annotation-backend-*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:API-Gateway-Execution-Logs_*"
+              - Sid: CloudFrontDistributionManagement
+                Effect: Allow
+                Action:
+                  - cloudfront:CreateDistribution
+                  - cloudfront:GetDistribution
+                  - cloudfront:UpdateDistribution
+                  - cloudfront:DeleteDistribution
+                  - cloudfront:CreateOriginAccessControl
+                  - cloudfront:GetOriginAccessControl
+                  - cloudfront:DeleteOriginAccessControl
+                  - cloudfront:CreateInvalidation
+                Resource: "*"
+              - Sid: IAMRoleDeployment
+                Effect: Allow
+                Action:
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:GetRole
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:AttachRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:TagRole
+                  - iam:UntagRole
+                  - iam:PassRole
+                Resource:
+                  - !Sub "arn:aws:iam::${AWS::AccountId}:role/ehr-annotation-backend-*"
+
+Outputs:
+  RoleArn:
+    Description: The ARN of the GitHub Actions execution role
+    Value: !GetAtt GitHubActionsDeployRole.Arn
