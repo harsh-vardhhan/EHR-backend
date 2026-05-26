@@ -8,15 +8,13 @@ import {
   GetCommand,
 } from '@aws-sdk/lib-dynamodb';
 
+import { MedicalEntityLabel } from '../constants/labels';
+
 export interface Annotation {
   annotationId: string;
   documentId: string;
   text: string;
-  label:
-    | 'Clinical Condition'
-    | 'Medication Statement'
-    | 'Clinical Finding'
-    | 'Medical Procedure';
+  label: MedicalEntityLabel;
   startOffset: number;
   endOffset: number;
   createdAt: string;

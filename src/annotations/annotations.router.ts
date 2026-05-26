@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import { annotationsService } from '../services';
+import { MEDICAL_ENTITIES } from '../constants/labels';
 
 export const annotationsApp = new Hono();
 
@@ -9,10 +10,10 @@ const createAnnotationSchema = z.object({
   documentId: z.string().min(1, 'documentId is required'),
   text: z.string().min(1, 'text is required').max(500, 'text must be 500 characters or less'),
   label: z.enum([
-    'Clinical Condition',
-    'Medication Statement',
-    'Clinical Finding',
-    'Medical Procedure',
+    MEDICAL_ENTITIES.CONDITION,
+    MEDICAL_ENTITIES.MEDICATION,
+    MEDICAL_ENTITIES.FINDING,
+    MEDICAL_ENTITIES.PROCEDURE,
   ], {
     errorMap: () => ({ message: 'Invalid label type' })
   }),
