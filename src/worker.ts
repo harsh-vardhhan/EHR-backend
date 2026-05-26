@@ -49,10 +49,10 @@ export const handler = async (event: SQSEvent) => {
         `Starting background processing for Document: ${docId} in bucket ${s3Bucket}`,
       );
 
-      // 1. Fetch document metadata and text
-      const doc = await documentsService.getDocument(docId);
+      // 1. Fetch document metadata and text from S3 and ingest into DynamoDB if not present
+      const doc = await documentsService.fetchAndIngestDocument(docId, s3Bucket, s3Key);
       if (!doc || !doc.text) {
-        console.error(`Document ${docId} not found or has no text. Skipping.`);
+        console.error(`Document ${docId} could not be ingested or has no text. Skipping.`);
         continue;
       }
 
