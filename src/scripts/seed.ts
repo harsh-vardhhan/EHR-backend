@@ -65,8 +65,8 @@ async function seed() {
         Body: note.text,
         ContentType: 'text/plain',
         Metadata: {
-          title: note.title,
-          category: note.category,
+          title: encodeURIComponent(note.title),
+          category: encodeURIComponent(note.category),
         },
       }),
     );

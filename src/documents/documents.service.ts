@@ -143,8 +143,10 @@ export class DocumentsService {
       const s3Response = await this.s3Client.send(getS3Command);
       text = await s3Response.Body?.transformToString();
       // S3 user-metadata keys are returned as lowercase by the SDK/S3
-      title = s3Response.Metadata?.title;
-      category = s3Response.Metadata?.category;
+      const rawTitle = s3Response.Metadata?.title;
+      const rawCategory = s3Response.Metadata?.category;
+      title = rawTitle ? decodeURIComponent(rawTitle) : undefined;
+      category = rawCategory ? decodeURIComponent(rawCategory) : undefined;
     } catch (error) {
       console.error(`Error fetching object from S3: ${s3Key}`, error);
       throw new Error(`Document text for ${id} not found in S3`);
