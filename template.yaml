@@ -220,6 +220,9 @@ Resources:
       Throttle:
         BurstLimit: 10
         RateLimit: 20
+      Quota:
+        Limit: 5000
+        Period: MONTH
 
   EhrUsagePlanKey:
     Type: AWS::ApiGateway::UsagePlanKey
