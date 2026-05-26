@@ -5,17 +5,16 @@ import {
   QueryCommand,
   PutCommand,
   UpdateCommand,
+  GetCommand,
 } from '@aws-sdk/lib-dynamodb';
+
+import { MedicalEntityLabel } from '../constants/labels';
 
 export interface Annotation {
   annotationId: string;
   documentId: string;
   text: string;
-  label:
-    | 'Clinical Condition'
-    | 'Medication Statement'
-    | 'Clinical Finding'
-    | 'Medical Procedure';
+  label: MedicalEntityLabel;
   startOffset: number;
   endOffset: number;
   createdAt: string;
@@ -59,6 +58,18 @@ export class AnnotationsService {
     data: Omit<Annotation, 'annotationId' | 'createdAt'>,
   ): Promise<Annotation> {
     const tableName = process.env.ANNOTATIONS_TABLE_NAME;
+    const documentsTableName = process.env.DOCUMENTS_TABLE_NAME;
+
+    if (documentsTableName) {
+      const getDocCommand = new GetCommand({
+        TableName: documentsTableName,
+        Key: { id: data.documentId },
+      });
+      const docRes = await this.docClient.send(getDocCommand);
+      if (!docRes.Item) {
+        throw new Error(`Document with id ${data.documentId} not found`);
+      }
+    }
 
     const newAnnotation: Annotation = {
       ...data,
