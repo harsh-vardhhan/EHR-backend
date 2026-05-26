@@ -28,7 +28,7 @@ graph TD
 
     %% DDoS Protection
     APIGateway -.->|Publishes Metrics| CWAlarm[CloudWatch Traffic Alarm]
-    CWAlarm -->|Trigger if >5000 req/5m| SNS[SNS Topic]
+    CWAlarm -->|Trigger if >1000 req/5m| SNS[SNS Topic]
     SNS -->|Invoke| LambdaKillSwitch[AWS Lambda - Kill Switch]
     LambdaKillSwitch -->|Throttle & Disable Logs| APIGateway
 ```
@@ -67,7 +67,7 @@ This backend is secured against automated billing exploits and volumetric API at
 1. **API Key Authentication**: All public endpoints require a valid `x-api-key` header verified by API Gateway. Unauthenticated requests are rejected at the AWS edge before invoking any compute (Lambda) resources.
 2. **Automated Traffic Circuit Breaker**:
    - A CloudWatch Alarm monitors the total API request volume.
-   - If requests exceed `5000` within 5 minutes, the alarm triggers and sends an alert via SNS to your configured `NotificationEmail`.
+   - If requests exceed `1000` within 5 minutes, the alarm triggers and sends an alert via SNS to your configured `NotificationEmail`.
     - The alert triggers the **Kill-Switch Lambda** (`EhrApiGatewayKillSwitchFunction`), which immediately throttles the `prod` stage of the API Gateway to 0 and disables CloudWatch logging and metrics, stopping all traffic processing and logging ingestion billing instantly.
 3. **Manual Recovery**: To restore the stage and bring the application back online, simply reset the throttling limits and re-enable logging/metrics in the API Gateway Console, via the AWS SDK/CLI, or by redeploying the stack.
 
