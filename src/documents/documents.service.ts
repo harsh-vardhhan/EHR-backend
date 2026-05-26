@@ -3,6 +3,7 @@ import {
   DynamoDBDocumentClient,
   ScanCommand,
   GetCommand,
+  PutCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
@@ -120,5 +121,76 @@ export class DocumentsService {
 
     console.log(`Queueing analysis request for Document: ${docId} on SQS...`);
     await this.sqsClient.send(command);
+  }
+
+  async fetchAndIngestDocument(id: string, bucketName: string, s3Key: string) {
+    const tableName = process.env.DOCUMENTS_TABLE_NAME;
+    if (!tableName) {
+      throw new Error('DOCUMENTS_TABLE_NAME not set');
+    }
+
+    // 1. Fetch from S3 to get both content and metadata
+    const getS3Command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: s3Key,
+    });
+
+    let text: string | undefined;
+    let title: string | undefined;
+    let category: string | undefined;
+
+    try {
+      const s3Response = await this.s3Client.send(getS3Command);
+      text = await s3Response.Body?.transformToString();
+      // S3 user-metadata keys are returned as lowercase by the SDK/S3
+      title = s3Response.Metadata?.title;
+      category = s3Response.Metadata?.category;
+    } catch (error) {
+      console.error(`Error fetching object from S3: ${s3Key}`, error);
+      throw new Error(`Document text for ${id} not found in S3`);
+    }
+
+    // 2. Check if metadata exists in DynamoDB
+    const getDdbCommand = new GetCommand({
+      TableName: tableName,
+      Key: { id },
+    });
+
+    let metadata;
+    try {
+      const ddbResponse = await this.docClient.send(getDdbCommand);
+      metadata = ddbResponse.Item;
+    } catch (error) {
+      console.error(`Error checking metadata in DynamoDB for ${id}`, error);
+    }
+
+    if (!metadata) {
+      console.log(`Document metadata for ${id} not found in DynamoDB. Creating record...`);
+      metadata = {
+        id,
+        title: title || `Document ${id}`,
+        category: category || 'Uncategorized',
+        s3Key: s3Key,
+        status: 'ready_for_review',
+        createdAt: new Date().toISOString(),
+      };
+
+      const putDdbCommand = new PutCommand({
+        TableName: tableName,
+        Item: metadata,
+      });
+
+      try {
+        await this.docClient.send(putDdbCommand);
+      } catch (error) {
+        console.error(`Failed to save metadata to DynamoDB for ${id}`, error);
+        throw error;
+      }
+    }
+
+    return {
+      ...metadata,
+      text,
+    };
   }
 }

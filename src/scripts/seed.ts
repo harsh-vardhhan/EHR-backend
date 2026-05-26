@@ -6,16 +6,10 @@ import {
   PutObjectCommand,
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 
 const BUCKET_NAME = process.env.DOCUMENTS_BUCKET_NAME;
-const DOC_TABLE_NAME = process.env.DOCUMENTS_TABLE_NAME;
-const ANN_TABLE_NAME = process.env.ANNOTATIONS_TABLE_NAME;
 
 const s3Client = new S3Client({});
-const ddbClient = new DynamoDBClient({});
-const docClient = DynamoDBDocumentClient.from(ddbClient);
 
 async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -40,9 +34,9 @@ async function isS3Seeded() {
 }
 
 async function seed() {
-  if (!BUCKET_NAME || !DOC_TABLE_NAME || !ANN_TABLE_NAME) {
+  if (!BUCKET_NAME) {
     console.error(
-      'Missing AWS environment variables. Ensure BUCKET_NAME, DOC_TABLE_NAME, ANN_TABLE_NAME are set.',
+      'Missing AWS environment variables. Ensure DOCUMENTS_BUCKET_NAME is set.',
     );
     process.exit(1);
   }
@@ -63,32 +57,21 @@ async function seed() {
   for (const note of notes) {
     const s3Key = `documents/${note.id}.txt`;
 
-    console.log(`Uploading ${note.id} to S3...`);
+    console.log(`Uploading ${note.id} to S3 with metadata...`);
     await s3Client.send(
       new PutObjectCommand({
         Bucket: BUCKET_NAME,
         Key: s3Key,
         Body: note.text,
         ContentType: 'text/plain',
-      }),
-    );
-
-    console.log(`Saving ${note.id} metadata to DynamoDB...`);
-    await docClient.send(
-      new PutCommand({
-        TableName: DOC_TABLE_NAME,
-        Item: {
-          id: note.id,
+        Metadata: {
           title: note.title,
           category: note.category,
-          s3Key: s3Key,
-          status: 'ready_for_review',
-          createdAt: new Date().toISOString(),
         },
       }),
     );
 
-    console.log(`Seeded ${note.id}. Pipeline will trigger for analysis.`);
+    console.log(`Seeded ${note.id}. Pipeline will trigger ingestion and analysis.`);
 
     // Minimal delay for S3 throughput stability
     await sleep(200);
