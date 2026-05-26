@@ -5,6 +5,7 @@ import {
   QueryCommand,
   PutCommand,
   UpdateCommand,
+  GetCommand,
 } from '@aws-sdk/lib-dynamodb';
 
 export interface Annotation {
@@ -59,6 +60,18 @@ export class AnnotationsService {
     data: Omit<Annotation, 'annotationId' | 'createdAt'>,
   ): Promise<Annotation> {
     const tableName = process.env.ANNOTATIONS_TABLE_NAME;
+    const documentsTableName = process.env.DOCUMENTS_TABLE_NAME;
+
+    if (documentsTableName) {
+      const getDocCommand = new GetCommand({
+        TableName: documentsTableName,
+        Key: { id: data.documentId },
+      });
+      const docRes = await this.docClient.send(getDocCommand);
+      if (!docRes.Item) {
+        throw new Error(`Document with id ${data.documentId} not found`);
+      }
+    }
 
     const newAnnotation: Annotation = {
       ...data,
