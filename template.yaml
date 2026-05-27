@@ -35,6 +35,7 @@ Resources:
   EhrApiGateway:
     Type: AWS::Serverless::Api
     Properties:
+      Name: !Ref AWS::StackName
       StageName: prod
       Auth:
         ApiKeyRequired: true
