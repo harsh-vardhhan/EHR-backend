@@ -33,52 +33,49 @@ graph TD
     LambdaKillSwitch -->|Throttle & Disable Logs| APIGateway
 ```
 
-### Infrastructure Components:
-- **AWS Lambda (API)**: Executes the Hono application for UI interactions and document management.
-- **AWS Lambda (NLP Worker)**: A dedicated asynchronous worker triggered by SQS for clinical entity extraction.
-- **AWS Lambda (Kill Switch)**: Administrative helper function invoked by SNS to throttle the API Gateway stage to zero and disable CloudWatch logging/metrics under a DDoS traffic spike.
-- **Amazon SQS & DLQ**: The "Shock Absorber" of the system. Handles buffering and retries for LLM inference, with a Dead Letter Queue for auditing failed processing jobs.
-- **Amazon DynamoDB**: NoSQL database for ultra-low latency storage of annotation metadata and document status.
-- **Amazon S3**: Secure, encrypted storage for raw clinical document text, serving as the event source for the ingestion pipeline.
-- **Amazon API Gateway**: Managed entry point for the frontend, protected with API Key verification and strict rate limiting.
-- **CloudWatch Alarm & SNS**: Tracks request count metric in real-time, acting as the circuit breaker sensor.
-- **Groq AI Integration**: Powers the clinical entity recognition using high-performance LLM inference.
+### Infrastructure Components
+
+| Component | Role in Architecture |
+| :--- | :--- |
+| **AWS Lambda (API)** | Executes the Hono application, handling UI interactions and document metadata orchestration. |
+| **AWS Lambda (NLP Worker)** | Dedicated asynchronous worker triggered by SQS to perform LLM clinical entity extraction. |
+| **AWS Lambda (Kill Switch)** | Administrative helper triggered by SNS to throttle API Gateway to zero and disable CloudWatch logging. |
+| **Amazon SQS & DLQ** | Decouples document ingestion from analysis, buffers surges, and quarantines failed tasks in a Dead Letter Queue. |
+| **Amazon DynamoDB** | Managed NoSQL storage for ultra-low latency storage of clinical annotation metadata and document status. |
+| **Amazon S3** | Encrypted object storage for raw clinical document text, acting as the event source for the ingestion pipeline. |
+| **Amazon API Gateway** | Managed entrance protected by mandatory API Key verification and usage plans. |
+| **CloudWatch Alarm & SNS** | Monitors API request volume metrics in real-time, acting as the circuit breaker sensor. |
+| **Groq AI Integration** | High-performance inference engine running clinical entity recognition models. |
 
 ## 🚀 CI/CD Pipeline
 
 The project uses GitHub Actions for an automated, zero-downtime deployment workflow.
 
-### Continuous Integration (CI)
-- **Linting**: Automated TypeScript linting ensures code quality.
-- **Type Checking**: Strict TypeScript validation before every merge.
-*Triggered on all Pull Requests to `main`.*
+| Pipeline Stage | Processes | Actions & Best Practices | Trigger Event |
+| :--- | :--- | :--- | :--- |
+| **Continuous Integration (CI)** | • Linting<br>• Type Checking | Runs automated TypeScript linting and strict compilation checks. | All Pull Requests targeting `main` |
+| **Continuous Deployment (CD)** | • Build & Bundle<br>• AWS SAM Deploy<br>• OIDC Authentication<br>• Env Variable Sync | Bundles files using `esbuild`, provisions CloudFormation stacks, signs in passwordlessly using OpenID Connect (OIDC), and syncs secrets. | Every commit/merge push to `main` |
 
-### Continuous Deployment (CD)
-- **Build & Bundle**: Compiles TypeScript and uses `esbuild` for an optimized Lambda package.
-- **AWS SAM (Serverless Application Model)**: Manages infrastructure as code, deploying the CloudFormation stack automatically.
-- **Secure Authentication (OIDC)**: Authenticates to AWS using passwordless OpenID Connect federation, eliminating static AWS Access Keys in GitHub Secrets.
-- **Automatic Environment Sync**: Injects application secrets and environment variables during the build process.
-*Triggered on every push to `main`.*
 
-## 🛡️ Security & DDoS Protection
+## 🛡️ Denial of Wallet (DoW) & DDoS Protection
 
-This backend is secured against automated billing exploits and volumetric API attacks using a hybrid protection system:
+This backend incorporates a robust, multi-layered security architecture designed to prevent volumetric DDoS abuse and cloud-native **Denial of Wallet (DoW)** attacks, guaranteeing predictable operational billing.
 
-1. **API Key Authentication**: All public endpoints require a valid `x-api-key` header verified by API Gateway. Unauthenticated requests are rejected at the AWS edge before invoking any compute (Lambda) resources.
-2. **Automated Traffic Circuit Breaker**:
-   - A CloudWatch Alarm monitors the total API request volume.
-   - If requests exceed `1000` within 5 minutes, the alarm triggers and sends an alert via SNS to your configured `NotificationEmail`.
-    - The alert triggers the **Kill-Switch Lambda** (`EhrApiGatewayKillSwitchFunction`), which immediately throttles the `prod` stage of the API Gateway to 0 and disables CloudWatch logging and metrics, stopping all traffic processing and logging ingestion billing instantly.
-3. **Manual Recovery**: To restore the stage and bring the application back online, simply reset the throttling limits and re-enable logging/metrics in the API Gateway Console, via the AWS SDK/CLI, or by redeploying the stack.
+| Defense Vector | Implementation & Controls | Purpose & Billing Safety Impact |
+| :--- | :--- | :--- |
+| **API Edge Gatekeeper** | Valid `x-api-key` header checked at API Gateway edge. | Rejects unauthenticated requests before triggering downstream Lambda compute or log metrics ingestion. |
+| **Throttling & Quotas** | Usage plan capped at **20 req/s** rate, **10 burst**, and **5,000 req/month**. | Hard-limits client-specific query volume to prevent cost runaway from API key exposure or leakage. |
+| **Automated Circuit Breaker** | CloudWatch Alarm (>1,000 req/5m) $\rightarrow$ SNS $\rightarrow$ Kill-Switch Lambda. | Automatically updates API Gateway stage throttle limits to `0` and disables metrics/logs ingestion on breach. |
+| **Compute Scaling Caps** | `ReservedConcurrentExecutions` limits (**5** for API Lambda, **2** for SQS NLP Worker). | Caps the maximum number of concurrent running containers AWS can spin up under a flood. |
+| **Asynchronous Decoupling** | SQS-backed queue hand-off (`EhrAnnotationQueue`) with `BatchSize: 5`. | Prevents container runtime crashes; processes spikes in document uploads sequentially rather than in parallel. |
+| **Infinite Retry Defense** | SQS Dead Letter Queue (`EhrAnnotationDLQ`) with `maxReceiveCount: 3`. | Quarantines failing payloads (poison pills) to prevent endless execution retry loops. |
+| **External API Timeouts** | Groq NLP call `AbortController` (strictly capped at **8 seconds**). | Prevents hung external LLM endpoints from keeping the worker Lambda running up to its 30-second cap. |
+| **Database Cost Ceiling** | DynamoDB tables configured with provisioned capacity (**5 RCU / 5 WCU**). | Acts as a budget boundary, preventing database scaling costs from skyrocketing during attacks. |
+| **Compute Efficiency** | Parallel database writes via `Promise.all` instead of sequential writes. | Grouped DB actions run concurrently, reducing billable Lambda active execution time by over 80%. |
 
-## 💸 Billing & Architectural Optimization
-
-To ensure predictable pricing, prevent Lambda container freezes, and eliminate execution bottlenecks, the following architectural controls are implemented:
-
-1. **SQS-Backed Asynchronous Hand-off**: Heavy tasks like NLP document analysis are decoupled from the API Lambda. The `/documents/:id/analyze` endpoint queues the task onto an Amazon SQS queue (`EhrAnnotationQueue`) and returns immediately. The **NLP Worker Lambda** then consumes the queue. This prevents background execution freezes on AWS Lambda.
-2. **On-Demand DynamoDB Billing**: Database tables are configured to use `PAY_PER_REQUEST` (On-Demand) billing instead of provisioned throughput (which was limited to 5 RCU/WCU). This completely avoids database write throttling under heavy clinician activity while eliminating costs when idle.
-3. **Groq API Request Timeout**: Outbound clinical NLP requests to the Groq API are strictly limited to an **8-second timeout** using an `AbortController`. This prevents hanging external API requests from keeping the Lambda function running up to its 30-second limit and inflating the bill.
-4. **Parallel Database Writes**: When saving clinical entities, database writes are executed concurrently using `Promise.all` rather than sequentially. This reduces execution times by over 80%, directly lowering Lambda runtime duration billing.
+> [!TIP]
+> **Manual Recovery after Circuit Breaker Activation:**
+> To bring the system back online after a kill-switch trigger, reset the API Gateway stage throttling limits and re-enable execution logging via the AWS Console, AWS SDK/CLI, or by redeploying the SAM template.
 
 ## 🛠 Local Development
 
