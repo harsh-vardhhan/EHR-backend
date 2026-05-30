@@ -99,9 +99,8 @@ Resources:
                   - dynamodb:DeleteItem
                   - dynamodb:PutItem
                 Resource:
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ehr-documents"
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ehr-annotations"
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ehr-annotations/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ehr-table"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ehr-table/index/*"
               - Sid: LambdaFunctionManagement
                 Effect: Allow
                 Action:
