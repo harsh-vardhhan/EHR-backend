@@ -6,13 +6,12 @@ import {
   DeleteCommand,
 } from '@aws-sdk/lib-dynamodb';
 
-const DOC_TABLE_NAME = process.env.DOCUMENTS_TABLE_NAME;
-const ANN_TABLE_NAME = process.env.ANNOTATIONS_TABLE_NAME;
+const EHR_TABLE_NAME = process.env.EHR_TABLE_NAME;
 
 const ddbClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(ddbClient);
 
-async function deleteTableItems(tableName: string, keyName: string) {
+async function cleanupTable(tableName: string) {
   if (!tableName) {
     console.warn(`Table name not configured. Skipping.`);
     return;
@@ -26,11 +25,11 @@ async function deleteTableItems(tableName: string, keyName: string) {
     console.log(`Found ${items.length} items to delete in ${tableName}.`);
 
     for (const item of items) {
-      console.log(`Deleting item with ${keyName} = ${item[keyName]}...`);
+      console.log(`Deleting item with PK = ${item.PK}, SK = ${item.SK}...`);
       await docClient.send(
         new DeleteCommand({
           TableName: tableName,
-          Key: { [keyName]: item[keyName] },
+          Key: { PK: item.PK, SK: item.SK },
         }),
       );
     }
@@ -41,8 +40,7 @@ async function deleteTableItems(tableName: string, keyName: string) {
 }
 
 async function main() {
-  await deleteTableItems(DOC_TABLE_NAME || '', 'id');
-  await deleteTableItems(ANN_TABLE_NAME || '', 'annotationId');
+  await cleanupTable(EHR_TABLE_NAME || '');
 }
 
 main().catch(console.error);

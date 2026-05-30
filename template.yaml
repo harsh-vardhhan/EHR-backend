@@ -14,12 +14,9 @@ Parameters:
   DocumentsBucketName:
     Type: String
     Description: Name of the S3 bucket for documents
-  DocumentsTableName:
+  EhrTableName:
     Type: String
-    Description: Name of the DynamoDB table for documents
-  AnnotationsTableName:
-    Type: String
-    Description: Name of the DynamoDB table for annotations
+    Description: Name of the single DynamoDB table for EHR data
   GroqApiKey:
     Type: String
     Description: Groq API Key
@@ -72,17 +69,20 @@ Resources:
       Environment:
         Variables:
           GROQ_API_KEY: !Ref GroqApiKey
-          DOCUMENTS_TABLE_NAME: !Ref DocumentsTableName
-          ANNOTATIONS_TABLE_NAME: !Ref AnnotationsTableName
+          EHR_TABLE_NAME: !Ref EhrTableName
           DOCUMENTS_BUCKET_NAME: !Ref DocumentsBucketName
           ANNOTATION_QUEUE_URL: !Ref EhrAnnotationQueue
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref DocumentsBucketName
         - DynamoDBCrudPolicy:
-            TableName: !Ref DocumentsTableName
-        - DynamoDBCrudPolicy:
-            TableName: !Ref AnnotationsTableName
+            TableName: !Ref EhrTableName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EhrTableName}/index/*"
         - SQSSendMessagePolicy:
             QueueName: !GetAtt EhrAnnotationQueue.QueueName
 
@@ -101,16 +101,19 @@ Resources:
       Environment:
         Variables:
           GROQ_API_KEY: !Ref GroqApiKey
-          DOCUMENTS_TABLE_NAME: !Ref DocumentsTableName
-          ANNOTATIONS_TABLE_NAME: !Ref AnnotationsTableName
+          EHR_TABLE_NAME: !Ref EhrTableName
           DOCUMENTS_BUCKET_NAME: !Ref DocumentsBucketName
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref DocumentsBucketName
         - DynamoDBCrudPolicy:
-            TableName: !Ref DocumentsTableName
-        - DynamoDBCrudPolicy:
-            TableName: !Ref AnnotationsTableName
+            TableName: !Ref EhrTableName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EhrTableName}/index/*"
 
   EhrAnnotationQueue:
     Type: AWS::SQS::Queue
@@ -158,38 +161,27 @@ Resources:
         - Arn: !GetAtt EhrAnnotationQueue.Arn
           Id: "EhrAnnotationQueueTarget"
 
-  DocumentsTable:
+  EhrTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Ref DocumentsTableName
+      TableName: !Ref EhrTableName
       AttributeDefinitions:
-        - AttributeName: id
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
           AttributeType: S
       KeySchema:
-        - AttributeName: id
+        - AttributeName: PK
           KeyType: HASH
-      BillingMode: PROVISIONED
-      ProvisionedThroughput:
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
-
-  AnnotationsTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Ref AnnotationsTableName
-      AttributeDefinitions:
-        - AttributeName: annotationId
-          AttributeType: S
-        - AttributeName: documentId
-          AttributeType: S
-      KeySchema:
-        - AttributeName: annotationId
-          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
       GlobalSecondaryIndexes:
-        - IndexName: DocumentIdIndex
+        - IndexName: SKIndex
           KeySchema:
-            - AttributeName: documentId
+            - AttributeName: SK
               KeyType: HASH
+            - AttributeName: PK
+              KeyType: RANGE
           Projection:
             ProjectionType: ALL
           ProvisionedThroughput:
