@@ -55,9 +55,8 @@
                 "dynamodb:PutItem"
             ],
             "Resource": [
-                "arn:aws:dynamodb:ap-south-1:479650866443:table/ehr-documents",
-                "arn:aws:dynamodb:ap-south-1:479650866443:table/ehr-annotations",
-                "arn:aws:dynamodb:ap-south-1:479650866443:table/ehr-annotations/index/*"
+                "arn:aws:dynamodb:ap-south-1:479650866443:table/ehr-table",
+                "arn:aws:dynamodb:ap-south-1:479650866443:table/ehr-table/index/*"
             ]
         },
         {

@@ -22,13 +22,17 @@ export class DocumentsService {
   }
 
   async getDocuments() {
-    const tableName = process.env.DOCUMENTS_TABLE_NAME;
+    const tableName = process.env.EHR_TABLE_NAME;
     if (!tableName) {
       return []; // Fallback or mock list if not configured
     }
 
     const command = new ScanCommand({
       TableName: tableName,
+      FilterExpression: 'SK = :sk',
+      ExpressionAttributeValues: {
+        ':sk': 'METADATA',
+      },
     });
 
     try {
@@ -41,7 +45,7 @@ export class DocumentsService {
   }
 
   async getDocument(id: string) {
-    const tableName = process.env.DOCUMENTS_TABLE_NAME;
+    const tableName = process.env.EHR_TABLE_NAME;
     const bucketName = process.env.DOCUMENTS_BUCKET_NAME;
 
     if (!tableName || !bucketName) {
@@ -59,7 +63,10 @@ export class DocumentsService {
 
     const getDdbCommand = new GetCommand({
       TableName: tableName,
-      Key: { id },
+      Key: {
+        PK: `DOCUMENT#${id}`,
+        SK: 'METADATA',
+      },
     });
 
     const ddbResponse = await this.docClient.send(getDdbCommand);
@@ -124,9 +131,9 @@ export class DocumentsService {
   }
 
   async fetchAndIngestDocument(id: string, bucketName: string, s3Key: string) {
-    const tableName = process.env.DOCUMENTS_TABLE_NAME;
+    const tableName = process.env.EHR_TABLE_NAME;
     if (!tableName) {
-      throw new Error('DOCUMENTS_TABLE_NAME not set');
+      throw new Error('EHR_TABLE_NAME not set');
     }
 
     // 1. Fetch from S3 to get both content and metadata
@@ -155,7 +162,10 @@ export class DocumentsService {
     // 2. Check if metadata exists in DynamoDB
     const getDdbCommand = new GetCommand({
       TableName: tableName,
-      Key: { id },
+      Key: {
+        PK: `DOCUMENT#${id}`,
+        SK: 'METADATA',
+      },
     });
 
     let metadata;
@@ -169,6 +179,8 @@ export class DocumentsService {
     if (!metadata) {
       console.log(`Document metadata for ${id} not found in DynamoDB. Creating record...`);
       metadata = {
+        PK: `DOCUMENT#${id}`,
+        SK: 'METADATA',
         id,
         title: title || `Document ${id}`,
         category: category || 'Uncategorized',
