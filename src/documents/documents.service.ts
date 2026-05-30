@@ -4,6 +4,7 @@ import {
   ScanCommand,
   GetCommand,
   PutCommand,
+  QueryCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
@@ -56,25 +57,34 @@ export class DocumentsService {
           text: 'Mock text',
           status: 'ready_for_review',
           s3Key: 'mock-key',
+          annotations: [],
         };
       }
       throw new Error(`Document with id ${id} not found`);
     }
 
-    const getDdbCommand = new GetCommand({
+    const queryCommand = new QueryCommand({
       TableName: tableName,
-      Key: {
-        PK: `DOCUMENT#${id}`,
-        SK: 'METADATA',
+      KeyConditionExpression: 'PK = :pk',
+      ExpressionAttributeValues: {
+        ':pk': `DOCUMENT#${id}`,
       },
     });
 
-    const ddbResponse = await this.docClient.send(getDdbCommand);
-    const metadata = ddbResponse.Item;
+    const queryResponse = await this.docClient.send(queryCommand);
+    const items = queryResponse.Items || [];
 
+    const metadata = items.find((item) => item.SK === 'METADATA');
     if (!metadata) {
       throw new Error(`Document with id ${id} not found`);
     }
+
+    const annotations = items
+      .filter((item) => item.SK.startsWith('ANNOTATION#'))
+      .map((item) => ({
+        ...item,
+        id: item.annotationId || item.id, // Map database key to frontend key 'id'
+      }));
 
     const getS3Command = new GetObjectCommand({
       Bucket: bucketName,
@@ -88,6 +98,7 @@ export class DocumentsService {
       return {
         ...metadata,
         text,
+        annotations,
       };
     } catch (error) {
       console.error('Error fetching from S3', error);
