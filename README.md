@@ -28,7 +28,7 @@ graph TD
 
     %% DDoS Protection
     APIGateway -.->|Publishes Metrics| CWAlarm[CloudWatch Traffic Alarm]
-    CWAlarm -->|Trigger if >1000 req/5m| SNS[SNS Topic]
+    CWAlarm -->|Trigger if >5000 req/5m| SNS[SNS Topic]
     SNS -->|Invoke| LambdaKillSwitch[AWS Lambda - Kill Switch]
     LambdaKillSwitch -->|Throttle & Disable Logs| APIGateway
 ```
@@ -82,8 +82,8 @@ This backend incorporates a robust, multi-layered security architecture designed
 | Defense Vector | Implementation & Controls | Purpose & Billing Safety Impact |
 | :--- | :--- | :--- |
 | **API Edge Gatekeeper** | Valid `x-api-key` header checked at API Gateway edge. | Rejects unauthenticated requests before triggering downstream Lambda compute or log metrics ingestion. |
-| **Throttling & Quotas** | Usage plan capped at **20 req/s** rate, **10 burst**, and **5,000 req/month**. | Hard-limits client-specific query volume to prevent cost runaway from API key exposure or leakage. |
-| **Automated Circuit Breaker** | CloudWatch Alarm (>1,000 req/5m) $\rightarrow$ SNS $\rightarrow$ Kill-Switch Lambda. | Automatically updates API Gateway stage throttle limits to `0` and disables metrics/logs ingestion on breach. |
+| **Throttling & Quotas** | Usage plan capped at **50 req/s** rate, **20 burst**, and **50,000 req/month**. | Hard-limits client-specific query volume to prevent cost runaway from API key exposure or leakage. |
+| **Automated Circuit Breaker** | CloudWatch Alarm (>5,000 req/5m) $\rightarrow$ SNS $\rightarrow$ Kill-Switch Lambda. | Automatically updates API Gateway stage throttle limits to `0` and disables metrics/logs ingestion on breach. |
 | **Compute Scaling Caps** | `ReservedConcurrentExecutions` limits (**5** for API Lambda, **2** for SQS NLP Worker). | Caps the maximum number of concurrent running containers AWS can spin up under a flood. |
 | **Asynchronous Decoupling** | SQS-backed queue hand-off (`EhrAnnotationQueue`) with `BatchSize: 5`. | Prevents container runtime crashes; processes spikes in document uploads sequentially rather than in parallel. |
 | **Infinite Retry Defense** | SQS Dead Letter Queue (`EhrAnnotationDLQ`) with `maxReceiveCount: 3`. | Quarantines failing payloads (poison pills) to prevent endless execution retry loops. |
