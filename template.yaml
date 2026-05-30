@@ -25,7 +25,7 @@ Parameters:
     Description: Email address to receive DDoS alert notifications
   DdosRequestThreshold:
     Type: Number
-    Default: 1000
+    Default: 5000
     Description: Number of API Gateway requests in 5 minutes to trigger the kill switch
 
 Resources:
@@ -44,8 +44,8 @@ Resources:
       MethodSettings:
         - HttpMethod: '*'
           ResourcePath: '/*'
-          ThrottlingBurstLimit: 2
-          ThrottlingRateLimit: 5
+          ThrottlingBurstLimit: 20
+          ThrottlingRateLimit: 50
 
   EhrBackendFunction:
     Type: AWS::Serverless::Function
@@ -220,10 +220,10 @@ Resources:
           Stage: prod
       UsagePlanName: !Sub "EhrUsagePlan-${AWS::StackName}"
       Throttle:
-        BurstLimit: 10
-        RateLimit: 20
+        BurstLimit: 20
+        RateLimit: 50
       Quota:
-        Limit: 5000
+        Limit: 50000
         Period: MONTH
 
   EhrUsagePlanKey:

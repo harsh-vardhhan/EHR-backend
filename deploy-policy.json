@@ -8,9 +8,9 @@
                 "cloudformation:*"
             ],
             "Resource": [
-                "arn:aws:cloudformation:ap-south-1:479650866443:stack/ehr-annotation-backend/*",
-                "arn:aws:cloudformation:ap-south-1:479650866443:stack/ehr-annotation-frontend/*",
-                "arn:aws:cloudformation:ap-south-1:479650866443:stack/aws-sam-cli-managed-default/*",
+                "arn:aws:cloudformation:ap-south-1:<AWS_ACCOUNT_ID>:stack/ehr-annotation-backend/*",
+                "arn:aws:cloudformation:ap-south-1:<AWS_ACCOUNT_ID>:stack/ehr-annotation-frontend/*",
+                "arn:aws:cloudformation:ap-south-1:<AWS_ACCOUNT_ID>:stack/aws-sam-cli-managed-default/*",
                 "arn:aws:cloudformation:*:aws:transform/*"
             ]
         },
@@ -55,8 +55,8 @@
                 "dynamodb:PutItem"
             ],
             "Resource": [
-                "arn:aws:dynamodb:ap-south-1:479650866443:table/ehr-table",
-                "arn:aws:dynamodb:ap-south-1:479650866443:table/ehr-table/index/*"
+                "arn:aws:dynamodb:ap-south-1:<AWS_ACCOUNT_ID>:table/ehr-table",
+                "arn:aws:dynamodb:ap-south-1:<AWS_ACCOUNT_ID>:table/ehr-table/index/*"
             ]
         },
         {
@@ -74,7 +74,7 @@
                 "lambda:PutFunctionConcurrency"
             ],
             "Resource": [
-                "arn:aws:lambda:ap-south-1:479650866443:function:ehr-annotation-backend-*"
+                "arn:aws:lambda:ap-south-1:<AWS_ACCOUNT_ID>:function:ehr-annotation-backend-*"
             ]
         },
         {
@@ -115,9 +115,9 @@
                 "events:RemoveTargets"
             ],
             "Resource": [
-                "arn:aws:sqs:ap-south-1:479650866443:ehr-annotation-backend-*",
-                "arn:aws:sns:ap-south-1:479650866443:EhrKillSwitchTopic-*",
-                "arn:aws:events:ap-south-1:479650866443:rule/ehr-annotation-backend-*"
+                "arn:aws:sqs:ap-south-1:<AWS_ACCOUNT_ID>:ehr-annotation-backend-*",
+                "arn:aws:sns:ap-south-1:<AWS_ACCOUNT_ID>:EhrKillSwitchTopic-*",
+                "arn:aws:events:ap-south-1:<AWS_ACCOUNT_ID>:rule/ehr-annotation-backend-*"
             ]
         },
         {
@@ -129,7 +129,7 @@
                 "cloudwatch:DescribeAlarms"
             ],
             "Resource": [
-                "arn:aws:cloudwatch:ap-south-1:479650866443:alarm:*"
+                "arn:aws:cloudwatch:ap-south-1:<AWS_ACCOUNT_ID>:alarm:*"
             ]
         },
         {
@@ -140,7 +140,7 @@
                 "logs:DescribeLogStreams"
             ],
             "Resource": [
-                "arn:aws:logs:ap-south-1:479650866443:log-group:*"
+                "arn:aws:logs:ap-south-1:<AWS_ACCOUNT_ID>:log-group:*"
             ]
         },
         {
@@ -157,8 +157,8 @@
                 "logs:DeleteSubscriptionFilter"
             ],
             "Resource": [
-                "arn:aws:logs:ap-south-1:479650866443:log-group:/aws/lambda/ehr-annotation-backend-*",
-                "arn:aws:logs:ap-south-1:479650866443:log-group:API-Gateway-Execution-Logs_*"
+                "arn:aws:logs:ap-south-1:<AWS_ACCOUNT_ID>:log-group:/aws/lambda/ehr-annotation-backend-*",
+                "arn:aws:logs:ap-south-1:<AWS_ACCOUNT_ID>:log-group:API-Gateway-Execution-Logs_*"
             ]
         },
         {
@@ -192,7 +192,7 @@
                 "iam:PassRole"
             ],
             "Resource": [
-                "arn:aws:iam::479650866443:role/ehr-annotation-backend-*"
+                "arn:aws:iam::<AWS_ACCOUNT_ID>:role/ehr-annotation-backend-*"
             ]
         }
     ]
