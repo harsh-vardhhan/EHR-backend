@@ -49,6 +49,7 @@ jobs:
             --resolve-s3 \
             --parameter-overrides \
               DocumentsBucketName=${{ secrets.DOCUMENTS_BUCKET_NAME }} \
+              ProcessedBucketName=${{ secrets.PROCESSED_BUCKET_NAME }} \
               EhrTableName=${{ secrets.EHR_TABLE_NAME }} \
               GroqApiKey=${{ secrets.GROQ_API_KEY }} \
               NotificationEmail=${{ secrets.NOTIFICATION_EMAIL }}
