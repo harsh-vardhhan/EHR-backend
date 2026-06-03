@@ -15,7 +15,7 @@
             ]
         },
         {
-            "Sid": "S3BucketAndObjectManagement",
+            "Sid": "S3BucketInfrastructureManagement",
             "Effect": "Allow",
             "Action": [
                 "s3:CreateBucket",
@@ -26,19 +26,25 @@
                 "s3:GetEncryptionConfiguration",
                 "s3:PutEncryptionConfiguration",
                 "s3:GetBucketNotification",
-                "s3:PutBucketNotification",
+                "s3:PutBucketNotification"
+            ],
+            "Resource": [
+                "arn:aws:s3:::ehr-demo-docs-bucket",
+                "arn:aws:s3:::ehr-demo-processed-bucket",
+                "arn:aws:s3:::ehr-annotation-frontend-*",
+                "arn:aws:s3:::aws-sam-cli-managed-default-*"
+            ]
+        },
+        {
+            "Sid": "S3DeploymentAssetsManagement",
+            "Effect": "Allow",
+            "Action": [
                 "s3:PutObject",
                 "s3:GetObject",
                 "s3:DeleteObject"
             ],
             "Resource": [
-                "arn:aws:s3:::ehr-demo-docs-bucket",
-                "arn:aws:s3:::ehr-demo-docs-bucket/*",
-                "arn:aws:s3:::ehr-demo-processed-bucket",
-                "arn:aws:s3:::ehr-demo-processed-bucket/*",
-                "arn:aws:s3:::*frontend*",
-                "arn:aws:s3:::*frontend*/*",
-                "arn:aws:s3:::aws-sam-cli-managed-default-*",
+                "arn:aws:s3:::ehr-annotation-frontend-*/*",
                 "arn:aws:s3:::aws-sam-cli-managed-default-*/*"
             ]
         },
@@ -51,10 +57,7 @@
                 "dynamodb:DescribeTable",
                 "dynamodb:UpdateTable",
                 "dynamodb:TagResource",
-                "dynamodb:UntagResource",
-                "dynamodb:Scan",
-                "dynamodb:DeleteItem",
-                "dynamodb:PutItem"
+                "dynamodb:UntagResource"
             ],
             "Resource": [
                 "arn:aws:dynamodb:ap-south-1:<AWS_ACCOUNT_ID>:table/ehr-table",
@@ -131,7 +134,8 @@
                 "cloudwatch:DescribeAlarms"
             ],
             "Resource": [
-                "arn:aws:cloudwatch:ap-south-1:<AWS_ACCOUNT_ID>:alarm:*"
+                "arn:aws:cloudwatch:ap-south-1:<AWS_ACCOUNT_ID>:alarm:EhrApiGatewayTrafficAlarm-*",
+                "arn:aws:cloudwatch:ap-south-1:<AWS_ACCOUNT_ID>:alarm:ehr-*"
             ]
         },
         {
