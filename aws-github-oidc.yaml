@@ -64,7 +64,7 @@ Resources:
                   - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/ehr-annotation-frontend/*"
                   - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/aws-sam-cli-managed-default/*"
                   - !Sub "arn:aws:cloudformation:*:aws:transform/*"
-              - Sid: S3BucketAndObjectManagement
+              - Sid: S3BucketInfrastructureManagement
                 Effect: Allow
                 Action:
                   - s3:CreateBucket
@@ -76,17 +76,19 @@ Resources:
                   - s3:PutEncryptionConfiguration
                   - s3:GetBucketNotification
                   - s3:PutBucketNotification
+                Resource:
+                  - !Sub "arn:aws:s3:::ehr-demo-docs-bucket"
+                  - !Sub "arn:aws:s3:::ehr-demo-processed-bucket"
+                  - !Sub "arn:aws:s3:::ehr-annotation-frontend-*"
+                  - !Sub "arn:aws:s3:::aws-sam-cli-managed-default-*"
+              - Sid: S3DeploymentAssetsManagement
+                Effect: Allow
+                Action:
                   - s3:PutObject
                   - s3:GetObject
                   - s3:DeleteObject
                 Resource:
-                  - !Sub "arn:aws:s3:::ehr-demo-docs-bucket"
-                  - !Sub "arn:aws:s3:::ehr-demo-docs-bucket/*"
-                  - !Sub "arn:aws:s3:::ehr-demo-processed-bucket"
-                  - !Sub "arn:aws:s3:::ehr-demo-processed-bucket/*"
-                  - !Sub "arn:aws:s3:::*frontend*"
-                  - !Sub "arn:aws:s3:::*frontend*/*"
-                  - !Sub "arn:aws:s3:::aws-sam-cli-managed-default-*"
+                  - !Sub "arn:aws:s3:::ehr-annotation-frontend-*/*"
                   - !Sub "arn:aws:s3:::aws-sam-cli-managed-default-*/*"
               - Sid: DynamoDBTableManagement
                 Effect: Allow
@@ -97,9 +99,6 @@ Resources:
                   - dynamodb:UpdateTable
                   - dynamodb:TagResource
                   - dynamodb:UntagResource
-                  - dynamodb:Scan
-                  - dynamodb:DeleteItem
-                  - dynamodb:PutItem
                 Resource:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ehr-table"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ehr-table/index/*"
@@ -159,7 +158,8 @@ Resources:
                   - cloudwatch:DeleteAlarms
                   - cloudwatch:DescribeAlarms
                 Resource:
-                  - !Sub "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*"
+                  - !Sub "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:EhrApiGatewayTrafficAlarm-*"
+                  - !Sub "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:ehr-*"
               - Sid: CloudWatchLogsDescribe
                 Effect: Allow
                 Action:
