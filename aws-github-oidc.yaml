@@ -82,6 +82,8 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:s3:::ehr-demo-docs-bucket"
                   - !Sub "arn:aws:s3:::ehr-demo-docs-bucket/*"
+                  - !Sub "arn:aws:s3:::ehr-demo-processed-bucket"
+                  - !Sub "arn:aws:s3:::ehr-demo-processed-bucket/*"
                   - !Sub "arn:aws:s3:::*frontend*"
                   - !Sub "arn:aws:s3:::*frontend*/*"
                   - !Sub "arn:aws:s3:::aws-sam-cli-managed-default-*"
