@@ -13,7 +13,6 @@ import {
 
 const EHR_TABLE_NAME = process.env.EHR_TABLE_NAME;
 const DOCUMENTS_BUCKET_NAME = process.env.DOCUMENTS_BUCKET_NAME;
-const PROCESSED_BUCKET_NAME = process.env.PROCESSED_BUCKET_NAME;
 
 const ddbClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(ddbClient);
@@ -82,7 +81,6 @@ async function cleanupBucket(bucketName: string, prefix: string) {
 async function main() {
   await cleanupTable(EHR_TABLE_NAME || '');
   await cleanupBucket(DOCUMENTS_BUCKET_NAME || '', 'documents/');
-  await cleanupBucket(PROCESSED_BUCKET_NAME || '', 'processed/');
 }
 
 main().catch(console.error);
