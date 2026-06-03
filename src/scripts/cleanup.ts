@@ -3,7 +3,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
   DynamoDBDocumentClient,
   ScanCommand,
-  DeleteCommand,
+  BatchWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import {
   S3Client,
@@ -31,12 +31,36 @@ async function cleanupTable(tableName: string) {
     const items = scanResponse.Items || [];
     console.log(`Found ${items.length} items to delete in ${tableName}.`);
 
-    for (const item of items) {
-      console.log(`Deleting item with PK = ${item.PK}, SK = ${item.SK}...`);
+    if (items.length === 0) {
+      console.log('No items to delete.');
+      return;
+    }
+
+    // Chunk items into batches of 25 for BatchWriteCommand
+    const batches: any[][] = [];
+    for (let i = 0; i < items.length; i += 25) {
+      batches.push(items.slice(i, i + 25));
+    }
+
+    console.log(`Deleting items in ${batches.length} batch(es)...`);
+    for (let index = 0; index < batches.length; index++) {
+      const batch = batches[index];
+      console.log(`Processing batch ${index + 1}/${batches.length} (${batch.length} items)...`);
+      
+      const deleteRequests = batch.map((item) => ({
+        DeleteRequest: {
+          Key: {
+            PK: item.PK,
+            SK: item.SK,
+          },
+        },
+      }));
+
       await docClient.send(
-        new DeleteCommand({
-          TableName: tableName,
-          Key: { PK: item.PK, SK: item.SK },
+        new BatchWriteCommand({
+          RequestItems: {
+            [tableName]: deleteRequests,
+          },
         }),
       );
     }
