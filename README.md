@@ -15,17 +15,16 @@ graph TD
     User((Clinician)) -->|API Request with API Key| APIGateway[AWS API Gateway]
     APIGateway -->|Trigger| LambdaAPI[AWS Lambda - API]
     LambdaAPI -->|Read/Write| DynamoDB[(Amazon DynamoDB)]
-    LambdaAPI -->|Upload| S3Raw[(Amazon S3 - Raw Inputs)]
+    LambdaAPI -->|Upload| S3[(Amazon S3 - Medical Notes)]
     LambdaAPI -->|Manual Trigger| SQS[AWS SQS - Annotation Queue]
 
-    S3Raw -->|Emit Event| EB[Amazon EventBridge - Bus]
+    S3 -->|Emit Event| EB[Amazon EventBridge - Bus]
     EB -->|Route Rule| SQS[AWS SQS - Annotation Queue]
     SQS -->|Trigger| LambdaWorker[AWS Lambda - NLP Worker]
     SQS -.->|Failures| DLQ[AWS SQS - Dead Letter Queue]
     
     LambdaWorker -->|Inference| Groq[Groq AI - LLM Inference]
     LambdaWorker -->|Save Annotations| DynamoDB
-    LambdaWorker -->|Save Processed JSON| S3Processed[(Amazon S3 - Processed Outputs)]
 
     %% DDoS Protection
     APIGateway -.->|Publishes Metrics| CWAlarm[CloudWatch Traffic Alarm]
@@ -43,7 +42,7 @@ graph TD
 | **AWS Lambda (Kill Switch)** | Administrative helper triggered by SNS to throttle API Gateway to zero and disable CloudWatch logging. |
 | **Amazon SQS & DLQ** | Decouples document ingestion from analysis, buffers surges, and quarantines failed tasks in a Dead Letter Queue. |
 | **Amazon DynamoDB** | Managed NoSQL storage for ultra-low latency storage of clinical annotation metadata and document status. |
-| **Amazon S3 (Raw & Processed)** | Encrypted S3 buckets. Raw bucket stores raw text (ingestion event source); Processed bucket isolates structured JSON output files to prevent triggers and loops. |
+| **Amazon S3** | Encrypted object storage for raw clinical document text, acting as the event source for the ingestion pipeline. |
 | **Amazon API Gateway** | Managed entrance protected by mandatory API Key verification and usage plans. |
 | **CloudWatch Alarm & SNS** | Monitors API request volume metrics in real-time, acting as the circuit breaker sensor. |
 | **Groq AI Integration** | High-performance inference engine running clinical entity recognition models. |
@@ -91,7 +90,7 @@ This backend incorporates a robust, multi-layered security architecture designed
 | **External API Timeouts** | Groq NLP call `AbortController` (strictly capped at **8 seconds**). | Prevents hung external LLM endpoints from keeping the worker Lambda running up to its 30-second cap. |
 | **Database Cost Ceiling** | DynamoDB table configured with provisioned capacity (**5 RCU / 5 WCU**). | Acts as a budget boundary, preventing database scaling costs from skyrocketing during attacks. |
 | **Compute Efficiency** | Parallel database writes via `Promise.all` instead of sequential writes. | Grouped DB actions run concurrently, reducing billable Lambda active execution time by over 80%. |
-| **S3 Storage Isolation** | Dual-bucket architecture (Raw Inputs vs. Processed Outputs). | Completely isolates processed output writes from SQS ingestion triggers, eliminating loop hazards. |
+| **S3 Read-Only Worker** | SQS Lambda worker has strictly read-only S3 permissions (`s3:GetObject`). | Since the worker Lambda never writes back to S3, there is zero risk of an S3 event loop. |
 
 > [!TIP]
 > **Manual Recovery after Circuit Breaker Activation:**
@@ -120,8 +119,8 @@ $ npm run start:dev
 - `npm run bundle`: Creates a production-ready esbuild bundle for AWS Lambda.
 - `npm run lint`: Runs the linter.
 - `npm run test`: Executes unit tests.
-- `npm run cleanup`: Wipes all DynamoDB table items and S3 objects in both buckets to reset the environment.
-- `npm run seed`: Seeds the raw S3 input bucket with sample document notes.
+- `npm run cleanup`: Wipes all DynamoDB table items and S3 objects to reset the environment.
+- `npm run seed`: Seeds the S3 bucket with sample document notes.
 
 ---
 *Built for the Modern Clinical Workflow.*

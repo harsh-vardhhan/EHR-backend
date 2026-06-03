@@ -6,7 +6,7 @@ import {
   PutCommand,
   QueryCommand,
 } from '@aws-sdk/lib-dynamodb';
-import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 
 export class DocumentsService {
@@ -217,29 +217,5 @@ export class DocumentsService {
       ...metadata,
       text,
     };
-  }
-
-  async saveProcessedDocument(docId: string, content: any) {
-    const processedBucket = process.env.PROCESSED_BUCKET_NAME;
-    if (!processedBucket) {
-      console.warn('PROCESSED_BUCKET_NAME not configured. Skipping save to S3.');
-      return;
-    }
-
-    const command = new PutObjectCommand({
-      Bucket: processedBucket,
-      Key: `processed/${docId}.json`,
-      Body: JSON.stringify(content, null, 2),
-      ContentType: 'application/json',
-    });
-
-    console.log(`Saving processed document ${docId} to S3 bucket ${processedBucket}...`);
-    try {
-      await this.s3Client.send(command);
-      console.log(`Successfully saved processed document ${docId} to S3.`);
-    } catch (error) {
-      console.error(`Failed to save processed document ${docId} to S3:`, error);
-      throw error;
-    }
   }
 }
