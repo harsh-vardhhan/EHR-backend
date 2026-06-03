@@ -14,6 +14,9 @@ Parameters:
   DocumentsBucketName:
     Type: String
     Description: Name of the S3 bucket for documents
+  ProcessedBucketName:
+    Type: String
+    Description: Name of the S3 bucket for processed output documents
   EhrTableName:
     Type: String
     Description: Name of the single DynamoDB table for EHR data
@@ -103,9 +106,12 @@ Resources:
           GROQ_API_KEY: !Ref GroqApiKey
           EHR_TABLE_NAME: !Ref EhrTableName
           DOCUMENTS_BUCKET_NAME: !Ref DocumentsBucketName
+          PROCESSED_BUCKET_NAME: !Ref ProcessedBucketName
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref DocumentsBucketName
+        - S3CrudPolicy:
+            BucketName: !Ref ProcessedBucketName
         - DynamoDBCrudPolicy:
             TableName: !Ref EhrTableName
         - Statement:
@@ -199,6 +205,16 @@ Resources:
       NotificationConfiguration:
         EventBridgeConfiguration:
           EventBridgeEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  ProcessedBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref ProcessedBucketName
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true

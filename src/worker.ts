@@ -59,6 +59,13 @@ export const handler = async (event: SQSEvent) => {
       // 2. Perform LLM Analysis
       await mastraService.runAnalysis(docId, doc.text);
 
+      // 3. Fetch consolidated document with metadata and annotations
+      console.log(`Fetching consolidated document: ${docId}`);
+      const completeDoc = await documentsService.getDocument(docId);
+
+      // 4. Save the final processed JSON output to the processed S3 bucket
+      await documentsService.saveProcessedDocument(docId, completeDoc);
+
       console.log(`Successfully processed Document: ${docId}`);
     } catch (err) {
       console.error('Failed to process SQS record', err);
