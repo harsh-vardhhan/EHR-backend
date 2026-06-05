@@ -18,11 +18,13 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "cleanup": "ts-node src/scripts/cleanup.ts",
     "seed": "ts-node src/scripts/seed.ts",
+    "test:dlq": "ts-node src/scripts/test-dlq.ts",
     "bundle": "esbuild dist/serverless.js --bundle --platform=node --target=node20 --outfile=dist/serverless-bundle.js --external:\"@aws-sdk/*\" --external:\"aws-sdk\" && esbuild dist/worker.js --bundle --platform=node --target=node20 --outfile=dist/worker-bundle.js --external:\"@aws-sdk/*\" --external:\"aws-sdk\" && esbuild dist/kill-switch.js --bundle --platform=node --target=node20 --outfile=dist/kill-switch-bundle.js --external:\"@aws-sdk/*\" --external:\"aws-sdk\""
   },
   "dependencies": {
     "@ai-sdk/groq": "^3.0.39",
     "@aws-sdk/client-api-gateway": "^3.1050.0",
+    "@aws-sdk/client-cloudformation": "^3.1062.0",
     "@aws-sdk/client-dynamodb": "^3.1045.0",
     "@aws-sdk/client-s3": "^3.1045.0",
     "@aws-sdk/client-sqs": "^3.1052.0",
