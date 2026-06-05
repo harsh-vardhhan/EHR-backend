@@ -2,199 +2,104 @@
 	"Version": "2012-10-17",
 	"Statement": [
 		{
-			"Sid": "CloudFormationManagement",
+			"Sid": "AllowDataOperations",
 			"Effect": "Allow",
 			"Action": [
-				"cloudformation:*"
-			],
-			"Resource": [
-				"arn:aws:cloudformation:ap-south-1:<AWS_ACCOUNT_ID>:stack/ehr-annotation-backend/*",
-				"arn:aws:cloudformation:ap-south-1:<AWS_ACCOUNT_ID>:stack/ehr-annotation-frontend/*",
-				"arn:aws:cloudformation:ap-south-1:<AWS_ACCOUNT_ID>:stack/aws-sam-cli-managed-default/*",
-				"arn:aws:cloudformation:*:aws:transform/*"
-			]
-		},
-		{
-			"Sid": "S3BucketAndObjectManagement",
-			"Effect": "Allow",
-			"Action": [
-				"s3:CreateBucket",
-				"s3:DeleteBucket",
-				"s3:GetBucket*",
-				"s3:PutBucket*",
-				"s3:ListBucket",
-				"s3:GetEncryptionConfiguration",
-				"s3:PutEncryptionConfiguration",
-				"s3:GetBucketNotification",
-				"s3:PutBucketNotification",
-				"s3:PutObject",
 				"s3:GetObject",
-				"s3:DeleteObject"
-			],
-			"Resource": [
-				"arn:aws:s3:::ehr-demo-docs-bucket",
-				"arn:aws:s3:::ehr-demo-docs-bucket/*",
-				"arn:aws:s3:::*frontend*",
-				"arn:aws:s3:::*frontend*/*",
-				"arn:aws:s3:::aws-sam-cli-managed-default-*",
-				"arn:aws:s3:::aws-sam-cli-managed-default-*/*"
-			]
-		},
-		{
-			"Sid": "DynamoDBTableManagement",
-			"Effect": "Allow",
-			"Action": [
-				"dynamodb:CreateTable",
-				"dynamodb:DeleteTable",
-				"dynamodb:DescribeTable",
-				"dynamodb:UpdateTable",
-				"dynamodb:TagResource",
-				"dynamodb:UntagResource",
-				"dynamodb:Scan",
-				"dynamodb:DeleteItem",
+				"s3:PutObject",
+				"s3:DeleteObject",
+				"dynamodb:GetItem",
 				"dynamodb:PutItem",
+				"dynamodb:UpdateItem",
+				"dynamodb:DeleteItem",
+				"dynamodb:Scan",
+				"dynamodb:Query",
 				"dynamodb:BatchWriteItem"
 			],
 			"Resource": [
+				"arn:aws:s3:::ehr-demo-docs-bucket/*",
+				"arn:aws:s3:::ehr-annotation-frontend-*/*",
 				"arn:aws:dynamodb:ap-south-1:<AWS_ACCOUNT_ID>:table/ehr-table",
 				"arn:aws:dynamodb:ap-south-1:<AWS_ACCOUNT_ID>:table/ehr-table/index/*"
 			]
 		},
 		{
-			"Sid": "LambdaFunctionManagement",
+			"Sid": "AllowListAndDescribeOnDataResources",
 			"Effect": "Allow",
 			"Action": [
-				"lambda:CreateFunction",
-				"lambda:DeleteFunction",
+				"s3:ListBucket",
+				"dynamodb:DescribeTable"
+			],
+			"Resource": [
+				"arn:aws:s3:::ehr-demo-docs-bucket",
+				"arn:aws:s3:::ehr-annotation-frontend-*",
+				"arn:aws:dynamodb:ap-south-1:<AWS_ACCOUNT_ID>:table/ehr-table"
+			]
+		},
+		{
+			"Sid": "AllowInfraReadAndDescribeOnly",
+			"Effect": "Allow",
+			"Action": [
+				"cloudformation:DescribeStacks",
+				"cloudformation:DescribeStackResources",
+				"cloudformation:GetTemplate",
 				"lambda:GetFunction",
-				"lambda:UpdateFunctionCode",
-				"lambda:UpdateFunctionConfiguration",
-				"lambda:AddPermission",
-				"lambda:RemovePermission",
-				"lambda:TagResource",
-				"lambda:PutFunctionConcurrency"
-			],
-			"Resource": [
-				"arn:aws:lambda:ap-south-1:<AWS_ACCOUNT_ID>:function:ehr-annotation-backend-*"
-			]
-		},
-		{
-			"Sid": "APIGatewayAndKeyManagement",
-			"Effect": "Allow",
-			"Action": [
+				"lambda:GetFunctionConfiguration",
+				"lambda:ListFunctions",
 				"apigateway:GET",
-				"apigateway:POST",
-				"apigateway:PUT",
-				"apigateway:PATCH",
-				"apigateway:DELETE"
-			],
-			"Resource": [
-				"arn:aws:apigateway:ap-south-1::/restapis*",
-				"arn:aws:apigateway:ap-south-1::/apikeys*",
-				"arn:aws:apigateway:ap-south-1::/usageplans*"
-			]
-		},
-		{
-			"Sid": "SQSSNSAndEventsManagement",
-			"Effect": "Allow",
-			"Action": [
-				"sqs:CreateQueue",
-				"sqs:DeleteQueue",
 				"sqs:GetQueueAttributes",
-				"sqs:SetQueueAttributes",
-				"sqs:TagQueue",
-				"sns:CreateTopic",
-				"sns:DeleteTopic",
+				"sqs:GetQueueUrl",
 				"sns:GetTopicAttributes",
-				"sns:SetTopicAttributes",
-				"sns:Subscribe",
-				"sns:Unsubscribe",
-				"events:PutRule",
-				"events:DeleteRule",
 				"events:DescribeRule",
-				"events:PutTargets",
-				"events:RemoveTargets"
-			],
-			"Resource": [
-				"arn:aws:sqs:ap-south-1:<AWS_ACCOUNT_ID>:ehr-annotation-backend-*",
-				"arn:aws:sns:ap-south-1:<AWS_ACCOUNT_ID>:EhrKillSwitchTopic-*",
-				"arn:aws:events:ap-south-1:<AWS_ACCOUNT_ID>:rule/ehr-annotation-backend-*"
-			]
-		},
-		{
-			"Sid": "CloudWatchAlarms",
-			"Effect": "Allow",
-			"Action": [
-				"cloudwatch:PutMetricAlarm",
-				"cloudwatch:DeleteAlarms",
-				"cloudwatch:DescribeAlarms"
-			],
-			"Resource": [
-				"arn:aws:cloudwatch:ap-south-1:<AWS_ACCOUNT_ID>:alarm:*"
-			]
-		},
-		{
-			"Sid": "CloudWatchLogsDescribe",
-			"Effect": "Allow",
-			"Action": [
-				"logs:DescribeLogGroups",
-				"logs:DescribeLogStreams"
-			],
-			"Resource": [
-				"arn:aws:logs:ap-south-1:<AWS_ACCOUNT_ID>:log-group:*"
-			]
-		},
-		{
-			"Sid": "CloudWatchLogsManagement",
-			"Effect": "Allow",
-			"Action": [
-				"logs:CreateLogGroup",
-				"logs:DeleteLogGroup",
-				"logs:PutRetentionPolicy",
-				"logs:PutLogEvents",
-				"logs:CreateLogStream",
-				"logs:DeleteLogStream",
-				"logs:PutSubscriptionFilter",
-				"logs:DeleteSubscriptionFilter"
-			],
-			"Resource": [
-				"arn:aws:logs:ap-south-1:<AWS_ACCOUNT_ID>:log-group:/aws/lambda/ehr-annotation-backend-*",
-				"arn:aws:logs:ap-south-1:<AWS_ACCOUNT_ID>:log-group:API-Gateway-Execution-Logs_*"
-			]
-		},
-		{
-			"Sid": "CloudFrontDistributionManagement",
-			"Effect": "Allow",
-			"Action": [
-				"cloudfront:CreateDistribution",
 				"cloudfront:GetDistribution",
-				"cloudfront:UpdateDistribution",
-				"cloudfront:DeleteDistribution",
-				"cloudfront:CreateOriginAccessControl",
-				"cloudfront:GetOriginAccessControl",
-				"cloudfront:DeleteOriginAccessControl",
-				"cloudfront:CreateInvalidation"
+				"cloudfront:ListDistributions",
+				"iam:GetRole",
+				"iam:GetRolePolicy",
+				"cloudwatch:DescribeAlarms",
+				"logs:DescribeLogGroups",
+				"logs:DescribeLogStreams",
+				"logs:GetLogEvents"
 			],
 			"Resource": "*"
 		},
 		{
-			"Sid": "IAMRoleDeployment",
-			"Effect": "Allow",
+			"Sid": "StrictDenyInfraWriteAndDestruction",
+			"Effect": "Deny",
 			"Action": [
+				"cloudformation:CreateStack",
+				"cloudformation:DeleteStack",
+				"cloudformation:UpdateStack",
+				"s3:CreateBucket",
+				"s3:DeleteBucket",
+				"s3:PutBucket*",
+				"dynamodb:CreateTable",
+				"dynamodb:DeleteTable",
+				"dynamodb:UpdateTable",
+				"lambda:CreateFunction",
+				"lambda:DeleteFunction",
+				"lambda:UpdateFunctionCode",
+				"lambda:UpdateFunctionConfiguration",
+				"apigateway:POST",
+				"apigateway:PUT",
+				"apigateway:PATCH",
+				"apigateway:DELETE",
+				"sqs:CreateQueue",
+				"sqs:DeleteQueue",
+				"sns:CreateTopic",
+				"sns:DeleteTopic",
+				"events:PutRule",
+				"events:DeleteRule",
+				"cloudfront:CreateDistribution",
+				"cloudfront:UpdateDistribution",
+				"cloudfront:DeleteDistribution",
 				"iam:CreateRole",
 				"iam:DeleteRole",
-				"iam:GetRole",
 				"iam:PutRolePolicy",
 				"iam:DeleteRolePolicy",
 				"iam:AttachRolePolicy",
-				"iam:DetachRolePolicy",
-				"iam:TagRole",
-				"iam:UntagRole",
-				"iam:PassRole"
+				"iam:DetachRolePolicy"
 			],
-			"Resource": [
-				"arn:aws:iam::<AWS_ACCOUNT_ID>:role/ehr-annotation-backend-*"
-			]
+			"Resource": "*"
 		}
 	]
 }
