@@ -1,12 +1,13 @@
-import { SQSEvent } from 'aws-lambda';
+import { SQSEvent, SQSBatchResponse } from 'aws-lambda';
 import { documentsService, mastraService } from './services';
 
 /**
  * Enterprise Worker Handler for Clinical Data Extraction.
  * This function is triggered by SQS messages (routed via EventBridge or S3).
  */
-export const handler = async (event: SQSEvent) => {
+export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   console.log('Worker received event:', JSON.stringify(event, null, 2));
+  const batchItemFailures: { itemIdentifier: string }[] = [];
 
   for (const record of event.Records) {
     try {
@@ -61,8 +62,10 @@ export const handler = async (event: SQSEvent) => {
 
       console.log(`Successfully processed Document: ${docId}`);
     } catch (err) {
-      console.error('Failed to process SQS record', err);
-      throw err;
+      console.error(`Failed to process SQS record: ${record.messageId}`, err);
+      batchItemFailures.push({ itemIdentifier: record.messageId });
     }
   }
+
+  return { batchItemFailures };
 };
