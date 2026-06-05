@@ -76,10 +76,15 @@
                 "lambda:AddPermission",
                 "lambda:RemovePermission",
                 "lambda:TagResource",
-                "lambda:PutFunctionConcurrency"
+                "lambda:PutFunctionConcurrency",
+                "lambda:CreateEventSourceMapping",
+                "lambda:UpdateEventSourceMapping",
+                "lambda:DeleteEventSourceMapping",
+                "lambda:GetEventSourceMapping"
             ],
             "Resource": [
-                "arn:aws:lambda:ap-south-1:<AWS_ACCOUNT_ID>:function:ehr-annotation-backend-*"
+                "arn:aws:lambda:ap-south-1:<AWS_ACCOUNT_ID>:function:ehr-annotation-backend-*",
+                "arn:aws:lambda:ap-south-1:<AWS_ACCOUNT_ID>:event-source-mapping:*"
             ]
         },
         {

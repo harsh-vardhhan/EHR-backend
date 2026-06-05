@@ -114,8 +114,13 @@ Resources:
                   - lambda:RemovePermission
                   - lambda:TagResource
                   - lambda:PutFunctionConcurrency
+                  - lambda:CreateEventSourceMapping
+                  - lambda:UpdateEventSourceMapping
+                  - lambda:DeleteEventSourceMapping
+                  - lambda:GetEventSourceMapping
                 Resource:
                   - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:ehr-annotation-backend-*"
+                  - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:event-source-mapping:*"
               - Sid: APIGatewayAndKeyManagement
                 Effect: Allow
                 Action:
