@@ -98,6 +98,8 @@ Resources:
           Properties:
             Queue: !GetAtt EhrAnnotationQueue.Arn
             BatchSize: 5
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
       Environment:
         Variables:
           GROQ_API_KEY: !Ref GroqApiKey
