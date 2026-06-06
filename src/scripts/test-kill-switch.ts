@@ -20,8 +20,8 @@ async function main() {
   console.log(`==================================================`);
   console.log(`Target URL: ${rootEndpoint}`);
   console.log(`Simulating a request spike of 20 requests/second.`);
-  console.log(`We need to reach ~5,000 requests to trigger the alarm.`);
-  console.log(`This run may take up to 5-6 minutes.`);
+  console.log(`We need to reach ~200 requests to trigger the alarm.`);
+  console.log(`This run may take up to 15-30 seconds.`);
   console.log(`Press Ctrl+C to abort at any time.`);
   console.log(`==================================================\n`);
 
