@@ -27,51 +27,37 @@ Parameters:
     Type: Number
     Default: 5000
     Description: Number of API Gateway requests in 5 minutes to trigger the kill switch
+  EhrApiKeyVal:
+    Type: String
+    Description: API Key for Hono authentication
 
 Resources:
-  EhrApiGateway:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: !Ref AWS::StackName
-      StageName: prod
-      Auth:
-        ApiKeyRequired: true
-        AddApiKeyRequiredToCorsPreflight: false
-      Cors:
-        AllowMethods: "'*'"
-        AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-        AllowOrigin: "'*'"
-      MethodSettings:
-        - HttpMethod: '*'
-          ResourcePath: '/*'
-          ThrottlingBurstLimit: 20
-          ThrottlingRateLimit: 50
-
   EhrBackendFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: dist/
       Handler: serverless-bundle.handler
       ReservedConcurrentExecutions: 5 # Prevent run-away compute costs
-      Events:
-        ProxyApiRoot:
-          Type: Api
-          Properties:
-            RestApiId: !Ref EhrApiGateway
-            Path: /
-            Method: ANY
-        ProxyApiGreedy:
-          Type: Api
-          Properties:
-            RestApiId: !Ref EhrApiGateway
-            Path: /{proxy+}
-            Method: ANY
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins:
+            - '*'
+          AllowHeaders:
+            - 'Content-Type'
+            - 'Authorization'
+            - 'X-Amz-Date'
+            - 'X-Api-Key'
+            - 'X-Amz-Security-Token'
+          AllowMethods:
+            - '*'
       Environment:
         Variables:
           GROQ_API_KEY: !Ref GroqApiKey
           EHR_TABLE_NAME: !Ref EhrTableName
           DOCUMENTS_BUCKET_NAME: !Ref DocumentsBucketName
           ANNOTATION_QUEUE_URL: !Ref EhrAnnotationQueue
+          API_KEY: !Ref EhrApiKeyVal
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref DocumentsBucketName
@@ -207,33 +193,7 @@ Resources:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
 
-  EhrApiKey:
-    Type: AWS::ApiGateway::ApiKey
-    Properties:
-      Enabled: true
-      GenerateDistinctId: true
-      Name: !Sub "EhrApiKey-${AWS::StackName}"
 
-  EhrUsagePlan:
-    Type: AWS::ApiGateway::UsagePlan
-    Properties:
-      ApiStages:
-        - ApiId: !Ref EhrApiGateway
-          Stage: prod
-      UsagePlanName: !Sub "EhrUsagePlan-${AWS::StackName}"
-      Throttle:
-        BurstLimit: 20
-        RateLimit: 50
-      Quota:
-        Limit: 50000
-        Period: MONTH
-
-  EhrUsagePlanKey:
-    Type: AWS::ApiGateway::UsagePlanKey
-    Properties:
-      KeyId: !Ref EhrApiKey
-      KeyType: API_KEY
-      UsagePlanId: !Ref EhrUsagePlan
 
   EhrKillSwitchTopic:
     Type: AWS::SNS::Topic
@@ -243,25 +203,43 @@ Resources:
         - Endpoint: !Ref NotificationEmail
           Protocol: email
 
-  EhrApiGatewayTrafficAlarm:
+  EhrLambdaTrafficAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmDescription: !Sub "Triggered if API Gateway requests exceed ${DdosRequestThreshold} in 5 minutes. Triggers API Gateway Kill Switch."
-      Namespace: AWS/ApiGateway
-      MetricName: Count
-      Dimensions:
-        - Name: ApiName
-          Value: !Ref AWS::StackName
-      Statistic: Sum
-      Period: 300
+      AlarmDescription: !Sub "Triggered if backend Lambda requests (Invocations + Throttles) exceed ${DdosRequestThreshold} in 5 minutes. Triggers Kill Switch."
       EvaluationPeriods: 1
       Threshold: !Ref DdosRequestThreshold
       ComparisonOperator: GreaterThanOrEqualToThreshold
       AlarmActions:
         - !Ref EhrKillSwitchTopic
       TreatMissingData: notBreaching
+      Metrics:
+        - Id: e1
+          Expression: m1 + m2
+          Label: TotalRequests
+          ReturnData: true
+        - Id: m1
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Invocations
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref EhrBackendFunction
+            Period: 300
+            Stat: Sum
+        - Id: m2
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Throttles
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref EhrBackendFunction
+            Period: 300
+            Stat: Sum
 
-  EhrApiGatewayKillSwitchFunction:
+  EhrLambdaKillSwitchFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: dist/
@@ -271,15 +249,15 @@ Resources:
       MemorySize: 128
       Environment:
         Variables:
-          API_GATEWAY_ID: !Ref EhrApiGateway
-          STAGE_NAME: prod
+          BACKEND_FUNCTION_NAME: !Ref EhrBackendFunction
       Policies:
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
               Action:
-                - apigateway:PATCH
-              Resource: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${EhrApiGateway}/stages/prod"
+                - lambda:PutFunctionConcurrency
+                - lambda:DeleteFunctionConcurrency
+              Resource: !GetAtt EhrBackendFunction.Arn
       Events:
         SnsEvent:
           Type: SNS
@@ -288,8 +266,8 @@ Resources:
 
 Outputs:
   ApiEndpoint:
-    Description: "API Gateway endpoint URL"
-    Value: !Sub "https://${EhrApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod/"
+    Description: "Lambda Function URL"
+    Value: !GetAtt EhrBackendFunctionUrl.FunctionUrl
 
   EhrAnnotationQueueUrl:
     Description: "URL of the Annotation SQS Queue"
