@@ -40,17 +40,6 @@ Resources:
       ReservedConcurrentExecutions: 5 # Prevent run-away compute costs
       FunctionUrlConfig:
         AuthType: NONE
-        Cors:
-          AllowOrigins:
-            - '*'
-          AllowHeaders:
-            - 'Content-Type'
-            - 'Authorization'
-            - 'X-Amz-Date'
-            - 'X-Api-Key'
-            - 'X-Amz-Security-Token'
-          AllowMethods:
-            - '*'
       Environment:
         Variables:
           GROQ_API_KEY: !Ref GroqApiKey
