@@ -276,7 +276,3 @@ Outputs:
   EhrAnnotationDLQUrl:
     Description: "URL of the Dead Letter Queue"
     Value: !Ref EhrAnnotationDLQ
-
-  EhrApiKeyId:
-    Description: "API Key ID for API Gateway"
-    Value: !Ref EhrApiKey
