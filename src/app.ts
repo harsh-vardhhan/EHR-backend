@@ -25,6 +25,26 @@ app.use(
 );
 
 // Route registration
+// Global API Key validation middleware
+app.use('*', async (c, next) => {
+  if (c.req.path === '/' || c.req.method === 'OPTIONS') {
+    await next();
+    return;
+  }
+
+  const apiKey = c.req.header('x-api-key');
+  const expectedApiKey = process.env.API_KEY;
+
+  if (!apiKey || apiKey !== expectedApiKey) {
+    return c.json(
+      { error: 'Unauthorized', message: 'Invalid or missing API Key' },
+      401,
+    );
+  }
+
+  await next();
+});
+
 app.route('/documents', documentsApp);
 app.route('/annotations', annotationsApp);
 
