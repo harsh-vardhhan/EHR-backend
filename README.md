@@ -12,8 +12,8 @@ The backend follows a highly scalable, serverless architecture designed for clin
 
 ```mermaid
 graph TD
-    User((Clinician)) -->|API Request with API Key| APIGateway[AWS API Gateway]
-    APIGateway -->|Trigger| LambdaAPI[AWS Lambda - API]
+    User((Clinician)) -->|API Request with API Key| LambdaURL[AWS Lambda Function URL]
+    LambdaURL -->|Hono Router & Auth Middleware| LambdaAPI[AWS Lambda - API]
     LambdaAPI -->|Read/Write| DynamoDB[(Amazon DynamoDB)]
     LambdaAPI -->|Upload| S3[(Amazon S3 - Medical Notes)]
     LambdaAPI -->|Manual Trigger| SQS[AWS SQS - Annotation Queue]
@@ -27,10 +27,10 @@ graph TD
     LambdaWorker -->|Save Annotations| DynamoDB
 
     %% DDoS Protection
-    APIGateway -.->|Publishes Metrics| CWAlarm[CloudWatch Traffic Alarm]
+    LambdaAPI -.->|Invocations & Throttles| CWAlarm[CloudWatch Traffic Alarm]
     CWAlarm -->|Trigger if >5000 req/5m| SNS[SNS Topic]
     SNS -->|Invoke| LambdaKillSwitch[AWS Lambda - Kill Switch]
-    LambdaKillSwitch -->|Throttle & Disable Logs| APIGateway
+    LambdaKillSwitch -->|Set Reserved Concurrency to 0| LambdaAPI
 ```
 
 ### Infrastructure Components
@@ -39,12 +39,12 @@ graph TD
 | :--- | :--- |
 | **AWS Lambda (API)** | Executes the Hono application, handling UI interactions and document metadata orchestration. |
 | **AWS Lambda (NLP Worker)** | Dedicated asynchronous worker triggered by SQS to perform LLM clinical entity extraction. |
-| **AWS Lambda (Kill Switch)** | Administrative helper triggered by SNS to throttle API Gateway to zero and disable CloudWatch logging. |
+| **AWS Lambda (Kill Switch)** | Administrative helper triggered by SNS to throttle the API Lambda reserved concurrency to 0. |
 | **Amazon SQS & DLQ** | Decouples document ingestion from analysis, buffers surges, and quarantines failed tasks in a Dead Letter Queue. |
 | **Amazon DynamoDB** | Managed NoSQL storage for ultra-low latency storage of clinical annotation metadata and document status. |
 | **Amazon S3** | Encrypted object storage for raw clinical document text, acting as the event source for the ingestion pipeline. |
-| **Amazon API Gateway** | Managed entrance protected by mandatory API Key verification and usage plans. |
-| **CloudWatch Alarm & SNS** | Monitors API request volume metrics in real-time, acting as the circuit breaker sensor. |
+| **Lambda Function URL** | Public HTTPS endpoint routing requests directly to the Hono backend. |
+| **CloudWatch Alarm & SNS** | Monitors total request volume (Invocations + Throttles) in real-time, acting as the circuit breaker sensor. |
 | **Groq AI Integration** | High-performance inference engine running clinical entity recognition models. |
 
 ## 🗄️ DynamoDB Single-Table Design
@@ -81,9 +81,9 @@ This backend incorporates a robust, multi-layered security architecture designed
 
 | Defense Vector | Implementation & Controls | Purpose & Billing Safety Impact |
 | :--- | :--- | :--- |
-| **API Edge Gatekeeper** | Valid `x-api-key` header checked at API Gateway edge. | Rejects unauthenticated requests before triggering downstream Lambda compute or log metrics ingestion. |
-| **Throttling & Quotas** | Usage plan capped at **50 req/s** rate, **20 burst**, and **50,000 req/month**. | Hard-limits client-specific query volume to prevent cost runaway from API key exposure or leakage. |
-| **Automated Circuit Breaker** | CloudWatch Alarm (>5,000 req/5m) $\rightarrow$ SNS $\rightarrow$ Kill-Switch Lambda. | Automatically updates API Gateway stage throttle limits to `0` and disables metrics/logs ingestion on breach. |
+| **Auth Gatekeeper** | Valid `x-api-key` header verified in Hono middleware. | Rejects unauthenticated requests in ~2ms before executing database operations. |
+| **Zero-Routing Cost Gateway** | Direct Lambda Function URL (no API Gateway request fees). | Eliminates API Gateway per-request charges ($3.50/million), ensuring throttled requests cost exactly $0.00. |
+| **Automated Circuit Breaker** | CloudWatch Alarm (>5,000 req/5m) $\rightarrow$ SNS $\rightarrow$ Kill-Switch Lambda. | Automatically updates backend Lambda reserved concurrency to `0` on breach, dropping resource billing to absolute zero. |
 | **Compute Scaling Caps** | `ReservedConcurrentExecutions` limits (**5** for API Lambda, **2** for SQS NLP Worker). | Caps the maximum number of concurrent running containers AWS can spin up under a flood. |
 | **Asynchronous Decoupling** | SQS-backed queue hand-off (`EhrAnnotationQueue`) with `BatchSize: 5`. | Prevents container runtime crashes; processes spikes in document uploads sequentially rather than in parallel. |
 | **Infinite Retry Defense** | SQS Dead Letter Queue (`EhrAnnotationDLQ`) with `maxReceiveCount: 3`. | Quarantines failing payloads (poison pills) to prevent endless execution retry loops. |
@@ -96,7 +96,7 @@ This backend incorporates a robust, multi-layered security architecture designed
 
 > [!TIP]
 > **Manual Recovery after Circuit Breaker Activation:**
-> To bring the system back online after a kill-switch trigger, reset the API Gateway stage throttling limits and re-enable execution logging via the AWS Console, AWS SDK/CLI, or by redeploying the SAM template.
+> To bring the system back online after a kill-switch trigger, reset the backend Lambda's reserved concurrency back to your desired capacity (e.g., `5` or delete the limit) via the AWS Console, AWS SDK/CLI, or by redeploying the SAM template.
 
 ## 🛠 Local Development
 
