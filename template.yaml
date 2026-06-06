@@ -228,6 +228,7 @@ Resources:
                   Value: !Ref EhrBackendFunction
             Period: 300
             Stat: Sum
+          ReturnData: false
         - Id: m2
           MetricStat:
             Metric:
@@ -238,6 +239,7 @@ Resources:
                   Value: !Ref EhrBackendFunction
             Period: 300
             Stat: Sum
+          ReturnData: false
 
   EhrLambdaKillSwitchFunction:
     Type: AWS::Serverless::Function
