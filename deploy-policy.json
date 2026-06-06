@@ -80,7 +80,11 @@
                 "lambda:CreateEventSourceMapping",
                 "lambda:UpdateEventSourceMapping",
                 "lambda:DeleteEventSourceMapping",
-                "lambda:GetEventSourceMapping"
+                "lambda:GetEventSourceMapping",
+                "lambda:CreateFunctionUrlConfig",
+                "lambda:UpdateFunctionUrlConfig",
+                "lambda:DeleteFunctionUrlConfig",
+                "lambda:GetFunctionUrlConfig"
             ],
             "Resource": [
                 "arn:aws:lambda:ap-south-1:<AWS_ACCOUNT_ID>:function:ehr-annotation-backend-*",
@@ -139,7 +143,7 @@
                 "cloudwatch:DescribeAlarms"
             ],
             "Resource": [
-                "arn:aws:cloudwatch:ap-south-1:<AWS_ACCOUNT_ID>:alarm:EhrApiGatewayTrafficAlarm-*",
+                "arn:aws:cloudwatch:ap-south-1:<AWS_ACCOUNT_ID>:alarm:EhrLambdaTrafficAlarm-*",
                 "arn:aws:cloudwatch:ap-south-1:<AWS_ACCOUNT_ID>:alarm:ehr-*"
             ]
         },
