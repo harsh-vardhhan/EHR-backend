@@ -25,8 +25,8 @@ Parameters:
     Description: Email address to receive DDoS alert notifications
   DdosRequestThreshold:
     Type: Number
-    Default: 5000
-    Description: Number of Lambda requests in 5 minutes to trigger the kill switch
+    Default: 200
+    Description: Number of Lambda requests in 1 minute to trigger the kill switch
   EhrApiKeyVal:
     Type: String
     Description: API Key for Hono authentication
@@ -37,6 +37,7 @@ Resources:
     Properties:
       CodeUri: dist/
       Handler: serverless-bundle.handler
+      Timeout: 5
       ReservedConcurrentExecutions: 5 # Prevent run-away compute costs
       FunctionUrlConfig:
         AuthType: NONE
@@ -195,7 +196,7 @@ Resources:
   EhrLambdaTrafficAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmDescription: !Sub "Triggered if backend Lambda requests (Invocations + Throttles) exceed ${DdosRequestThreshold} in 5 minutes. Triggers Kill Switch."
+      AlarmDescription: !Sub "Triggered if backend Lambda requests (Invocations + Throttles) exceed ${DdosRequestThreshold} in 1 minute. Triggers Kill Switch."
       EvaluationPeriods: 1
       Threshold: !Ref DdosRequestThreshold
       ComparisonOperator: GreaterThanOrEqualToThreshold
@@ -215,7 +216,7 @@ Resources:
               Dimensions:
                 - Name: FunctionName
                   Value: !Ref EhrBackendFunction
-            Period: 300
+            Period: 60
             Stat: Sum
           ReturnData: false
         - Id: m2
@@ -226,7 +227,7 @@ Resources:
               Dimensions:
                 - Name: FunctionName
                   Value: !Ref EhrBackendFunction
-            Period: 300
+            Period: 60
             Stat: Sum
           ReturnData: false
 
