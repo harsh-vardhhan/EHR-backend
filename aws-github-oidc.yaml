@@ -79,7 +79,7 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:s3:::ehr-demo-docs-bucket"
                   - !Sub "arn:aws:s3:::ehr-demo-processed-bucket"
-                  - !Sub "arn:aws:s3:::ehr-annotation-frontend-*"
+                  - !Sub "arn:aws:s3:::ehr-*frontend*"
                   - !Sub "arn:aws:s3:::aws-sam-cli-managed-default-*"
               - Sid: S3DeploymentAssetsManagement
                 Effect: Allow
@@ -88,7 +88,7 @@ Resources:
                   - s3:GetObject
                   - s3:DeleteObject
                 Resource:
-                  - !Sub "arn:aws:s3:::ehr-annotation-frontend-*/*"
+                  - !Sub "arn:aws:s3:::ehr-*frontend*/*"
                   - !Sub "arn:aws:s3:::aws-sam-cli-managed-default-*/*"
               - Sid: DynamoDBTableManagement
                 Effect: Allow
