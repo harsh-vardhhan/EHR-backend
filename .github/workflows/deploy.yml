@@ -52,8 +52,7 @@ jobs:
               EhrTableName=${{ secrets.EHR_TABLE_NAME }} \
               GroqApiKey=${{ secrets.GROQ_API_KEY }} \
               NotificationEmail=${{ secrets.NOTIFICATION_EMAIL }} \
-              EhrApiKeyVal=${{ secrets.VITE_API_KEY }} \
-              DdosRequestThreshold=10
+              EhrApiKeyVal=${{ secrets.VITE_API_KEY }}
 
 
 
