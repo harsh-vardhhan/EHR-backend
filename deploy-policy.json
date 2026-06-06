@@ -31,7 +31,7 @@
             "Resource": [
                 "arn:aws:s3:::ehr-demo-docs-bucket",
                 "arn:aws:s3:::ehr-demo-processed-bucket",
-                "arn:aws:s3:::ehr-annotation-frontend-*",
+                "arn:aws:s3:::ehr-*frontend*",
                 "arn:aws:s3:::aws-sam-cli-managed-default-*"
             ]
         },
@@ -44,7 +44,7 @@
                 "s3:DeleteObject"
             ],
             "Resource": [
-                "arn:aws:s3:::ehr-annotation-frontend-*/*",
+                "arn:aws:s3:::ehr-*frontend*/*",
                 "arn:aws:s3:::aws-sam-cli-managed-default-*/*"
             ]
         },
