@@ -42,29 +42,11 @@ async function main() {
           const res = await fetch(rootEndpoint, {
             method: 'GET',
             headers: {
-              'x-api-key': process.env.VITE_API_KEY || 'dummy-key', // root endpoint / doesn't require valid key, but let's pass a header anyway
+              'x-api-key': process.env.VITE_API_KEY || 'dummy-key',
             },
           });
 
           statusCounts[res.status] = (statusCounts[res.status] || 0) + 1;
-
-          if (res.status === 429) {
-            isThrottled = true;
-            clearInterval(intervalId);
-            console.log(
-              `\n[🚨 CRITICAL TRIGGERED] Response returned 429 Too Many Requests!`,
-            );
-            console.log(`Total Requests Sent: ${requestCount}`);
-            console.log(`Response breakdown:`, statusCounts);
-            console.log(
-              `\n🎉 SUCCESS! The CloudWatch Traffic Alarm fired and the Kill Switch throttled the Lambda reserved concurrency to 0!`,
-            );
-            console.log(
-              `Downstream resources are protected and subsequent throttled requests are costing you $0.00.`,
-            );
-            resolve();
-            process.exit(0);
-          }
         } catch {
           statusCounts[500] = (statusCounts[500] || 0) + 1;
         }
@@ -83,6 +65,38 @@ async function main() {
         lastLogTime = now;
       }
     }, 100); // 10 batches per second of size 2 = 20 req/sec
+
+    // Send a slow probe request every 2 seconds. A slow single request should always succeed (200)
+    // if the concurrency limit is 5. If it returns 429, the kill switch has set concurrency to 0.
+    const probeIntervalId = setInterval(() => {
+      void (async () => {
+        try {
+          const res = await fetch(rootEndpoint, {
+            method: 'GET',
+            headers: {
+              'x-api-key': process.env.VITE_API_KEY || 'dummy-key',
+            },
+          });
+          if (res.status === 429) {
+            isThrottled = true;
+            clearInterval(intervalId);
+            clearInterval(probeIntervalId);
+            console.log(
+              `\n[🚨 KILL SWITCH ACTIVE] Probe request returned 429 Too Many Requests!`,
+            );
+            console.log(`Total Requests Sent: ${requestCount}`);
+            console.log(`Response breakdown:`, statusCounts);
+            console.log(
+              `\n🎉 SUCCESS! The CloudWatch Traffic Alarm fired and the Kill Switch throttled the Lambda reserved concurrency to 0!`,
+            );
+            resolve();
+            process.exit(0);
+          }
+        } catch {
+          // Ignore network errors on probe
+        }
+      })();
+    }, 2000);
   });
 }
 
