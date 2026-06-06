@@ -27,7 +27,7 @@ graph TD
     User((Clinician)) -->|API Request with API Key| LambdaURL[AWS Lambda Function URL]
     LambdaURL -->|Hono Router & Auth Middleware| LambdaAPI[AWS Lambda - API]
     LambdaAPI -->|Read/Write| DynamoDB[(Amazon DynamoDB)]
-    LambdaAPI -->|Upload| S3[(Amazon S3 - Medical Notes)]
+    LambdaAPI -->|Read| S3[(Amazon S3 - Medical Notes)]
     LambdaAPI -->|Manual Trigger| SQS[AWS SQS - Annotation Queue]
 
     S3 -->|Emit Event| EB[Amazon EventBridge - Bus]
