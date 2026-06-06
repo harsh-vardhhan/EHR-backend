@@ -25,8 +25,8 @@ Parameters:
     Description: Email address to receive DDoS alert notifications
   DdosRequestThreshold:
     Type: Number
-    Default: 5000
-    Description: Number of API Gateway requests in 5 minutes to trigger the kill switch
+    Default: 10
+    Description: Number of Lambda requests in 1 minute to trigger the kill switch
   EhrApiKeyVal:
     Type: String
     Description: API Key for Hono authentication
@@ -215,7 +215,7 @@ Resources:
               Dimensions:
                 - Name: FunctionName
                   Value: !Ref EhrBackendFunction
-            Period: 300
+            Period: 60
             Stat: Sum
           ReturnData: false
         - Id: m2
@@ -226,7 +226,7 @@ Resources:
               Dimensions:
                 - Name: FunctionName
                   Value: !Ref EhrBackendFunction
-            Period: 300
+            Period: 60
             Stat: Sum
           ReturnData: false
 
