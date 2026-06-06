@@ -44,8 +44,7 @@ export const handler = async (event: SNSEvent) => {
     return {
       statusCode: 200,
       body: JSON.stringify({
-        message:
-          'Lambda reserved concurrency throttled to 0 successfully.',
+        message: 'Lambda reserved concurrency throttled to 0 successfully.',
       }),
     };
   } catch (error: any) {

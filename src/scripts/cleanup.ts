@@ -45,8 +45,10 @@ async function cleanupTable(tableName: string) {
     console.log(`Deleting items in ${batches.length} batch(es)...`);
     for (let index = 0; index < batches.length; index++) {
       const batch = batches[index];
-      console.log(`Processing batch ${index + 1}/${batches.length} (${batch.length} items)...`);
-      
+      console.log(
+        `Processing batch ${index + 1}/${batches.length} (${batch.length} items)...`,
+      );
+
       const deleteRequests = batch.map((item) => ({
         DeleteRequest: {
           Key: {
@@ -75,7 +77,9 @@ async function cleanupBucket(bucketName: string, prefix: string) {
     console.warn(`Bucket name not configured. Skipping.`);
     return;
   }
-  console.log(`Listing objects in bucket ${bucketName} with prefix "${prefix}"...`);
+  console.log(
+    `Listing objects in bucket ${bucketName} with prefix "${prefix}"...`,
+  );
   try {
     const listCommand = new ListObjectsV2Command({
       Bucket: bucketName,
@@ -84,7 +88,9 @@ async function cleanupBucket(bucketName: string, prefix: string) {
     const listResponse = await s3Client.send(listCommand);
     const objects = listResponse.Contents || [];
     if (objects.length === 0) {
-      console.log(`No objects found in bucket ${bucketName} with prefix "${prefix}".`);
+      console.log(
+        `No objects found in bucket ${bucketName} with prefix "${prefix}".`,
+      );
       return;
     }
 
@@ -96,7 +102,9 @@ async function cleanupBucket(bucketName: string, prefix: string) {
       },
     };
     await s3Client.send(new DeleteObjectsCommand(deleteParams));
-    console.log(`Deleted all objects in bucket ${bucketName} with prefix "${prefix}".`);
+    console.log(
+      `Deleted all objects in bucket ${bucketName} with prefix "${prefix}".`,
+    );
   } catch (err: any) {
     console.error(`Error cleaning up bucket ${bucketName}:`, err.message);
   }

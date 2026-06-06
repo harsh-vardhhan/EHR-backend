@@ -71,7 +71,9 @@ async function seed() {
       }),
     );
 
-    console.log(`Seeded ${note.id}. Pipeline will trigger ingestion and analysis.`);
+    console.log(
+      `Seeded ${note.id}. Pipeline will trigger ingestion and analysis.`,
+    );
 
     // Minimal delay for S3 throughput stability
     await sleep(200);
