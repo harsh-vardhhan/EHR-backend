@@ -9,4 +9,5 @@ export const MEDICAL_ENTITIES = {
   PROCEDURE: 'Medical Procedure',
 } as const;
 
-export type MedicalEntityLabel = typeof MEDICAL_ENTITIES[keyof typeof MEDICAL_ENTITIES];
+export type MedicalEntityLabel =
+  (typeof MEDICAL_ENTITIES)[keyof typeof MEDICAL_ENTITIES];

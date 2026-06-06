@@ -188,7 +188,9 @@ export class DocumentsService {
     }
 
     if (!metadata) {
-      console.log(`Document metadata for ${id} not found in DynamoDB. Creating record...`);
+      console.log(
+        `Document metadata for ${id} not found in DynamoDB. Creating record...`,
+      );
       metadata = {
         PK: `DOCUMENT#${id}`,
         SK: 'METADATA',

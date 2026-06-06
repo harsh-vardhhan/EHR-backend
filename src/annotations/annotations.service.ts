@@ -126,7 +126,12 @@ export class AnnotationsService {
     const expressionAttributeValues: Record<string, any> = {};
 
     for (const [key, value] of Object.entries(updates)) {
-      if (key !== 'annotationId' && key !== 'documentId' && key !== 'PK' && key !== 'SK') {
+      if (
+        key !== 'annotationId' &&
+        key !== 'documentId' &&
+        key !== 'PK' &&
+        key !== 'SK'
+      ) {
         updateExpressions.push(`#${key} = :${key}`);
         expressionAttributeNames[`#${key}`] = key;
         expressionAttributeValues[`:${key}`] = value;
