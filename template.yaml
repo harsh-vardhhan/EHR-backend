@@ -37,7 +37,7 @@ Resources:
     Properties:
       CodeUri: dist/
       Handler: serverless-bundle.handler
-      ReservedConcurrentExecutions: 6 # Prevent run-away compute costs
+      ReservedConcurrentExecutions: 5 # Prevent run-away compute costs
       FunctionUrlConfig:
         AuthType: NONE
       Environment:
