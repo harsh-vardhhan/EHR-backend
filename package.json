@@ -19,6 +19,7 @@
     "cleanup": "ts-node src/scripts/cleanup.ts",
     "seed": "ts-node src/scripts/seed.ts",
     "test:dlq": "ts-node src/scripts/test-dlq.ts",
+    "test:kill-switch": "ts-node src/scripts/test-kill-switch.ts",
     "bundle": "esbuild dist/serverless.js --bundle --platform=node --target=node20 --outfile=dist/serverless-bundle.js --external:\"@aws-sdk/*\" --external:\"aws-sdk\" && esbuild dist/worker.js --bundle --platform=node --target=node20 --outfile=dist/worker-bundle.js --external:\"@aws-sdk/*\" --external:\"aws-sdk\" && esbuild dist/kill-switch.js --bundle --platform=node --target=node20 --outfile=dist/kill-switch-bundle.js --external:\"@aws-sdk/*\" --external:\"aws-sdk\""
   },
   "dependencies": {
