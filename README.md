@@ -2,6 +2,8 @@
 
 Enterprise-grade serverless backend for clinical document annotation, built with Hono and deployed on AWS.
 
+**🚀 Live Demo:** [https://d1pijuvgczqoi4.cloudfront.net/](https://d1pijuvgczqoi4.cloudfront.net/)
+
 > [!WARNING]
 > **Financial & Architectural Safeguard: Denial of Wallet (DoW) Protection**
 > 
