@@ -4,7 +4,7 @@ Enterprise-grade serverless backend for clinical document annotation, built with
 
 **🚀 Live Demo:** [https://d1pijuvgczqoi4.cloudfront.net/](https://d1pijuvgczqoi4.cloudfront.net/)
 
-## 🛡️ Denial of Wallet (DoW) Protection
+## ⚠️ Warning for Developers
 
 Unlike traditional servers (EC2, Render, Railway, etc.) that cap their financial damage by crashing under high load, AWS serverless applications scale **infinitely**.
 
