@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: EHR Annotation Tool Backend SAM Template - Hacker News Scaling Version
+Description: EHR Annotation Tool Backend SAM Template
 
 Globals:
   Function:
@@ -25,7 +25,7 @@ Parameters:
     Description: Email address to receive DDoS alert notifications
   DdosRequestThreshold:
     Type: Number
-    Default: 1500 # Safely raised from 200 to accommodate organic HN surge traffic
+    Default: 1500
     Description: Number of Lambda requests in 1 minute to trigger the kill switch
   EhrApiKeyVal:
     Type: String
@@ -38,7 +38,7 @@ Resources:
       CodeUri: dist/
       Handler: serverless-bundle.handler
       Timeout: 5
-      ReservedConcurrentExecutions: 200 # Bumped from 20 to 200 to absorb concurrent Hacker News clicks smoothly
+      ReservedConcurrentExecutions: 200
       FunctionUrlConfig:
         AuthType: NONE
       Environment:
@@ -143,7 +143,7 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: !Ref EhrTableName
-      BillingMode: PAY_PER_REQUEST # Completely decoupled from Token Bucket constraints for the HN wave
+      BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: PK
           AttributeType: S
