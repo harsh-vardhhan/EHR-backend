@@ -1,7 +1,6 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
   DynamoDBDocumentClient,
-  ScanCommand,
   GetCommand,
   PutCommand,
   QueryCommand,
@@ -28,9 +27,10 @@ export class DocumentsService {
       return []; // Fallback or mock list if not configured
     }
 
-    const command = new ScanCommand({
+    const command = new QueryCommand({
       TableName: tableName,
-      FilterExpression: 'SK = :sk',
+      IndexName: 'SKIndex',
+      KeyConditionExpression: 'SK = :sk',
       ExpressionAttributeValues: {
         ':sk': 'METADATA',
       },
