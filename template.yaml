@@ -38,7 +38,7 @@ Resources:
       CodeUri: dist/
       Handler: serverless-bundle.handler
       Timeout: 5
-      ReservedConcurrentExecutions: 200
+      ReservedConcurrentExecutions: 50
       FunctionUrlConfig:
         AuthType: NONE
       Environment:
