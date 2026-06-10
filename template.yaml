@@ -38,7 +38,7 @@ Resources:
       CodeUri: dist/
       Handler: serverless-bundle.handler
       Timeout: 5
-      ReservedConcurrentExecutions: 20 # Prevent run-away compute costs
+      ReservedConcurrentExecutions: 100 # Prevent run-away compute costs
       FunctionUrlConfig:
         AuthType: NONE
       Environment:
