@@ -2,7 +2,7 @@
 
 Enterprise-grade serverless backend for clinical document annotation, built with Hono and deployed on AWS.
 
-**🚀 Live Demo:** [https://d1pijuvgczqoi4.cloudfront.net/](https://d1pijuvgczqoi4.cloudfront.net/)
+**🚀 Live Demo:** [https://d1pijuvgczqoi4.cloudfront.net/document/doc-001](https://d1pijuvgczqoi4.cloudfront.net/document/doc-001)
 
 ## 🚨 Financial Warning: The Cost of Infinite Scaling
 
