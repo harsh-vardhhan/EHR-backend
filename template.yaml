@@ -25,7 +25,7 @@ Parameters:
     Description: Email address to receive DDoS alert notifications
   DdosRequestThreshold:
     Type: Number
-    Default: 1500
+    Default: 200
     Description: Number of Lambda requests in 1 minute to trigger the kill switch
   EhrApiKeyVal:
     Type: String
@@ -38,7 +38,7 @@ Resources:
       CodeUri: dist/
       Handler: serverless-bundle.handler
       Timeout: 5
-      ReservedConcurrentExecutions: 50
+      ReservedConcurrentExecutions: 20 # Prevent run-away compute costs
       FunctionUrlConfig:
         AuthType: NONE
       Environment:
@@ -67,7 +67,7 @@ Resources:
     Properties:
       CodeUri: dist/
       Handler: worker-bundle.handler
-      ReservedConcurrentExecutions: 2 # Hard cap on LLM parallel processing stays intact
+      ReservedConcurrentExecutions: 2 # Hard cap on LLM parallel processing
       Events:
         SQSEvent:
           Type: SQS
@@ -143,7 +143,6 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: !Ref EhrTableName
-      BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: PK
           AttributeType: S
@@ -163,8 +162,13 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
-          # Note: ProvisionedThroughput properties are completely removed from the GSI block 
-          # because BillingMode is set to PAY_PER_REQUEST at the root level.
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      BillingMode: PROVISIONED
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
 
   DocumentsBucket:
     Type: AWS::S3::Bucket
@@ -178,6 +182,8 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+
+
 
   EhrKillSwitchTopic:
     Type: AWS::SNS::Topic
