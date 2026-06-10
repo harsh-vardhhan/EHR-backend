@@ -25,7 +25,7 @@ Parameters:
     Description: Email address to receive DDoS alert notifications
   DdosRequestThreshold:
     Type: Number
-    Default: 200
+    Default: 1000
     Description: Number of Lambda requests in 1 minute to trigger the kill switch
   EhrApiKeyVal:
     Type: String
