@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: EHR Annotation Tool Backend SAM Template
+Description: EHR Annotation Tool Backend SAM Template - Hacker News Scaling Version
 
 Globals:
   Function:
@@ -25,7 +25,7 @@ Parameters:
     Description: Email address to receive DDoS alert notifications
   DdosRequestThreshold:
     Type: Number
-    Default: 1500
+    Default: 1500 # Safely raised from 200 to accommodate organic HN surge traffic
     Description: Number of Lambda requests in 1 minute to trigger the kill switch
   EhrApiKeyVal:
     Type: String
@@ -38,7 +38,7 @@ Resources:
       CodeUri: dist/
       Handler: serverless-bundle.handler
       Timeout: 5
-      ReservedConcurrentExecutions: 200 # Prevent run-away compute costs
+      ReservedConcurrentExecutions: 200 # Bumped from 20 to 200 to absorb concurrent Hacker News clicks smoothly
       FunctionUrlConfig:
         AuthType: NONE
       Environment:
@@ -67,7 +67,7 @@ Resources:
     Properties:
       CodeUri: dist/
       Handler: worker-bundle.handler
-      ReservedConcurrentExecutions: 2 # Hard cap on LLM parallel processing
+      ReservedConcurrentExecutions: 2 # Hard cap on LLM parallel processing stays intact
       Events:
         SQSEvent:
           Type: SQS
@@ -143,6 +143,7 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: !Ref EhrTableName
+      BillingMode: PAY_PER_REQUEST # Completely decoupled from Token Bucket constraints for the HN wave
       AttributeDefinitions:
         - AttributeName: PK
           AttributeType: S
@@ -162,13 +163,8 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
-          # ProvisionedThroughput:
-            # ReadCapacityUnits: 5
-            # WriteCapacityUnits: 5
-      BillingMode: PROVISIONED
-      ProvisionedThroughput:
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
+          # Note: ProvisionedThroughput properties are completely removed from the GSI block 
+          # because BillingMode is set to PAY_PER_REQUEST at the root level.
 
   DocumentsBucket:
     Type: AWS::S3::Bucket
@@ -182,8 +178,6 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-
-
 
   EhrKillSwitchTopic:
     Type: AWS::SNS::Topic
