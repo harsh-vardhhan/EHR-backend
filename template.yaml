@@ -25,7 +25,7 @@ Parameters:
     Description: Email address to receive DDoS alert notifications
   DdosRequestThreshold:
     Type: Number
-    Default: 200
+    Default: 1500
     Description: Number of Lambda requests in 1 minute to trigger the kill switch
   EhrApiKeyVal:
     Type: String
@@ -38,7 +38,7 @@ Resources:
       CodeUri: dist/
       Handler: serverless-bundle.handler
       Timeout: 5
-      ReservedConcurrentExecutions: 100 # Prevent run-away compute costs
+      ReservedConcurrentExecutions: 200 # Prevent run-away compute costs
       FunctionUrlConfig:
         AuthType: NONE
       Environment:
@@ -162,9 +162,9 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
-          ProvisionedThroughput:
-            ReadCapacityUnits: 5
-            WriteCapacityUnits: 5
+          # ProvisionedThroughput:
+            # ReadCapacityUnits: 5
+            # WriteCapacityUnits: 5
       BillingMode: PROVISIONED
       ProvisionedThroughput:
         ReadCapacityUnits: 5
