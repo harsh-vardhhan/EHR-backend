@@ -162,7 +162,14 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
-      BillingMode: PAY_PER_REQUEST
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      BillingMode: PROVISIONED
+      ProvisionedThroughput:
+        ReadCapacityUnits: 20
+        WriteCapacityUnits: 20
+
 
   DocumentsBucket:
     Type: AWS::S3::Bucket
