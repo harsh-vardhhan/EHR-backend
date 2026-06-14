@@ -45,6 +45,16 @@ graph TD
     SNS -->|Invoke| LambdaKillSwitch[AWS Lambda - Kill Switch]
     LambdaKillSwitch -->|Set Reserved Concurrency to 0| LambdaAPI
 
+    %% Legend
+    subgraph Legend ["AWS Service Legend"]
+        direction LR
+        L_Comp[Compute]
+        L_Db[(Database)]
+        L_Stor[(Storage)]
+        L_Int[Integration]
+        L_Mon[Monitoring]
+    end
+
     %% AWS Styling Classes
     classDef compute fill:#FFF2E6,stroke:#FF9900,stroke-width:2px,color:#232F3E;
     classDef database fill:#E6F2FF,stroke:#0073BB,stroke-width:2px,color:#232F3E;
@@ -62,6 +72,13 @@ graph TD
     class CWAlarm monitor;
     class User userNode;
     class Groq external;
+    
+    %% Apply Classes to Legend
+    class L_Comp compute;
+    class L_Db database;
+    class L_Stor storage;
+    class L_Int integration;
+    class L_Mon monitor;
 ```
 
 ### Infrastructure Components
