@@ -25,25 +25,75 @@ The backend follows a highly scalable, serverless architecture designed for clin
 
 ```mermaid
 graph TD
-    User((Clinician)) -->|API Request with API Key| LambdaURL[AWS Lambda Function URL]
-    LambdaURL -->|Hono Router & Auth Middleware| LambdaAPI[AWS Lambda - API]
-    LambdaAPI -->|Read/Write| DynamoDB[(Amazon DynamoDB)]
-    LambdaAPI -->|Read| S3[(Amazon S3 - Medical Notes)]
-    LambdaAPI -->|Manual Trigger| SQS[AWS SQS - Annotation Queue]
+    %% Core Application Subgraph (Left Side)
+    subgraph Core ["Clinical Ingestion & NLP Inferences"]
+        User((Clinician)) -->|API Request with API Key| LambdaURL(AWS Lambda Function URL)
+        LambdaURL -->|Hono Router & Auth Middleware| LambdaAPI[AWS Lambda - API]
+        LambdaAPI -->|Read/Write| DynamoDB[(Amazon DynamoDB)]
+        LambdaAPI -->|Read| S3[(Amazon S3 - Medical Notes)]
+        LambdaAPI -->|Manual Trigger| SQS([AWS SQS - Annotation Queue])
 
-    S3 -->|Emit Event| EB[Amazon EventBridge - Bus]
-    EB -->|Route Rule| SQS[AWS SQS - Annotation Queue]
-    SQS -->|Trigger| LambdaWorker[AWS Lambda - NLP Worker]
-    SQS -.->|Failures| DLQ[AWS SQS - Dead Letter Queue]
-    
-    LambdaWorker -->|Inference| Groq[Groq AI - LLM Inference]
-    LambdaWorker -->|Save Annotations| DynamoDB
+        S3 -->|Emit Event| EB([Amazon EventBridge - Bus])
+        EB -->|Route Rule| SQS
+        SQS -->|Trigger| LambdaWorker[AWS Lambda - NLP Worker]
+        SQS -.->|Failures| DLQ([AWS SQS - Dead Letter Queue])
+        
+        LambdaWorker -->|Inference| Groq{{Groq AI - LLM Inference}}
+        LambdaWorker -->|Save Annotations| DynamoDB
+    end
 
-    %% DDoS Protection
-    LambdaAPI -.->|Invocations & Throttles| CWAlarm[CloudWatch Traffic Alarm]
-    CWAlarm -->|Trigger if >200 req/1m| SNS[SNS Topic]
-    SNS -->|Invoke| LambdaKillSwitch[AWS Lambda - Kill Switch]
+    %% DDoS/DoW Circuit Breaker Subgraph (Right Side)
+    subgraph DDoS ["DDoS & DoW Circuit Breaker"]
+        CWAlarm{CloudWatch Traffic Alarm}
+        SNS[SNS Topic]
+        LambdaKillSwitch[AWS Lambda - Kill Switch]
+        
+        CWAlarm -->|Trigger if >200 req/1m| SNS
+        SNS -->|Invoke| LambdaKillSwitch
+    end
+
+    %% Cross-Subgraph Connections
+    LambdaAPI -.->|Invocations & Throttles| CWAlarm
     LambdaKillSwitch -->|Set Reserved Concurrency to 0| LambdaAPI
+
+    %% Legend
+    subgraph Legend ["AWS Service Legend"]
+        direction LR
+        L_Comp[Compute]
+        L_Db[(Database)]
+        L_Stor[(Storage)]
+        L_Int[Integration]
+        L_Mon[Monitoring]
+    end
+
+    %% Subgraph Styling
+    style Core fill:#FCFDFD,stroke:#D1D5DB,stroke-width:2px,stroke-dasharray: 5 5;
+    style DDoS fill:#FFF5F5,stroke:#FECACA,stroke-width:2px,stroke-dasharray: 5 5;
+
+    %% AWS Styling Classes
+    classDef compute fill:#FFF2E6,stroke:#FF9900,stroke-width:2px,color:#232F3E;
+    classDef database fill:#E6F2FF,stroke:#0073BB,stroke-width:2px,color:#232F3E;
+    classDef storage fill:#E6FFE6,stroke:#1D8102,stroke-width:2px,color:#232F3E;
+    classDef integration fill:#F3E8FF,stroke:#8B5CF6,stroke-width:2px,color:#232F3E;
+    classDef monitor fill:#FFEBF5,stroke:#C2185B,stroke-width:2px,color:#232F3E;
+    classDef userNode fill:#F2F3F3,stroke:#545F7A,stroke-width:2px,color:#232F3E;
+    classDef external fill:#F9FAF1,stroke:#6B7280,stroke-width:2px,color:#232F3E;
+
+    %% Apply Classes
+    class LambdaURL,LambdaAPI,LambdaWorker,LambdaKillSwitch compute;
+    class DynamoDB database;
+    class S3 storage;
+    class SQS,DLQ,EB,SNS integration;
+    class CWAlarm monitor;
+    class User userNode;
+    class Groq external;
+    
+    %% Apply Classes to Legend
+    class L_Comp compute;
+    class L_Db database;
+    class L_Stor storage;
+    class L_Int integration;
+    class L_Mon monitor;
 ```
 
 ### Infrastructure Components
