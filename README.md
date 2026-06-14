@@ -44,6 +44,24 @@ graph TD
     CWAlarm -->|Trigger if >200 req/1m| SNS[SNS Topic]
     SNS -->|Invoke| LambdaKillSwitch[AWS Lambda - Kill Switch]
     LambdaKillSwitch -->|Set Reserved Concurrency to 0| LambdaAPI
+
+    %% AWS Styling Classes
+    classDef compute fill:#FFF2E6,stroke:#FF9900,stroke-width:2px,color:#232F3E;
+    classDef database fill:#E6F2FF,stroke:#0073BB,stroke-width:2px,color:#232F3E;
+    classDef storage fill:#E6FFE6,stroke:#1D8102,stroke-width:2px,color:#232F3E;
+    classDef integration fill:#F3E8FF,stroke:#8B5CF6,stroke-width:2px,color:#232F3E;
+    classDef monitor fill:#FFEBF5,stroke:#C2185B,stroke-width:2px,color:#232F3E;
+    classDef userNode fill:#F2F3F3,stroke:#545F7A,stroke-width:2px,color:#232F3E;
+    classDef external fill:#F9FAF1,stroke:#6B7280,stroke-width:2px,color:#232F3E;
+
+    %% Apply Classes
+    class LambdaURL,LambdaAPI,LambdaWorker,LambdaKillSwitch compute;
+    class DynamoDB database;
+    class S3 storage;
+    class SQS,DLQ,EB,SNS integration;
+    class CWAlarm monitor;
+    class User userNode;
+    class Groq external;
 ```
 
 ### Infrastructure Components
