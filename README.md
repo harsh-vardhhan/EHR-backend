@@ -25,24 +25,31 @@ The backend follows a highly scalable, serverless architecture designed for clin
 
 ```mermaid
 graph TD
-    User((Clinician)) -->|API Request with API Key| LambdaURL[AWS Lambda Function URL]
+    User((Clinician)) -->|API Request with API Key| LambdaURL(AWS Lambda Function URL)
     LambdaURL -->|Hono Router & Auth Middleware| LambdaAPI[AWS Lambda - API]
     LambdaAPI -->|Read/Write| DynamoDB[(Amazon DynamoDB)]
     LambdaAPI -->|Read| S3[(Amazon S3 - Medical Notes)]
-    LambdaAPI -->|Manual Trigger| SQS[AWS SQS - Annotation Queue]
+    LambdaAPI -->|Manual Trigger| SQS([AWS SQS - Annotation Queue])
 
-    S3 -->|Emit Event| EB[Amazon EventBridge - Bus]
-    EB -->|Route Rule| SQS[AWS SQS - Annotation Queue]
+    S3 -->|Emit Event| EB([Amazon EventBridge - Bus])
+    EB -->|Route Rule| SQS
     SQS -->|Trigger| LambdaWorker[AWS Lambda - NLP Worker]
-    SQS -.->|Failures| DLQ[AWS SQS - Dead Letter Queue]
+    SQS -.->|Failures| DLQ([AWS SQS - Dead Letter Queue])
     
-    LambdaWorker -->|Inference| Groq[Groq AI - LLM Inference]
+    LambdaWorker -->|Inference| Groq{{Groq AI - LLM Inference}}
     LambdaWorker -->|Save Annotations| DynamoDB
 
-    %% DDoS Protection
-    LambdaAPI -.->|Invocations & Throttles| CWAlarm[CloudWatch Traffic Alarm]
-    CWAlarm -->|Trigger if >200 req/1m| SNS[SNS Topic]
-    SNS -->|Invoke| LambdaKillSwitch[AWS Lambda - Kill Switch]
+    %% DDoS/DoW Circuit Breaker Container
+    subgraph DDoS ["DDoS & DoW Circuit Breaker"]
+        CWAlarm{CloudWatch Traffic Alarm}
+        SNS[SNS Topic]
+        LambdaKillSwitch[AWS Lambda - Kill Switch]
+        
+        CWAlarm -->|Trigger if >200 req/1m| SNS
+        SNS -->|Invoke| LambdaKillSwitch
+    end
+
+    LambdaAPI -.->|Invocations & Throttles| CWAlarm
     LambdaKillSwitch -->|Set Reserved Concurrency to 0| LambdaAPI
 
     %% Legend
