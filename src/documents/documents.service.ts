@@ -1,44 +1,20 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import {
-  DynamoDBDocumentClient,
-  GetCommand,
-  PutCommand,
-  QueryCommand,
-} from '@aws-sdk/lib-dynamodb';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
+import { DocumentEntity, AnnotationEntity } from '../database/entities';
 
 export class DocumentsService {
-  private ddbClient: DynamoDBClient;
-  private docClient: DynamoDBDocumentClient;
   private s3Client: S3Client;
   private sqsClient: SQSClient;
 
   constructor() {
-    this.ddbClient = new DynamoDBClient({});
-    this.docClient = DynamoDBDocumentClient.from(this.ddbClient);
     this.s3Client = new S3Client({});
     this.sqsClient = new SQSClient({});
   }
 
   async getDocuments() {
-    const tableName = process.env.EHR_TABLE_NAME;
-    if (!tableName) {
-      return []; // Fallback or mock list if not configured
-    }
-
-    const command = new QueryCommand({
-      TableName: tableName,
-      IndexName: 'SKIndex',
-      KeyConditionExpression: 'SK = :sk',
-      ExpressionAttributeValues: {
-        ':sk': 'METADATA',
-      },
-    });
-
     try {
-      const response = await this.docClient.send(command);
-      return response.Items || [];
+      const response = await DocumentEntity.query.bySk({}).go();
+      return response.data || [];
     } catch (error) {
       console.error('Error fetching documents from DDB', error);
       return [];
@@ -46,10 +22,9 @@ export class DocumentsService {
   }
 
   async getDocument(id: string) {
-    const tableName = process.env.EHR_TABLE_NAME;
     const bucketName = process.env.DOCUMENTS_BUCKET_NAME;
 
-    if (!tableName || !bucketName) {
+    if (!bucketName) {
       // Mock fallback
       if (id === 'doc-001') {
         return {
@@ -63,28 +38,21 @@ export class DocumentsService {
       throw new Error(`Document with id ${id} not found`);
     }
 
-    const queryCommand = new QueryCommand({
-      TableName: tableName,
-      KeyConditionExpression: 'PK = :pk',
-      ExpressionAttributeValues: {
-        ':pk': `DOCUMENT#${id}`,
-      },
-    });
+    // Query Document Entity and Annotation Entity concurrently using ElectroDB
+    const [docRes, annotationsRes] = await Promise.all([
+      DocumentEntity.get({ id }).go(),
+      AnnotationEntity.query.primary({ documentId: id }).go(),
+    ]);
 
-    const queryResponse = await this.docClient.send(queryCommand);
-    const items = queryResponse.Items || [];
-
-    const metadata = items.find((item) => item.SK === 'METADATA');
+    const metadata = docRes.data;
     if (!metadata) {
       throw new Error(`Document with id ${id} not found`);
     }
 
-    const annotations = items
-      .filter((item) => item.SK.startsWith('ANNOTATION#'))
-      .map((item) => ({
-        ...item,
-        id: item.annotationId || item.id, // Map database key to frontend key 'id'
-      }));
+    const annotations = (annotationsRes.data || []).map((item) => ({
+      ...item,
+      id: item.annotationId || item.annotationId, // Map database key to frontend key 'id'
+    }));
 
     const getS3Command = new GetObjectCommand({
       Bucket: bucketName,
@@ -142,11 +110,6 @@ export class DocumentsService {
   }
 
   async fetchAndIngestDocument(id: string, bucketName: string, s3Key: string) {
-    const tableName = process.env.EHR_TABLE_NAME;
-    if (!tableName) {
-      throw new Error('EHR_TABLE_NAME not set');
-    }
-
     // 1. Fetch from S3 to get both content and metadata
     const getS3Command = new GetObjectCommand({
       Bucket: bucketName,
@@ -171,18 +134,10 @@ export class DocumentsService {
     }
 
     // 2. Check if metadata exists in DynamoDB
-    const getDdbCommand = new GetCommand({
-      TableName: tableName,
-      Key: {
-        PK: `DOCUMENT#${id}`,
-        SK: 'METADATA',
-      },
-    });
-
     let metadata;
     try {
-      const ddbResponse = await this.docClient.send(getDdbCommand);
-      metadata = ddbResponse.Item;
+      const ddbResponse = await DocumentEntity.get({ id }).go();
+      metadata = ddbResponse.data;
     } catch (error) {
       console.error(`Error checking metadata in DynamoDB for ${id}`, error);
     }
@@ -191,9 +146,7 @@ export class DocumentsService {
       console.log(
         `Document metadata for ${id} not found in DynamoDB. Creating record...`,
       );
-      metadata = {
-        PK: `DOCUMENT#${id}`,
-        SK: 'METADATA',
+      const newDoc = {
         id,
         title: title || `Document ${id}`,
         category: category || 'Uncategorized',
@@ -202,13 +155,9 @@ export class DocumentsService {
         createdAt: new Date().toISOString(),
       };
 
-      const putDdbCommand = new PutCommand({
-        TableName: tableName,
-        Item: metadata,
-      });
-
       try {
-        await this.docClient.send(putDdbCommand);
+        const response = await DocumentEntity.create(newDoc).go();
+        metadata = response.data;
       } catch (error) {
         console.error(`Failed to save metadata to DynamoDB for ${id}`, error);
         throw error;
@@ -221,3 +170,4 @@ export class DocumentsService {
     };
   }
 }
+
