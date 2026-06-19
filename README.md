@@ -112,7 +112,7 @@ graph TD
 
 ## 🗄️ DynamoDB Single-Table Design
 
-To maximize performance, cut database costs, and eliminate cross-table JOIN latency, this application uses a consolidated **Single-Table Design** layout (`EhrTable`) instead of traditional relational multi-table structures.
+To maximize performance, cut database costs, and eliminate cross-table JOIN latency, this application uses a consolidated **Single-Table Design** layout (`EhrTable`) modeled with **ElectroDB**. ElectroDB provides type-safe schemas, validates attributes, and automatically formats keys and index queries without raw SDK query strings.
 
 ### Key Schema Layout
 
@@ -123,10 +123,10 @@ To maximize performance, cut database costs, and eliminate cross-table JOIN late
 
 ### Query Optimizations
 
-1. **Unified Read (Document + Annotations):** 
-   When opening a patient note, the backend executes a single DynamoDB query where `PK = DOCUMENT#<docId>`. This retrieves the document metadata and all its annotations in a **single physical database operation**, reducing network roundtrips and latency by 50%.
+1. **Concurrent Single-Table Read (Document + Annotations):** 
+   When opening a patient note, the backend executes concurrent reads (`GetItem` for Document metadata and `Query` for all related Annotations) in parallel using `Promise.all` over the single table. This utilizes ElectroDB entities for strict type safety while maintaining sub-millisecond single-table responses.
 2. **Inverted Index (`SKIndex`):**
-   To update or delete an annotation by its `annotationId` alone (without knowing the parent `documentId`), we use a Global Secondary Index (GSI) called `SKIndex` (where `HashKey = SK` and `RangeKey = PK`). This resolves the parent `PK` in milliseconds, allowing targeted, isolated edits on specific rows.
+   To update or delete an annotation by its `annotationId` alone (without knowing the parent `documentId`), we query the Global Secondary Index (GSI) `SKIndex` (where `HashKey = SK` and `RangeKey = PK`) mapped in ElectroDB. This resolves the parent `PK` in milliseconds, allowing targeted, isolated edits on specific rows.
 
 ## 🚀 CI/CD Pipeline
 
