@@ -20,7 +20,7 @@ export class AnnotationsService {
     try {
       const response = await AnnotationEntity.query
         .primary({ documentId })
-        .go();
+        .go({ ignoreOwnership: true });
       return (response.data as Annotation[]) || [];
     } catch (error) {
       console.error('Error fetching annotations', error);
@@ -32,7 +32,7 @@ export class AnnotationsService {
     data: Omit<Annotation, 'annotationId' | 'createdAt'>,
   ): Promise<Annotation> {
     // Check if document exists in the single table
-    const docRes = await DocumentEntity.get({ id: data.documentId }).go();
+    const docRes = await DocumentEntity.get({ id: data.documentId }).go({ ignoreOwnership: true });
     if (!docRes.data) {
       throw new Error(`Document with id ${data.documentId} not found`);
     }
@@ -55,7 +55,7 @@ export class AnnotationsService {
     // 1. Query the GSI to find the documentId for this annotationId
     const findResponse = await AnnotationEntity.query
       .bySk({ annotationId })
-      .go();
+      .go({ ignoreOwnership: true });
 
     const item = findResponse.data?.[0];
     if (!item) {

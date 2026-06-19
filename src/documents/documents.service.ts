@@ -13,7 +13,7 @@ export class DocumentsService {
 
   async getDocuments() {
     try {
-      const response = await DocumentEntity.query.bySk({}).go();
+      const response = await DocumentEntity.query.bySk({}).go({ ignoreOwnership: true });
       return response.data || [];
     } catch (error) {
       console.error('Error fetching documents from DDB', error);
@@ -40,8 +40,8 @@ export class DocumentsService {
 
     // Query Document Entity and Annotation Entity concurrently using ElectroDB
     const [docRes, annotationsRes] = await Promise.all([
-      DocumentEntity.get({ id }).go(),
-      AnnotationEntity.query.primary({ documentId: id }).go(),
+      DocumentEntity.get({ id }).go({ ignoreOwnership: true }),
+      AnnotationEntity.query.primary({ documentId: id }).go({ ignoreOwnership: true }),
     ]);
 
     const metadata = docRes.data;
@@ -136,7 +136,7 @@ export class DocumentsService {
     // 2. Check if metadata exists in DynamoDB
     let metadata;
     try {
-      const ddbResponse = await DocumentEntity.get({ id }).go();
+      const ddbResponse = await DocumentEntity.get({ id }).go({ ignoreOwnership: true });
       metadata = ddbResponse.data;
     } catch (error) {
       console.error(`Error checking metadata in DynamoDB for ${id}`, error);
