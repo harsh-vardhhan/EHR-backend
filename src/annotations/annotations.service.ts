@@ -1,14 +1,6 @@
 import { randomUUID } from 'crypto';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import {
-  DynamoDBDocumentClient,
-  QueryCommand,
-  PutCommand,
-  UpdateCommand,
-  GetCommand,
-} from '@aws-sdk/lib-dynamodb';
-
 import { MedicalEntityLabel } from '../constants/labels';
+import { AnnotationEntity, DocumentEntity } from '../database/entities';
 
 export interface Annotation {
   annotationId: string;
@@ -24,30 +16,12 @@ export interface Annotation {
 }
 
 export class AnnotationsService {
-  private ddbClient: DynamoDBClient;
-  private docClient: DynamoDBDocumentClient;
-
-  constructor() {
-    this.ddbClient = new DynamoDBClient({});
-    this.docClient = DynamoDBDocumentClient.from(this.ddbClient);
-  }
-
   async getAnnotationsByDocument(documentId: string): Promise<Annotation[]> {
-    const tableName = process.env.EHR_TABLE_NAME;
-    if (!tableName) return [];
-
-    const command = new QueryCommand({
-      TableName: tableName,
-      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :skPrefix)',
-      ExpressionAttributeValues: {
-        ':pk': `DOCUMENT#${documentId}`,
-        ':skPrefix': 'ANNOTATION#',
-      },
-    });
-
     try {
-      const response = await this.docClient.send(command);
-      return (response.Items as Annotation[]) || [];
+      const response = await AnnotationEntity.query
+        .primary({ documentId })
+        .go();
+      return (response.data as Annotation[]) || [];
     } catch (error) {
       console.error('Error fetching annotations', error);
       return [];
@@ -57,21 +31,9 @@ export class AnnotationsService {
   async createAnnotation(
     data: Omit<Annotation, 'annotationId' | 'createdAt'>,
   ): Promise<Annotation> {
-    const tableName = process.env.EHR_TABLE_NAME;
-    if (!tableName) {
-      throw new Error('EHR_TABLE_NAME not set');
-    }
-
     // Check if document exists in the single table
-    const getDocCommand = new GetCommand({
-      TableName: tableName,
-      Key: {
-        PK: `DOCUMENT#${data.documentId}`,
-        SK: 'METADATA',
-      },
-    });
-    const docRes = await this.docClient.send(getDocCommand);
-    if (!docRes.Item) {
+    const docRes = await DocumentEntity.get({ id: data.documentId }).go();
+    if (!docRes.data) {
       throw new Error(`Document with id ${data.documentId} not found`);
     }
 
@@ -82,16 +44,7 @@ export class AnnotationsService {
       createdAt: new Date().toISOString(),
     };
 
-    const command = new PutCommand({
-      TableName: tableName,
-      Item: {
-        PK: `DOCUMENT#${data.documentId}`,
-        SK: `ANNOTATION#${annotationId}`,
-        ...newAnnotation,
-      },
-    });
-
-    await this.docClient.send(command);
+    await AnnotationEntity.create(newAnnotation).go();
     return newAnnotation;
   }
 
@@ -99,64 +52,49 @@ export class AnnotationsService {
     annotationId: string,
     updates: Partial<Annotation>,
   ): Promise<Annotation> {
-    const tableName = process.env.EHR_TABLE_NAME;
-    if (!tableName) throw new Error('Table not configured');
+    // 1. Query the GSI to find the documentId for this annotationId
+    const findResponse = await AnnotationEntity.query
+      .bySk({ annotationId })
+      .go();
 
-    // 1. Query the inverted GSI SKIndex to find the composite Key { PK, SK }
-    const findCommand = new QueryCommand({
-      TableName: tableName,
-      IndexName: 'SKIndex',
-      KeyConditionExpression: 'SK = :sk',
-      ExpressionAttributeValues: {
-        ':sk': `ANNOTATION#${annotationId}`,
-      },
-    });
-
-    const findResponse = await this.docClient.send(findCommand);
-    const item = findResponse.Items?.[0];
+    const item = findResponse.data?.[0];
     if (!item) {
       throw new Error(`Annotation with id ${annotationId} not found`);
     }
-    const PK = item.PK;
-    const SK = item.SK;
+    const documentId = item.documentId;
 
-    // 2. Perform the update
-    const updateExpressions: string[] = [];
-    const expressionAttributeNames: Record<string, string> = {};
-    const expressionAttributeValues: Record<string, any> = {};
-
+    // Remove keys that cannot be modified (like keys used in PK/SK)
+    const cleanedUpdates: Record<string, any> = {};
     for (const [key, value] of Object.entries(updates)) {
       if (
         key !== 'annotationId' &&
         key !== 'documentId' &&
-        key !== 'PK' &&
-        key !== 'SK'
+        value !== undefined
       ) {
-        updateExpressions.push(`#${key} = :${key}`);
-        expressionAttributeNames[`#${key}`] = key;
-        expressionAttributeValues[`:${key}`] = value;
+        cleanedUpdates[key] = value;
       }
     }
 
-    if (updateExpressions.length === 0) {
+    if (Object.keys(cleanedUpdates).length === 0) {
       return item as Annotation;
     }
 
-    const command = new UpdateCommand({
-      TableName: tableName,
-      Key: { PK, SK },
-      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
-      ExpressionAttributeNames: expressionAttributeNames,
-      ExpressionAttributeValues: expressionAttributeValues,
-      ReturnValues: 'ALL_NEW',
-    });
-
     try {
-      const response = await this.docClient.send(command);
-      return response.Attributes as Annotation;
+      const response = await AnnotationEntity.patch({
+        documentId,
+        annotationId,
+      })
+        .set(cleanedUpdates)
+        .go({ response: 'all_new' });
+
+      if (!response.data) {
+        throw new Error(`Annotation with id ${annotationId} not found`);
+      }
+      return response.data as Annotation;
     } catch (error) {
       console.error('Error updating annotation', error);
       throw new Error(`Annotation with id ${annotationId} not found`);
     }
   }
 }
+
