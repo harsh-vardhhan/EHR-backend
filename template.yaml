@@ -30,22 +30,6 @@ Parameters:
   EhrApiKeyVal:
     Type: String
     Description: API Key for Hono authentication
-  EhrTableReadCapacity:
-    Type: Number
-    Default: 1
-    Description: Read Capacity Units for the main table
-  EhrTableWriteCapacity:
-    Type: Number
-    Default: 1
-    Description: Write Capacity Units for the main table
-  EhrIndexReadCapacity:
-    Type: Number
-    Default: 1
-    Description: Read Capacity Units for the SKIndex Global Secondary Index
-  EhrIndexWriteCapacity:
-    Type: Number
-    Default: 1
-    Description: Write Capacity Units for the SKIndex Global Secondary Index
 
 Resources:
   EhrBackendFunction:
@@ -178,13 +162,7 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
-          ProvisionedThroughput:
-            ReadCapacityUnits: !Ref EhrIndexReadCapacity
-            WriteCapacityUnits: !Ref EhrIndexWriteCapacity
-      BillingMode: PROVISIONED
-      ProvisionedThroughput:
-        ReadCapacityUnits: !Ref EhrTableReadCapacity
-        WriteCapacityUnits: !Ref EhrTableWriteCapacity
+      BillingMode: PAY_PER_REQUEST
 
 
   DocumentsBucket:
