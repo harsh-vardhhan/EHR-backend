@@ -48,7 +48,7 @@ graph TD
         SNS[SNS Topic]
         LambdaKillSwitch[AWS Lambda - Kill Switch]
         
-        CWAlarm -->|Trigger if >200 req/1m| SNS
+        CWAlarm -->|Trigger if >2000 req/1m| SNS
         SNS -->|Invoke| LambdaKillSwitch
     end
 
@@ -146,7 +146,7 @@ This backend incorporates a robust, multi-layered security architecture designed
 | :--- | :--- | :--- |
 | **Auth Gatekeeper** | Valid `x-api-key` header verified in Hono middleware. | Rejects unauthenticated requests in ~2ms before executing database operations. |
 | **Zero-Routing Cost Gateway** | Direct Lambda Function URL (no API Gateway request fees). | Eliminates API Gateway per-request charges ($3.50/million), ensuring throttled requests cost exactly $0.00. |
-| **Automated Circuit Breaker** | CloudWatch Alarm (>200 req/1m) $\rightarrow$ SNS $\rightarrow$ Kill-Switch Lambda. | Automatically updates backend Lambda reserved concurrency to `0` on breach, dropping resource billing to absolute zero. |
+| **Automated Circuit Breaker** | CloudWatch Alarm (>2000 req/1m) $\rightarrow$ SNS $\rightarrow$ Kill-Switch Lambda. | Automatically updates backend Lambda reserved concurrency to `0` on breach, dropping resource billing to absolute zero. |
 | **Compute Scaling Caps** | `ReservedConcurrentExecutions` limits (**20** for API Lambda, **2** for SQS NLP Worker). | Caps the maximum number of concurrent running containers AWS can spin up under a flood. |
 | **Asynchronous Decoupling** | SQS-backed queue hand-off (`EhrAnnotationQueue`) with `BatchSize: 5`. | Prevents container runtime crashes; processes spikes in document uploads sequentially rather than in parallel. |
 | **Infinite Retry Defense** | SQS Dead Letter Queue (`EhrAnnotationDLQ`) with `maxReceiveCount: 3`. | Quarantines failing payloads (poison pills) to prevent endless execution retry loops. |
