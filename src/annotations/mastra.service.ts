@@ -1,4 +1,4 @@
-import { generateObject } from 'ai';
+import { generateText, Output } from 'ai';
 import { createGroq } from '@ai-sdk/groq';
 import { z } from 'zod';
 import { AnnotationsService } from './annotations.service';
@@ -26,27 +26,29 @@ export class MastraService {
         apiKey: process.env.GROQ_API_KEY,
       });
 
-      const { object } = await generateObject({
+      const { output } = await generateText({
         model: groq('llama-3.3-70b-versatile'),
         abortSignal: AbortSignal.timeout(8000),
-        schema: z.object({
-          entities: z.array(
-            z.object({
-              text: z.string(),
-              label: z.enum([
-                MEDICAL_ENTITIES.CONDITION,
-                MEDICAL_ENTITIES.MEDICATION,
-                MEDICAL_ENTITIES.FINDING,
-                MEDICAL_ENTITIES.PROCEDURE,
-              ]),
-              confidence: z.number(),
-            }),
-          ),
+        output: Output.object({
+          schema: z.object({
+            entities: z.array(
+              z.object({
+                text: z.string(),
+                label: z.enum([
+                  MEDICAL_ENTITIES.CONDITION,
+                  MEDICAL_ENTITIES.MEDICATION,
+                  MEDICAL_ENTITIES.FINDING,
+                  MEDICAL_ENTITIES.PROCEDURE,
+                ]),
+                confidence: z.number(),
+              }),
+            ),
+          }),
         }),
         prompt: buildExtractionPrompt(text),
       });
 
-      const writePromises = object.entities.map(async (entity) => {
+      const writePromises = output.entities.map(async (entity) => {
         const escapedText = entity.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regexPattern = escapedText.replace(/\\s\+|\\n|\s+/g, '\\s+');
         const regex = new RegExp(regexPattern, 'i');
