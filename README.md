@@ -40,6 +40,10 @@ graph TD
         
         LambdaWorker -->|Inference| Groq{{Groq AI - LLM Inference}}
         LambdaWorker -->|Save Annotations| DynamoDB
+
+        %% Stateless Sandbox Preview Flow
+        Visitor((Portfolio Visitor)) -->|Unauthenticated Request| LambdaURL
+        LambdaAPI -->|Stateless Inference| Groq
     end
 
     %% DDoS/DoW Circuit Breaker Subgraph (Right Side)
@@ -85,7 +89,7 @@ graph TD
     class S3 storage;
     class SQS,DLQ,EB,SNS integration;
     class CWAlarm monitor;
-    class User userNode;
+    class User,Visitor userNode;
     class Groq external;
     
     %% Apply Classes to Legend
