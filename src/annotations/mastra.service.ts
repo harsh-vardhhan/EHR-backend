@@ -13,10 +13,6 @@ export class MastraService {
     });
   }
 
-  /**
-   * The core clinical extraction logic.
-   * Exposed as public for use by the background SQS worker.
-   */
   async runAnalysis(documentId: string, text: string) {
     // Wait for 2 seconds to simulate "2-3 seconds" wait time
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -47,13 +43,10 @@ export class MastraService {
             }),
           ),
         }),
-        prompt: `Extract medical entities from the following text and classify them strictly into one of these professional healthcare labels: ${MEDICAL_ENTITIES.CONDITION}, ${MEDICAL_ENTITIES.MEDICATION}, ${MEDICAL_ENTITIES.FINDING}, or ${MEDICAL_ENTITIES.PROCEDURE}.
-
-Text: "${text}"`,
+        prompt: buildExtractionPrompt(text),
       });
 
       const writePromises = object.entities.map(async (entity) => {
-        // Escape special regex characters, then replace spaces with \s+ to match across newlines
         const escapedText = entity.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regexPattern = escapedText.replace(/\\s\+|\\n|\s+/g, '\\s+');
         const regex = new RegExp(regexPattern, 'i');
@@ -85,3 +78,7 @@ Text: "${text}"`,
     }
   }
 }
+
+const buildExtractionPrompt = (text: string) => `Extract medical entities from the following text and classify them strictly into one of these professional healthcare labels: ${MEDICAL_ENTITIES.CONDITION}, ${MEDICAL_ENTITIES.MEDICATION}, ${MEDICAL_ENTITIES.FINDING}, or ${MEDICAL_ENTITIES.PROCEDURE}.
+
+Text: "${text}"`;
