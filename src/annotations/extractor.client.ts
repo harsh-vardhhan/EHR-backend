@@ -19,7 +19,7 @@ export async function extractClinicalEntities(text: string): Promise<ExtractedEn
   });
 
   const { output } = await generateText({
-    model: groq('meta-llama/llama-4-scout-17b-16e-instruct'),
+    model: groq('openai/gpt-oss-20b'),
     abortSignal: AbortSignal.timeout(8000),
     output: Output.object({
       schema: z.object({
