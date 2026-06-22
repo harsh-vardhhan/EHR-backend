@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { annotationsService } from '../services';
 import { MEDICAL_ENTITIES } from '../constants/labels';
 import type { MiddlewareHandler } from 'hono';
+import { extractClinicalEntities } from './extractor.client';
+import { findEntityOffsets } from './mastra.service';
 
 export const annotationsApp = new Hono();
 
@@ -125,4 +127,50 @@ annotationsApp.patch('/:id', validateParam('id', uuidSchema), async (c) => {
   const body = await c.req.json();
   const updatedAnnotation = await annotationsService.updateAnnotation(id, body);
   return c.json(updatedAnnotation);
+});
+
+const previewRequestSchema = z.object({
+  text: z
+    .string()
+    .min(10, 'Text must be at least 10 characters')
+    .max(3000, 'Text must be 3000 characters or less'),
+});
+
+annotationsApp.post('/preview', async (c) => {
+  const body = await c.req.json();
+  const result = previewRequestSchema.safeParse(body);
+
+  if (!result.success) {
+    const errors = result.error.errors
+      .map((err) => `${err.path.join('.')}: ${err.message}`)
+      .join(', ');
+    return c.json({ error: 'Validation failed', message: errors }, 400);
+  }
+
+  const { text } = result.data;
+
+  try {
+    const entities = await extractClinicalEntities(text);
+
+    const annotations = entities.map((entity, index) => {
+      const offsets = findEntityOffsets(text, entity.text);
+      return {
+        annotationId: `temp-${index}-${Date.now()}`,
+        documentId: 'preview',
+        text: entity.text,
+        label: entity.label,
+        startOffset: offsets?.startOffset ?? 0,
+        endOffset: offsets?.endOffset ?? 0,
+        source: 'llm' as const,
+        status: 'suggested' as const,
+        confidence: entity.confidence,
+        createdAt: new Date().toISOString(),
+      };
+    });
+
+    return c.json(annotations);
+  } catch (error: any) {
+    console.error('Failed to run preview analysis', error);
+    return c.json({ error: 'Failed to run preview analysis', message: error.message }, 500);
+  }
 });
