@@ -1,4 +1,8 @@
+import { generateObject } from 'ai';
+import { createGroq } from '@ai-sdk/groq';
+import { z } from 'zod';
 import { AnnotationsService } from './annotations.service';
+import { MEDICAL_ENTITIES } from '../constants/labels';
 
 export class MastraService {
   private readonly logger = {
@@ -27,103 +31,47 @@ export class MastraService {
     // Wait for 2 seconds to simulate "2-3 seconds" wait time
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    let timeoutId: any = null;
     try {
       if (!process.env.GROQ_API_KEY) {
-        throw new Error('GROQ_API_KEY not set, falling back to mock data');
+        throw new Error('GROQ_API_KEY is not set');
       }
 
-      const controller = new AbortController();
-      timeoutId = setTimeout(() => {
-        this.logger.warn(
-          `Groq API request timed out after 8 seconds. Aborting request.`,
-        );
-        controller.abort();
-      }, 8000);
+      const groq = createGroq({
+        apiKey: process.env.GROQ_API_KEY,
+      });
 
-      const response = await fetch(
-        'https://api.groq.com/openai/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-          body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            max_tokens: 4096,
-            messages: [
-              {
-                role: 'system',
-                content: 'You are a clinical NLP system.',
-              },
-              {
-                role: 'user',
-                content: `Extract medical entities from the following text and classify them strictly into one of these professional healthcare labels: Clinical Condition, Medication Statement, Clinical Finding, or Medical Procedure.
-
-Important: You must output your response as a valid JSON object matching this schema:
-{
-  "entities": [
-    { "text": string, "label": "Clinical Condition" | "Medication Statement" | "Clinical Finding" | "Medical Procedure", "confidence": number (decimal 0-1), "startOffset": number, "endOffset": number }
-  ]
-}
+      const { object } = await generateObject({
+        model: groq('llama-3.3-70b-versatile'),
+        abortSignal: AbortSignal.timeout(8000),
+        schema: z.object({
+          entities: z.array(
+            z.object({
+              text: z.string(),
+              label: z.enum([
+                MEDICAL_ENTITIES.CONDITION,
+                MEDICAL_ENTITIES.MEDICATION,
+                MEDICAL_ENTITIES.FINDING,
+                MEDICAL_ENTITIES.PROCEDURE,
+              ]),
+              confidence: z.number(),
+              startOffset: z.number(),
+              endOffset: z.number(),
+            }),
+          ),
+        }),
+        prompt: `Extract medical entities from the following text and classify them strictly into one of these professional healthcare labels: ${MEDICAL_ENTITIES.CONDITION}, ${MEDICAL_ENTITIES.MEDICATION}, ${MEDICAL_ENTITIES.FINDING}, or ${MEDICAL_ENTITIES.PROCEDURE}.
 
 Note: Do not calculate exact character offsets. Always set startOffset and endOffset to 0 for every entity. Our backend will handle the exact offset calculation.
 
-Example output:
-{
-  "entities": [
-    { "text": "chest pain", "label": "Clinical Finding", "confidence": 0.95, "startOffset": 0, "endOffset": 0 }
-  ]
-}
-
-Do not include any markdown formatting, backticks, or conversational text. Return only the JSON object. Do not over-reason. Output the final JSON immediately.
-
 Text: "${text}"`,
-              },
-            ],
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Groq API error: ${errorText}`);
-      }
-
-      const data = await response.json();
-
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        timeoutId = null;
-      }
-
-      let generatedText = data.choices[0].message.content || '';
-
-      // Robust JSON extraction to handle markdown or conversational wrappers
-      const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        generatedText = jsonMatch[0];
-      }
-
-      let object;
-      try {
-        object = JSON.parse(generatedText);
-      } catch (e) {
-        throw new Error(
-          `Failed to parse JSON. Raw text was: ${generatedText}. Error: ${e.message}`,
-        );
-      }
+      });
 
       this.logger.log(`=========================================`);
-      this.logger.log(
-        `✅ SUCCESS: LLM API (gpt-oss-120b) responded successfully!`,
-      );
+      this.logger.log(`✅ SUCCESS: LLM API responded successfully!`);
       this.logger.log(`LLM returned ${object.entities.length} entities`);
       this.logger.log(`=========================================`);
 
-      const writePromises = object.entities.map(async (entity: any) => {
+      const writePromises = object.entities.map(async (entity) => {
         let actualStart = entity.startOffset;
         let actualEnd = entity.endOffset;
         const extractedText = text.substring(actualStart, actualEnd);
@@ -162,66 +110,9 @@ Text: "${text}"`,
       });
 
       await Promise.all(writePromises);
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error('Error calling Groq / AI SDK', error);
-      void this.fallbackMock(documentId, text);
-    } finally {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+      throw error;
     }
-  }
-
-  private async fallbackMock(documentId: string, text: string) {
-    this.logger.warn(`=========================================`);
-    this.logger.warn(`⚠️ FALLBACK ENGAGED: Using hardcoded mock data!`);
-    this.logger.warn(`=========================================`);
-    const mockEntities = [
-      { text: 'chest pain', label: 'Clinical Finding', confidence: 0.95 },
-      {
-        text: 'shortness of breath',
-        label: 'Clinical Finding',
-        confidence: 0.85,
-      },
-      { text: 'hypertension', label: 'Clinical Condition', confidence: 0.95 },
-      {
-        text: 'type 2 diabetes mellitus',
-        label: 'Clinical Condition',
-        confidence: 0.99,
-      },
-      { text: 'lisinopril', label: 'Medication Statement', confidence: 0.96 },
-      { text: 'atorvastatin', label: 'Medication Statement', confidence: 0.99 },
-      { text: 'aspirin', label: 'Medication Statement', confidence: 0.97 },
-      { text: 'furosemide', label: 'Medication Statement', confidence: 0.94 },
-      {
-        text: 'pulmonary oedema',
-        label: 'Clinical Condition',
-        confidence: 0.75,
-      },
-      { text: 'echocardiogram', label: 'Medical Procedure', confidence: 0.55 },
-      { text: 'heart failure', label: 'Clinical Condition', confidence: 0.8 },
-    ];
-
-    const writePromises = mockEntities.map(async (ent) => {
-      const escapedText = ent.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regexPattern = escapedText.replace(/\\s\+|\\n|\s+/g, '\\s+');
-      const regex = new RegExp(regexPattern, 'i');
-      const match = text.match(regex);
-
-      if (match && match.index !== undefined) {
-        await this.annotationsService.createAnnotation({
-          documentId,
-          text: ent.text,
-          label: ent.label as any,
-          startOffset: match.index,
-          endOffset: match.index + match[0].length,
-          source: 'llm',
-          status: 'suggested',
-          confidence: ent.confidence,
-        });
-      }
-    });
-
-    await Promise.all(writePromises);
   }
 }
