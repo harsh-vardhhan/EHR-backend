@@ -1,8 +1,5 @@
-import { generateText, Output } from 'ai';
-import { createGroq } from '@ai-sdk/groq';
-import { z } from 'zod';
 import { AnnotationsService } from './annotations.service';
-import { MEDICAL_ENTITIES } from '../constants/labels';
+import { extractClinicalEntities } from './extractor.client';
 
 export class MastraService {
   constructor(private annotationsService: AnnotationsService) {}
@@ -13,42 +10,18 @@ export class MastraService {
     });
   }
 
+  /**
+   * The core clinical extraction logic.
+   * Exposed as public for use by the background SQS worker.
+   */
   async runAnalysis(documentId: string, text: string) {
     // Wait for 2 seconds to simulate "2-3 seconds" wait time
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     try {
-      if (!process.env.GROQ_API_KEY) {
-        throw new Error('GROQ_API_KEY is not set');
-      }
+      const entities = await extractClinicalEntities(text);
 
-      const groq = createGroq({
-        apiKey: process.env.GROQ_API_KEY,
-      });
-
-      const { output } = await generateText({
-        model: groq('meta-llama/llama-4-scout-17b-16e-instruct'),
-        abortSignal: AbortSignal.timeout(8000),
-        output: Output.object({
-          schema: z.object({
-            entities: z.array(
-              z.object({
-                text: z.string(),
-                label: z.enum([
-                  MEDICAL_ENTITIES.CONDITION,
-                  MEDICAL_ENTITIES.MEDICATION,
-                  MEDICAL_ENTITIES.FINDING,
-                  MEDICAL_ENTITIES.PROCEDURE,
-                ]),
-                confidence: z.number(),
-              }),
-            ),
-          }),
-        }),
-        prompt: buildExtractionPrompt(text),
-      });
-
-      const writePromises = output.entities.map(async (entity) => {
+      const writePromises = entities.map(async (entity) => {
         const escapedText = entity.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regexPattern = escapedText.replace(/\\s\+|\\n|\s+/g, '\\s+');
         const regex = new RegExp(regexPattern, 'i');
@@ -80,7 +53,3 @@ export class MastraService {
     }
   }
 }
-
-const buildExtractionPrompt = (text: string) => `Extract medical entities from the following text and classify them strictly into one of these professional healthcare labels: ${MEDICAL_ENTITIES.CONDITION}, ${MEDICAL_ENTITIES.MEDICATION}, ${MEDICAL_ENTITIES.FINDING}, or ${MEDICAL_ENTITIES.PROCEDURE}.
-
-Text: "${text}"`;
