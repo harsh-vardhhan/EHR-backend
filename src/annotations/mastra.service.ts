@@ -56,7 +56,7 @@ export class MastraService {
  * Finds the character start and end offsets of a text match within a document,
  * ignoring casing and treating dynamic whitespace/newlines as simple spaces.
  */
-function findEntityOffsets(
+export function findEntityOffsets(
   documentText: string,
   entityText: string,
 ): { startOffset: number; endOffset: number } | null {
