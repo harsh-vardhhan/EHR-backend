@@ -22,12 +22,9 @@ export class MastraService {
       const entities = await extractClinicalEntities(text);
 
       const writePromises = entities.map(async (entity) => {
-        const escapedText = entity.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regexPattern = escapedText.replace(/\\s\+|\\n|\s+/g, '\\s+');
-        const regex = new RegExp(regexPattern, 'i');
-        const match = text.match(regex);
+        const offsets = findEntityOffsets(text, entity.text);
 
-        if (!match || match.index === undefined) {
+        if (!offsets) {
           console.warn(
             `[MastraService] Entity text not found in document: ${entity.text}`,
           );
@@ -38,8 +35,8 @@ export class MastraService {
           documentId,
           text: entity.text,
           label: entity.label,
-          startOffset: match.index,
-          endOffset: match.index + match[0].length,
+          startOffset: offsets.startOffset,
+          endOffset: offsets.endOffset,
           source: 'llm',
           status: 'suggested',
           confidence: entity.confidence,
@@ -52,4 +49,26 @@ export class MastraService {
       throw error;
     }
   }
+}
+
+/**
+ * Finds the character start and end offsets of a text match within a document,
+ * ignoring casing and treating dynamic whitespace/newlines as simple spaces.
+ */
+function findEntityOffsets(
+  documentText: string,
+  entityText: string,
+): { startOffset: number; endOffset: number } | null {
+  const escapedText = entityText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regexPattern = escapedText.replace(/\\s\+|\\n|\s+/g, '\\s+');
+  const match = documentText.match(new RegExp(regexPattern, 'i'));
+
+  if (!match || match.index === undefined) {
+    return null;
+  }
+
+  return {
+    startOffset: match.index,
+    endOffset: match.index + match[0].length,
+  };
 }
