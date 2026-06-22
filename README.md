@@ -67,17 +67,17 @@ graph TD
     end
 
     %% Subgraph Styling
-    style Core fill:rgba(136, 136, 136, 0.05),stroke:#D1D5DB,stroke-width:2px,stroke-dasharray: 5 5;
-    style DDoS fill:rgba(255, 51, 51, 0.05),stroke:#FECACA,stroke-width:2px,stroke-dasharray: 5 5;
+    style Core fill:#888888,fill-opacity:0.05,stroke:#D1D5DB,stroke-width:2px,stroke-dasharray: 5 5;
+    style DDoS fill:#FF3333,fill-opacity:0.05,stroke:#FECACA,stroke-width:2px,stroke-dasharray: 5 5;
 
     %% AWS Styling Classes
-    classDef compute fill:rgba(255, 153, 0, 0.15),stroke:#FF9900,stroke-width:2px;
-    classDef database fill:rgba(0, 115, 187, 0.15),stroke:#0073BB,stroke-width:2px;
-    classDef storage fill:rgba(29, 129, 2, 0.15),stroke:#1D8102,stroke-width:2px;
-    classDef integration fill:rgba(139, 92, 246, 0.15),stroke:#8B5CF6,stroke-width:2px;
-    classDef monitor fill:rgba(194, 24, 91, 0.15),stroke:#C2185B,stroke-width:2px;
-    classDef userNode fill:rgba(84, 95, 122, 0.15),stroke:#545F7A,stroke-width:2px;
-    classDef external fill:rgba(107, 114, 128, 0.15),stroke:#6B7280,stroke-width:2px;
+    classDef compute fill:#FF9900,fill-opacity:0.15,stroke:#FF9900,stroke-width:2px;
+    classDef database fill:#0073BB,fill-opacity:0.15,stroke:#0073BB,stroke-width:2px;
+    classDef storage fill:#1D8102,fill-opacity:0.15,stroke:#1D8102,stroke-width:2px;
+    classDef integration fill:#8B5CF6,fill-opacity:0.15,stroke:#8B5CF6,stroke-width:2px;
+    classDef monitor fill:#C2185B,fill-opacity:0.15,stroke:#C2185B,stroke-width:2px;
+    classDef userNode fill:#545F7A,fill-opacity:0.15,stroke:#545F7A,stroke-width:2px;
+    classDef external fill:#6B7280,fill-opacity:0.15,stroke:#6B7280,stroke-width:2px;
 
     %% Apply Classes
     class LambdaURL,LambdaAPI,LambdaWorker,LambdaKillSwitch compute;
