@@ -27,7 +27,7 @@ export class MastraService {
       });
 
       const { output } = await generateText({
-        model: groq('llama-3.3-70b-versatile'),
+        model: groq('meta-llama/llama-4-scout-17b-16e-instruct'),
         abortSignal: AbortSignal.timeout(8000),
         output: Output.object({
           schema: z.object({
