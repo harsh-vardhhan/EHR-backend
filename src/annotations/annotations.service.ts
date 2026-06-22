@@ -48,6 +48,29 @@ export class AnnotationsService {
     return newAnnotation;
   }
 
+  async createAnnotations(
+    documentId: string,
+    annotationsData: Omit<Annotation, 'annotationId' | 'createdAt' | 'documentId'>[],
+  ): Promise<Annotation[]> {
+    if (annotationsData.length === 0) return [];
+
+    const docRes = await DocumentEntity.get({ id: documentId }).go();
+    if (!docRes.data) {
+      throw new Error(`Document with id ${documentId} not found`);
+    }
+
+    const timestamp = new Date().toISOString();
+    const newAnnotations: Annotation[] = annotationsData.map((data) => ({
+      ...data,
+      documentId,
+      annotationId: randomUUID(),
+      createdAt: timestamp,
+    }));
+
+    await AnnotationEntity.put(newAnnotations).go();
+    return newAnnotations;
+  }
+
   async updateAnnotation(
     annotationId: string,
     updates: Partial<Annotation>,

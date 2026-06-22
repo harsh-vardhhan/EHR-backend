@@ -18,36 +18,41 @@ const ddbClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(ddbClient);
 const s3Client = new S3Client({});
 
-async function cleanupTable(tableName: string) {
+function logJson(level: 'info' | 'success' | 'warn' | 'error', event: string, data: Record<string, any> = {}) {
+  console.log(JSON.stringify({ timestamp: new Date().toISOString(), level, event, ...data }));
+}
+
+async function cleanupTable(tableName: string): Promise<number> {
   if (!tableName) {
-    console.warn(`Table name not configured. Skipping.`);
-    return;
+    logJson('warn', 'ddb_cleanup_skipped', { reason: 'table_name_not_configured' });
+    return 0;
   }
-  console.log(`Scanning table ${tableName}...`);
+  logJson('info', 'ddb_scan_start', { table: tableName });
   try {
     const scanResponse = await docClient.send(
       new ScanCommand({ TableName: tableName }),
     );
     const items = scanResponse.Items || [];
-    console.log(`Found ${items.length} items to delete in ${tableName}.`);
+    logJson('info', 'ddb_scan_results', { table: tableName, count: items.length });
 
     if (items.length === 0) {
-      console.log('No items to delete.');
-      return;
+      return 0;
     }
 
-    // Chunk items into batches of 25 for BatchWriteCommand
     const batches: any[][] = [];
     for (let i = 0; i < items.length; i += 25) {
       batches.push(items.slice(i, i + 25));
     }
 
-    console.log(`Deleting items in ${batches.length} batch(es)...`);
+    logJson('info', 'ddb_delete_start', { table: tableName, total_batches: batches.length });
     for (let index = 0; index < batches.length; index++) {
       const batch = batches[index];
-      console.log(
-        `Processing batch ${index + 1}/${batches.length} (${batch.length} items)...`,
-      );
+      logJson('info', 'ddb_delete_batch', {
+        table: tableName,
+        batch_index: index + 1,
+        total_batches: batches.length,
+        batch_size: batch.length,
+      });
 
       const deleteRequests = batch.map((item) => ({
         DeleteRequest: {
@@ -66,20 +71,20 @@ async function cleanupTable(tableName: string) {
         }),
       );
     }
-    console.log(`Deleted all items from ${tableName}.`);
+    logJson('success', 'ddb_cleanup_success', { table: tableName, items_deleted: items.length });
+    return items.length;
   } catch (err: any) {
-    console.error(`Error deleting from ${tableName}:`, err.message);
+    logJson('error', 'ddb_cleanup_failed', { table: tableName, error: err.message });
+    throw err;
   }
 }
 
-async function cleanupBucket(bucketName: string, prefix: string) {
+async function cleanupBucket(bucketName: string, prefix: string): Promise<number> {
   if (!bucketName) {
-    console.warn(`Bucket name not configured. Skipping.`);
-    return;
+    logJson('warn', 's3_cleanup_skipped', { reason: 'bucket_name_not_configured' });
+    return 0;
   }
-  console.log(
-    `Listing objects in bucket ${bucketName} with prefix "${prefix}"...`,
-  );
+  logJson('info', 's3_list_start', { bucket: bucketName, prefix });
   try {
     const listCommand = new ListObjectsV2Command({
       Bucket: bucketName,
@@ -87,14 +92,12 @@ async function cleanupBucket(bucketName: string, prefix: string) {
     });
     const listResponse = await s3Client.send(listCommand);
     const objects = listResponse.Contents || [];
+    logJson('info', 's3_list_results', { bucket: bucketName, count: objects.length });
+
     if (objects.length === 0) {
-      console.log(
-        `No objects found in bucket ${bucketName} with prefix "${prefix}".`,
-      );
-      return;
+      return 0;
     }
 
-    console.log(`Found ${objects.length} objects to delete in ${bucketName}.`);
     const deleteParams = {
       Bucket: bucketName,
       Delete: {
@@ -102,17 +105,32 @@ async function cleanupBucket(bucketName: string, prefix: string) {
       },
     };
     await s3Client.send(new DeleteObjectsCommand(deleteParams));
-    console.log(
-      `Deleted all objects in bucket ${bucketName} with prefix "${prefix}".`,
-    );
+    logJson('success', 's3_cleanup_success', { bucket: bucketName, prefix, objects_deleted: objects.length });
+    return objects.length;
   } catch (err: any) {
-    console.error(`Error cleaning up bucket ${bucketName}:`, err.message);
+    logJson('error', 's3_cleanup_failed', { bucket: bucketName, error: err.message });
+    throw err;
   }
 }
 
 async function main() {
-  await cleanupTable(EHR_TABLE_NAME || '');
-  await cleanupBucket(DOCUMENTS_BUCKET_NAME || '', 'documents/');
+  logJson('info', 'cleanup_start', { table: EHR_TABLE_NAME, bucket: DOCUMENTS_BUCKET_NAME });
+  try {
+    const ddbDeleted = await cleanupTable(EHR_TABLE_NAME || '');
+    const s3Deleted = await cleanupBucket(DOCUMENTS_BUCKET_NAME || '', 'documents/');
+    logJson('success', 'cleanup_complete', {
+      summary: {
+        ddb_items_deleted: ddbDeleted,
+        s3_objects_deleted: s3Deleted,
+      },
+    });
+  } catch (err: any) {
+    logJson('error', 'cleanup_failed', { error: err.message });
+    process.exit(1);
+  }
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  logJson('error', 'cleanup_failed_fatal', { error: err.message });
+  process.exit(1);
+});

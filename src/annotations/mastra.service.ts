@@ -1,4 +1,4 @@
-import { AnnotationsService } from './annotations.service';
+import { AnnotationsService, Annotation } from './annotations.service';
 import { extractClinicalEntities } from './extractor.client';
 
 export class MastraService {
@@ -21,29 +21,30 @@ export class MastraService {
     try {
       const entities = await extractClinicalEntities(text);
 
-      const writePromises = entities.map(async (entity) => {
+      const annotationsToCreate: Omit<Annotation, 'annotationId' | 'createdAt' | 'documentId'>[] = [];
+
+      for (const entity of entities) {
         const offsets = findEntityOffsets(text, entity.text);
 
         if (!offsets) {
           console.warn(
             `[MastraService] Entity text not found in document: ${entity.text}`,
           );
-          return;
+          continue;
         }
 
-        await this.annotationsService.createAnnotation({
-          documentId,
+        annotationsToCreate.push({
           text: entity.text,
           label: entity.label,
           startOffset: offsets.startOffset,
           endOffset: offsets.endOffset,
-          source: 'llm',
-          status: 'suggested',
+          source: 'llm' as const,
+          status: 'suggested' as const,
           confidence: entity.confidence,
         });
-      });
+      }
 
-      await Promise.all(writePromises);
+      await this.annotationsService.createAnnotations(documentId, annotationsToCreate);
     } catch (error: any) {
       console.error('[MastraService] Error calling Groq / AI SDK', error);
       throw error;

@@ -3,8 +3,54 @@ import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import { annotationsService } from '../services';
 import { MEDICAL_ENTITIES } from '../constants/labels';
+import type { MiddlewareHandler } from 'hono';
 
 export const annotationsApp = new Hono();
+
+// Validation middlewares
+const validateParam = (paramName: string, schema: z.ZodSchema): MiddlewareHandler => {
+  return async (c, next) => {
+    const value = c.req.param(paramName);
+    const result = schema.safeParse(value);
+    if (!result.success) {
+      return c.json(
+        {
+          error: 'Bad Request',
+          message: `Invalid parameter: ${paramName}`,
+          details: result.error.errors.map((err) => err.message),
+        },
+        400,
+      );
+    }
+    await next();
+  };
+};
+
+const validateQuery = (paramName: string, schema: z.ZodSchema): MiddlewareHandler => {
+  return async (c, next) => {
+    const value = c.req.query(paramName);
+    const result = schema.safeParse(value);
+    if (!result.success) {
+      return c.json(
+        {
+          error: 'Bad Request',
+          message: `Invalid query parameter: ${paramName}`,
+          details: result.error.errors.map((err) => err.message),
+        },
+        400,
+      );
+    }
+    await next();
+  };
+};
+
+const documentIdQuerySchema = z
+  .string()
+  .min(1, 'documentId is required')
+  .max(100, 'documentId is too long')
+  .regex(/^[a-zA-Z0-9_-]+$/, 'documentId must only contain alphanumeric characters, dashes, or underscores');
+
+const uuidSchema = z.string().uuid('id must be a valid UUID');
 
 annotationsApp.onError((err, c) => {
   if (err instanceof HTTPException) return err.getResponse();
@@ -53,7 +99,7 @@ const createAnnotationSchema = z
     path: ['startOffset'],
   });
 
-annotationsApp.get('/', async (c) => {
+annotationsApp.get('/', validateQuery('documentId', documentIdQuerySchema), async (c) => {
   const documentId = c.req.query('documentId') || '';
   const annotations = await annotationsService.getAnnotationsByDocument(documentId);
   return c.json(annotations);
@@ -74,7 +120,7 @@ annotationsApp.post('/', async (c) => {
   return c.json(newAnnotation, 201);
 });
 
-annotationsApp.patch('/:id', async (c) => {
+annotationsApp.patch('/:id', validateParam('id', uuidSchema), async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json();
   const updatedAnnotation = await annotationsService.updateAnnotation(id, body);
