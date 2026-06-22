@@ -1,19 +1,12 @@
 import { AnnotationsService } from './annotations.service';
+import { extractClinicalEntities } from './extractor.client';
 
 export class MastraService {
-  private readonly logger = {
-    log: (msg: string) => console.log(`[MastraService] ${msg}`),
-    warn: (msg: string) => console.warn(`[MastraService] ${msg}`),
-    error: (msg: string, err?: any) =>
-      console.error(`[MastraService] ${msg}`, err || ''),
-  };
-
   constructor(private annotationsService: AnnotationsService) {}
 
   analyzeDocumentBackground(documentId: string, text: string) {
-    // Fire and forget, run async without awaiting in the caller
     void this.runAnalysis(documentId, text).catch((err) => {
-      this.logger.error('Failed to run LLM analysis', err);
+      console.error('[MastraService] Failed to run LLM analysis', err);
     });
   }
 
@@ -22,139 +15,28 @@ export class MastraService {
    * Exposed as public for use by the background SQS worker.
    */
   async runAnalysis(documentId: string, text: string) {
-    this.logger.log(`Starting LLM pre-labelling for document ${documentId}`);
-
     // Wait for 2 seconds to simulate "2-3 seconds" wait time
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    let timeoutId: any = null;
     try {
-      if (!process.env.GROQ_API_KEY) {
-        throw new Error('GROQ_API_KEY not set, falling back to mock data');
-      }
+      const entities = await extractClinicalEntities(text);
 
-      const controller = new AbortController();
-      timeoutId = setTimeout(() => {
-        this.logger.warn(
-          `Groq API request timed out after 8 seconds. Aborting request.`,
-        );
-        controller.abort();
-      }, 8000);
+      const writePromises = entities.map(async (entity) => {
+        const offsets = findEntityOffsets(text, entity.text);
 
-      const response = await fetch(
-        'https://api.groq.com/openai/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-          body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            max_tokens: 4096,
-            messages: [
-              {
-                role: 'system',
-                content: 'You are a clinical NLP system.',
-              },
-              {
-                role: 'user',
-                content: `Extract medical entities from the following text and classify them strictly into one of these professional healthcare labels: Clinical Condition, Medication Statement, Clinical Finding, or Medical Procedure.
-
-Important: You must output your response as a valid JSON object matching this schema:
-{
-  "entities": [
-    { "text": string, "label": "Clinical Condition" | "Medication Statement" | "Clinical Finding" | "Medical Procedure", "confidence": number (decimal 0-1), "startOffset": number, "endOffset": number }
-  ]
-}
-
-Note: Do not calculate exact character offsets. Always set startOffset and endOffset to 0 for every entity. Our backend will handle the exact offset calculation.
-
-Example output:
-{
-  "entities": [
-    { "text": "chest pain", "label": "Clinical Finding", "confidence": 0.95, "startOffset": 0, "endOffset": 0 }
-  ]
-}
-
-Do not include any markdown formatting, backticks, or conversational text. Return only the JSON object. Do not over-reason. Output the final JSON immediately.
-
-Text: "${text}"`,
-              },
-            ],
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Groq API error: ${errorText}`);
-      }
-
-      const data = await response.json();
-
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        timeoutId = null;
-      }
-
-      let generatedText = data.choices[0].message.content || '';
-
-      // Robust JSON extraction to handle markdown or conversational wrappers
-      const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        generatedText = jsonMatch[0];
-      }
-
-      let object;
-      try {
-        object = JSON.parse(generatedText);
-      } catch (e) {
-        throw new Error(
-          `Failed to parse JSON. Raw text was: ${generatedText}. Error: ${e.message}`,
-        );
-      }
-
-      this.logger.log(`=========================================`);
-      this.logger.log(
-        `✅ SUCCESS: LLM API (gpt-oss-120b) responded successfully!`,
-      );
-      this.logger.log(`LLM returned ${object.entities.length} entities`);
-      this.logger.log(`=========================================`);
-
-      const writePromises = object.entities.map(async (entity: any) => {
-        let actualStart = entity.startOffset;
-        let actualEnd = entity.endOffset;
-        const extractedText = text.substring(actualStart, actualEnd);
-
-        if (extractedText !== entity.text) {
-          // Escape special regex characters, then replace spaces with \s+ to match across newlines
-          const escapedText = entity.text.replace(
-            /[.*+?^${}()|[\]\\]/g,
-            '\\$&',
+        if (!offsets) {
+          console.warn(
+            `[MastraService] Entity text not found in document: ${entity.text}`,
           );
-          const regexPattern = escapedText.replace(/\\s\+|\\n|\s+/g, '\\s+');
-          const regex = new RegExp(regexPattern, 'i');
-          const match = text.match(regex);
-
-          if (match && match.index !== undefined) {
-            actualStart = match.index;
-            actualEnd = match.index + match[0].length;
-          } else {
-            this.logger.warn(
-              `Entity text not found in document: ${entity.text}`,
-            );
-            return;
-          }
+          return;
         }
 
         await this.annotationsService.createAnnotation({
           documentId,
           text: entity.text,
           label: entity.label,
-          startOffset: actualStart,
-          endOffset: actualEnd,
+          startOffset: offsets.startOffset,
+          endOffset: offsets.endOffset,
           source: 'llm',
           status: 'suggested',
           confidence: entity.confidence,
@@ -162,66 +44,31 @@ Text: "${text}"`,
       });
 
       await Promise.all(writePromises);
-    } catch (error) {
-      this.logger.error('Error calling Groq / AI SDK', error);
-      void this.fallbackMock(documentId, text);
-    } finally {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+    } catch (error: any) {
+      console.error('[MastraService] Error calling Groq / AI SDK', error);
+      throw error;
     }
   }
+}
 
-  private async fallbackMock(documentId: string, text: string) {
-    this.logger.warn(`=========================================`);
-    this.logger.warn(`⚠️ FALLBACK ENGAGED: Using hardcoded mock data!`);
-    this.logger.warn(`=========================================`);
-    const mockEntities = [
-      { text: 'chest pain', label: 'Clinical Finding', confidence: 0.95 },
-      {
-        text: 'shortness of breath',
-        label: 'Clinical Finding',
-        confidence: 0.85,
-      },
-      { text: 'hypertension', label: 'Clinical Condition', confidence: 0.95 },
-      {
-        text: 'type 2 diabetes mellitus',
-        label: 'Clinical Condition',
-        confidence: 0.99,
-      },
-      { text: 'lisinopril', label: 'Medication Statement', confidence: 0.96 },
-      { text: 'atorvastatin', label: 'Medication Statement', confidence: 0.99 },
-      { text: 'aspirin', label: 'Medication Statement', confidence: 0.97 },
-      { text: 'furosemide', label: 'Medication Statement', confidence: 0.94 },
-      {
-        text: 'pulmonary oedema',
-        label: 'Clinical Condition',
-        confidence: 0.75,
-      },
-      { text: 'echocardiogram', label: 'Medical Procedure', confidence: 0.55 },
-      { text: 'heart failure', label: 'Clinical Condition', confidence: 0.8 },
-    ];
+/**
+ * Finds the character start and end offsets of a text match within a document,
+ * ignoring casing and treating dynamic whitespace/newlines as simple spaces.
+ */
+function findEntityOffsets(
+  documentText: string,
+  entityText: string,
+): { startOffset: number; endOffset: number } | null {
+  const escapedText = entityText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regexPattern = escapedText.replace(/\\s\+|\\n|\s+/g, '\\s+');
+  const match = documentText.match(new RegExp(regexPattern, 'i'));
 
-    const writePromises = mockEntities.map(async (ent) => {
-      const escapedText = ent.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regexPattern = escapedText.replace(/\\s\+|\\n|\s+/g, '\\s+');
-      const regex = new RegExp(regexPattern, 'i');
-      const match = text.match(regex);
-
-      if (match && match.index !== undefined) {
-        await this.annotationsService.createAnnotation({
-          documentId,
-          text: ent.text,
-          label: ent.label as any,
-          startOffset: match.index,
-          endOffset: match.index + match[0].length,
-          source: 'llm',
-          status: 'suggested',
-          confidence: ent.confidence,
-        });
-      }
-    });
-
-    await Promise.all(writePromises);
+  if (!match || match.index === undefined) {
+    return null;
   }
+
+  return {
+    startOffset: match.index,
+    endOffset: match.index + match[0].length,
+  };
 }
