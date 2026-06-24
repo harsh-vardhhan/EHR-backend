@@ -103,6 +103,32 @@ const createAnnotationSchema = z
     path: ['startOffset'],
   });
 
+const searchQuerySchema = z.object({
+  assertion: z.enum(['positive', 'negated', 'possible']).optional(),
+  label: z.enum([
+    MEDICAL_ENTITIES.CONDITION,
+    MEDICAL_ENTITIES.MEDICATION,
+    MEDICAL_ENTITIES.FINDING,
+    MEDICAL_ENTITIES.PROCEDURE,
+  ]).optional(),
+  conceptCode: z.string().optional(),
+});
+
+annotationsApp.get('/search', async (c) => {
+  const query = c.req.query();
+  const result = searchQuerySchema.safeParse(query);
+
+  if (!result.success) {
+    const errors = result.error.errors
+      .map((err) => `${err.path.join('.')}: ${err.message}`)
+      .join(', ');
+    return c.json({ error: 'Validation failed', message: errors }, 400);
+  }
+
+  const annotations = await annotationsService.searchAnnotations(result.data as any);
+  return c.json(annotations);
+});
+
 annotationsApp.get('/', validateQuery('documentId', documentIdQuerySchema), async (c) => {
   const documentId = c.req.query('documentId') || '';
   const annotations = await annotationsService.getAnnotationsByDocument(documentId);
