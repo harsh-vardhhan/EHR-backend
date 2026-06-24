@@ -153,10 +153,12 @@ To maximize performance, cut database costs, and eliminate cross-table JOIN late
 
 ### Key Schema Layout
 
-| PK (Partition Key) | SK (Sort Key) | Entity Type | Attributes & Schema |
-| :--- | :--- | :--- | :--- |
-| `DOCUMENT#<docId>` | `METADATA` | **Document** | `id`, `title`, `category`, `s3Key`, `status`, `createdAt` |
-| `DOCUMENT#<docId>` | `ANNOTATION#<annotationId>` | **Annotation** | `annotationId`, `documentId`, `text`, `label`, `startOffset`, `endOffset`, `createdAt`, `source`, `status`, `confidence` |
+| PK (Partition Key) | SK (Sort Key) | Index Name | Entity Type | Attributes & Schema |
+| :--- | :--- | :--- | :--- | :--- |
+| `DOCUMENT#<docId>` | `METADATA` | Primary | **Document** | `id`, `title`, `category`, `s3Key`, `status`, `createdAt` |
+| `DOCUMENT#<docId>` | `ANNOTATION#<annotationId>` | Primary | **Annotation** | `annotationId`, `documentId`, `text`, `label`, `startOffset`, `endOffset`, `createdAt`, `source`, `status`, `confidence`, `assertion`, `conceptCode` |
+| `SK` (Inverted) | `PK` | `SKIndex` (GSI) | **Annotation** | Mapped for inverted parent-key resolution. |
+| `ASSERTION#<assertion>` | `LABEL#<label>` | `GSI1Index` (GSI) | **Annotation** | Secondary index optimized for clinical cohort filtering. |
 
 ### Query Optimizations
 
@@ -164,6 +166,8 @@ To maximize performance, cut database costs, and eliminate cross-table JOIN late
    When opening a patient note, the backend executes concurrent reads (`GetItem` for Document metadata and `Query` for all related Annotations) in parallel using `Promise.all` over the single table. This utilizes ElectroDB entities for strict type safety while maintaining sub-millisecond single-table responses.
 2. **Inverted Index (`SKIndex`):**
    To update or delete an annotation by its `annotationId` alone (without knowing the parent `documentId`), we query the Global Secondary Index (GSI) `SKIndex` (where `HashKey = SK` and `RangeKey = PK`) mapped in ElectroDB. This resolves the parent `PK` in milliseconds, allowing targeted, isolated edits on specific rows.
+3. **Clinical Cohort Search Index (`GSI1Index`):**
+   To query patient annotations by medical category, assertion status, and standard ICD-10/RxNorm concept codes without performing expensive table scans, the search API targets `GSI1Index` (`GSI1PK = HASH`, `GSI1SK = RANGE`). If a filter query omits the assertion status, the service executes parallelized index queries across all three assertion states in parallel using `Promise.all` and flattens the result, ensuring consistent sub-second search speeds.
 
 ## 🚀 CI/CD Pipeline
 
