@@ -95,6 +95,8 @@ const createAnnotationSchema = z
     }),
     status: z.enum(['suggested', 'accepted', 'rejected', 'corrected']).optional(),
     confidence: z.number().min(0).max(1).optional(),
+    assertion: z.enum(['positive', 'negated', 'possible']).optional(),
+    conceptCode: z.string().optional(),
   })
   .refine((data) => data.startOffset <= data.endOffset, {
     message: 'startOffset must be less than or equal to endOffset',
@@ -164,6 +166,8 @@ annotationsApp.post('/preview', async (c) => {
         source: 'llm' as const,
         status: 'suggested' as const,
         confidence: entity.confidence,
+        assertion: entity.assertion,
+        conceptCode: entity.conceptCode,
         createdAt: new Date().toISOString(),
       };
     });
