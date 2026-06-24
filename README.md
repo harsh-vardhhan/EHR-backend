@@ -21,7 +21,7 @@ To mitigate this, this repository implements a custom **DDoS/DoW Circuit Breaker
 
 ## 🏥 Clinical NLP & Health-Tech Domain Design
 
-This platform is engineered to mirror real-world EHR aggregation pipelines (similar to systems built by Truveta or Flatiron Health). It handles the parsing, validation, and structuring of raw clinical narratives into standardized, research-ready health datasets.
+This platform is engineered to mirror real-world EHR aggregation pipelines. It handles the parsing, validation, and structuring of raw clinical narratives into standardized, research-ready health datasets.
 
 ### 1. Clinical Entity Recognition (NER) & Taxonomy Mapping
 Raw medical notes are unstructured. The platform parses these text streams and automatically extracts clinical concepts, mapping them to standard health-tech ontologies:
