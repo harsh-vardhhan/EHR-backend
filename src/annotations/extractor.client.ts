@@ -11,7 +11,9 @@ export interface ExtractedEntity {
   conceptCode: string;
 }
 
-export async function extractClinicalEntities(text: string): Promise<ExtractedEntity[]> {
+export async function extractClinicalEntities(
+  text: string,
+): Promise<ExtractedEntity[]> {
   if (!process.env.GROQ_API_KEY) {
     throw new Error('GROQ_API_KEY is not set');
   }
@@ -35,12 +37,16 @@ export async function extractClinicalEntities(text: string): Promise<ExtractedEn
               MEDICAL_ENTITIES.PROCEDURE,
             ]),
             confidence: z.number(),
-            assertion: z.enum(['positive', 'negated', 'possible']).describe(
-              "Determines the assertion status of the entity: 'negated' if the text denies the condition/finding (e.g. 'no history of chest pain'), 'possible' if it is uncertain or hypothetical (e.g. 'rule out pneumonia', 'suspect fracture'), or 'positive' if it is present and confirmed.",
-            ),
-            conceptCode: z.string().describe(
-              "The standard medical ontology code for the entity. Provide an ICD-10-CM code for Conditions, an RxNorm CUI code for Medications, or a SNOMED-CT code for Clinical Findings and Medical Procedures.",
-            ),
+            assertion: z
+              .enum(['positive', 'negated', 'possible'])
+              .describe(
+                "Determines the assertion status of the entity: 'negated' if the text denies the condition/finding (e.g. 'no history of chest pain'), 'possible' if it is uncertain or hypothetical (e.g. 'rule out pneumonia', 'suspect fracture'), or 'positive' if it is present and confirmed.",
+              ),
+            conceptCode: z
+              .string()
+              .describe(
+                'The standard medical ontology code for the entity. Provide an ICD-10-CM code for Conditions, an RxNorm CUI code for Medications, or a SNOMED-CT code for Clinical Findings and Medical Procedures.',
+              ),
           }),
         ),
       }),
@@ -51,7 +57,9 @@ export async function extractClinicalEntities(text: string): Promise<ExtractedEn
   return output.entities;
 }
 
-const buildExtractionPrompt = (text: string) => `Extract clinical entities from the patient text and classify them strictly into: ${MEDICAL_ENTITIES.CONDITION}, ${MEDICAL_ENTITIES.MEDICATION}, ${MEDICAL_ENTITIES.FINDING}, or ${MEDICAL_ENTITIES.PROCEDURE}.
+const buildExtractionPrompt = (
+  text: string,
+) => `Extract clinical entities from the patient text and classify them strictly into: ${MEDICAL_ENTITIES.CONDITION}, ${MEDICAL_ENTITIES.MEDICATION}, ${MEDICAL_ENTITIES.FINDING}, or ${MEDICAL_ENTITIES.PROCEDURE}.
 
 For each entity, determine:
 1. The assertion status: 'negated' if the finding/condition is mentioned as absent/ruled out/denied, 'possible' if it is a suspected/hypothetical diagnosis, or 'positive' if it is confirmed active.

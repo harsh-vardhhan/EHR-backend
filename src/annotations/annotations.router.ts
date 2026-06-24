@@ -10,7 +10,10 @@ import { findEntityOffsets } from './mastra.service';
 export const annotationsApp = new Hono();
 
 // Validation middlewares
-const validateParam = (paramName: string, schema: z.ZodSchema): MiddlewareHandler => {
+const validateParam = (
+  paramName: string,
+  schema: z.ZodSchema,
+): MiddlewareHandler => {
   return async (c, next) => {
     const value = c.req.param(paramName);
     const result = schema.safeParse(value);
@@ -28,7 +31,10 @@ const validateParam = (paramName: string, schema: z.ZodSchema): MiddlewareHandle
   };
 };
 
-const validateQuery = (paramName: string, schema: z.ZodSchema): MiddlewareHandler => {
+const validateQuery = (
+  paramName: string,
+  schema: z.ZodSchema,
+): MiddlewareHandler => {
   return async (c, next) => {
     const value = c.req.query(paramName);
     const result = schema.safeParse(value);
@@ -50,7 +56,10 @@ const documentIdQuerySchema = z
   .string()
   .min(1, 'documentId is required')
   .max(100, 'documentId is too long')
-  .regex(/^[a-zA-Z0-9_-]+$/, 'documentId must only contain alphanumeric characters, dashes, or underscores');
+  .regex(
+    /^[a-zA-Z0-9_-]+$/,
+    'documentId must only contain alphanumeric characters, dashes, or underscores',
+  );
 
 const uuidSchema = z.string().uuid('id must be a valid UUID');
 
@@ -59,7 +68,10 @@ annotationsApp.onError((err, c) => {
 
   const status = err.message?.includes('not found') ? 404 : 400;
   return c.json(
-    { error: status === 404 ? 'Not Found' : 'Bad Request', message: err.message },
+    {
+      error: status === 404 ? 'Not Found' : 'Bad Request',
+      message: err.message,
+    },
     status,
   );
 });
@@ -93,7 +105,9 @@ const createAnnotationSchema = z
     source: z.enum(['human', 'llm'], {
       errorMap: () => ({ message: 'source must be either "human" or "llm"' }),
     }),
-    status: z.enum(['suggested', 'accepted', 'rejected', 'corrected']).optional(),
+    status: z
+      .enum(['suggested', 'accepted', 'rejected', 'corrected'])
+      .optional(),
     confidence: z.number().min(0).max(1).optional(),
     assertion: z.enum(['positive', 'negated', 'possible']).optional(),
     conceptCode: z.string().optional(),
@@ -105,12 +119,14 @@ const createAnnotationSchema = z
 
 const searchQuerySchema = z.object({
   assertion: z.enum(['positive', 'negated', 'possible']).optional(),
-  label: z.enum([
-    MEDICAL_ENTITIES.CONDITION,
-    MEDICAL_ENTITIES.MEDICATION,
-    MEDICAL_ENTITIES.FINDING,
-    MEDICAL_ENTITIES.PROCEDURE,
-  ]).optional(),
+  label: z
+    .enum([
+      MEDICAL_ENTITIES.CONDITION,
+      MEDICAL_ENTITIES.MEDICATION,
+      MEDICAL_ENTITIES.FINDING,
+      MEDICAL_ENTITIES.PROCEDURE,
+    ])
+    .optional(),
   conceptCode: z.string().optional(),
 });
 
@@ -125,15 +141,20 @@ annotationsApp.get('/search', async (c) => {
     return c.json({ error: 'Validation failed', message: errors }, 400);
   }
 
-  const annotations = await annotationsService.searchAnnotations(result.data as any);
+  const annotations = await annotationsService.searchAnnotations(result.data);
   return c.json(annotations);
 });
 
-annotationsApp.get('/', validateQuery('documentId', documentIdQuerySchema), async (c) => {
-  const documentId = c.req.query('documentId') || '';
-  const annotations = await annotationsService.getAnnotationsByDocument(documentId);
-  return c.json(annotations);
-});
+annotationsApp.get(
+  '/',
+  validateQuery('documentId', documentIdQuerySchema),
+  async (c) => {
+    const documentId = c.req.query('documentId') || '';
+    const annotations =
+      await annotationsService.getAnnotationsByDocument(documentId);
+    return c.json(annotations);
+  },
+);
 
 annotationsApp.post('/', async (c) => {
   const body = await c.req.json();
@@ -201,6 +222,9 @@ annotationsApp.post('/preview', async (c) => {
     return c.json(annotations);
   } catch (error: any) {
     console.error('Failed to run preview analysis', error);
-    return c.json({ error: 'Failed to run preview analysis', message: error.message }, 500);
+    return c.json(
+      { error: 'Failed to run preview analysis', message: error.message },
+      500,
+    );
   }
 });

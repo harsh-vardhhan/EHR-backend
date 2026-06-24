@@ -21,7 +21,10 @@ export class MastraService {
     try {
       const entities = await extractClinicalEntities(text);
 
-      const annotationsToCreate: Omit<Annotation, 'annotationId' | 'createdAt' | 'documentId'>[] = [];
+      const annotationsToCreate: Omit<
+        Annotation,
+        'annotationId' | 'createdAt' | 'documentId'
+      >[] = [];
 
       for (const entity of entities) {
         const offsets = findEntityOffsets(text, entity.text);
@@ -46,7 +49,10 @@ export class MastraService {
         });
       }
 
-      await this.annotationsService.createAnnotations(documentId, annotationsToCreate);
+      await this.annotationsService.createAnnotations(
+        documentId,
+        annotationsToCreate,
+      );
     } catch (error: any) {
       console.error('[MastraService] Error calling Groq / AI SDK', error);
       throw error;
