@@ -41,6 +41,8 @@ export class MastraService {
           source: 'llm' as const,
           status: 'suggested' as const,
           confidence: entity.confidence,
+          assertion: entity.assertion,
+          conceptCode: entity.conceptCode,
         });
       }
 

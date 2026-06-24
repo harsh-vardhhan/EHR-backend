@@ -13,6 +13,8 @@ export interface Annotation {
   source: 'human' | 'llm';
   status?: 'suggested' | 'accepted' | 'rejected' | 'corrected';
   confidence?: number;
+  assertion?: 'positive' | 'negated' | 'possible';
+  conceptCode?: string;
 }
 
 export class AnnotationsService {

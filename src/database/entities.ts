@@ -68,6 +68,8 @@ export const AnnotationEntity = new Entity(
       source: { type: 'string', required: true }, // 'human' | 'llm'
       status: { type: 'string' },
       confidence: { type: 'number' },
+      assertion: { type: 'string' }, // 'positive' | 'negated' | 'possible'
+      conceptCode: { type: 'string' },
     },
     indexes: {
       primary: {
