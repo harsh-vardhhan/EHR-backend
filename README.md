@@ -19,6 +19,27 @@ To mitigate this, this repository implements a custom **DDoS/DoW Circuit Breaker
 - **Backend**: [https://github.com/harsh-vardhhan/EHR-backend](https://github.com/harsh-vardhhan/EHR-backend)
 - **Frontend**: [https://github.com/harsh-vardhhan/EHR-frontend](https://github.com/harsh-vardhhan/EHR-frontend)
 
+## 🏥 Clinical NLP & Health-Tech Domain Design
+
+This platform is engineered to mirror real-world EHR aggregation pipelines (similar to systems built by Truveta or Flatiron Health). It handles the parsing, validation, and structuring of raw clinical narratives into standardized, research-ready health datasets.
+
+### 1. Clinical Entity Recognition (NER) & Taxonomy Mapping
+Raw medical notes are unstructured. The platform parses these text streams and automatically extracts clinical concepts, mapping them to standard health-tech ontologies:
+*   **Clinical Conditions** (e.g., *"Type 2 Diabetes"*): Mapped to **ICD-10-CM** (International Classification of Diseases, 10th Revision, Clinical Modification) codes, the gold standard for clinical classification and diagnostic billing.
+*   **Medication Statements** (e.g., *"Metformin 500mg daily"*): Mapped to **RxNorm** Concept Unique Identifiers (CUIs), ensuring precise drug-name normalization and interaction safety checks.
+*   **Clinical Findings & Symptoms** (e.g., *"Chest tightness"*): Mapped to **SNOMED-CT** (Systematized Nomenclature of Medicine—Clinical Terms) codes to ensure vocabulary consistency across clinical records.
+*   **Medical Procedures** (e.g., *"Chest X-Ray"*): Mapped to **CPT** (Current Procedural Terminology) or **SNOMED-CT** codes for tracking operations and clinical interventions.
+
+### 2. Clinical Assertion Status (Negation & Speculation)
+In clinical NLP, identifying a disease term is only half the battle. We must determine its **assertion status** (contextual modifier) to prevent critical medical errors:
+*   **Positive (Active):** Conditions the patient currently has (e.g., *"patient has asthma"*).
+*   **Negated (Ruled Out):** Conditions explicitly denied (e.g., *"denies chest pain"*). Misclassifying a negated symptom as an active condition leads to incorrect diagnoses and billing errors.
+*   **Possible (Hypothetical):** Speculative diagnoses under investigation (e.g., *"suspect bronchitis, rule out pneumonia"*), tracking diagnostic uncertainty.
+
+### 3. HIPAA & Data Privacy Architecture
+*   **Data Residency:** All clinical notes are isolated in an encrypted Amazon S3 bucket using KMS Customer Managed Keys (CMKs). DynamoDB stores strictly structured, de-identified annotation offsets and concept mappings.
+*   **Stateless Inferences:** The public sandbox pipeline runs completely stateless with input character caps, ensuring no patient-identifiable data is cached or written to persistent storage.
+
 ## 🏗 AWS Architecture
 
 The backend follows a highly scalable, serverless architecture designed for clinical data residency and high availability.
