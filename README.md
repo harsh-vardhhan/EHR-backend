@@ -1,23 +1,45 @@
-# EHR Annotation Platform - Backend
+# EHR Annotation Platform - Cloud-Native Clinical NLP Backend
 
 Enterprise-grade serverless backend for clinical document annotation, built with Hono and deployed on AWS.
 
+![AWS SAM](https://img.shields.io/badge/AWS%20SAM-FF9900?style=flat-square&logo=amazon-aws&logoColor=white)
+![Hono](https://img.shields.io/badge/Hono-E36049?style=flat-square&logo=hono&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Inference-Groq](https://img.shields.io/badge/Inference-Groq%20GPT--OSS--20B-orange?style=flat-square)
+![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
+
 **🚀 Live Demo:** [https://d1pijuvgczqoi4.cloudfront.net/](https://d1pijuvgczqoi4.cloudfront.net/)
 
-## 🚨 Financial Warning: The Cost of Infinite Scaling
-
-Unlike traditional servers (EC2, Render, Railway, etc.) that cap their financial damage by crashing under high load, AWS serverless applications scale **infinitely**.
-
-Under high virality or a **DDoS attack**, an unprotected serverless stack will spin up thousands of concurrent containers instantly. This can lead to **runaway AWS bills of hundreds of thousands of dollars overnight**.
-
-To mitigate this, this repository implements a custom **DDoS/DoW Circuit Breaker**:
-1. **Zero-Base-Cost Function URLs** bypass API Gateway completely, eliminating gateway request charges ($3.50/M) for blocked requests.
-2. **CloudWatch Alarm Metric Math** monitors total Lambda traffic (`Invocations + Throttles`) in a 1-minute window.
-3. **Lambda Concurrency Kill Switch** automatically triggers during an anomaly, programmatically throttling the API's reserved concurrency to `0` to drop subsequent request costs to exactly **$0.00**.
+### Key Capabilities
+*   **Clinical Named Entity Recognition (NER):** Parse raw EHR notes to identify critical health variables.
+*   **Medical Ontology Tagging:** Automated ICD-10, RxNorm, and SNOMED-CT dictionary code lookups.
+*   **Clinical Assertion Parsing:** Distinguish positive, negated (ruled-out), and speculated medical claims.
+*   **Stateless De-identification Sandbox:** HIPAA-aligned safe-harbor clinical preview engine.
 
 ## 🔗 Repository Links
-- **Backend**: [https://github.com/harsh-vardhhan/EHR-backend](https://github.com/harsh-vardhhan/EHR-backend)
-- **Frontend**: [https://github.com/harsh-vardhhan/EHR-frontend](https://github.com/harsh-vardhhan/EHR-frontend)
+*   🖥️ **Frontend React UI:** [EHR Annotation Client Dashboard Repository](https://github.com/harsh-vardhhan/EHR-frontend)
+*   ⚙️ **Backend API Service:** [AWS Serverless Clinical NLP Backend Repository](https://github.com/harsh-vardhhan/EHR-backend)
+
+## 🏥 Clinical NLP & Health-Tech Domain Design
+
+This platform is engineered to mirror real-world EHR aggregation pipelines. It handles the parsing, validation, and structuring of raw clinical narratives into standardized, research-ready health datasets.
+
+### 1. Clinical Entity Recognition (NER) & Taxonomy Mapping
+Raw medical notes are unstructured. The platform parses these text streams and automatically extracts clinical concepts, mapping them to standard health-tech ontologies:
+*   **Clinical Conditions** (e.g., *"Type 2 Diabetes"*): Mapped to **ICD-10-CM** (International Classification of Diseases, 10th Revision, Clinical Modification) codes, the gold standard for clinical classification and diagnostic billing.
+*   **Medication Statements** (e.g., *"Metformin 500mg daily"*): Mapped to **RxNorm** Concept Unique Identifiers (CUIs), ensuring precise drug-name normalization and interaction safety checks.
+*   **Clinical Findings & Symptoms** (e.g., *"Chest tightness"*): Mapped to **SNOMED-CT** (Systematized Nomenclature of Medicine—Clinical Terms) codes to ensure vocabulary consistency across clinical records.
+*   **Medical Procedures** (e.g., *"Chest X-Ray"*): Mapped to **CPT** (Current Procedural Terminology) or **SNOMED-CT** codes for tracking operations and clinical interventions.
+
+### 2. Clinical Assertion Status (Negation & Speculation)
+In clinical NLP, identifying a disease term is only half the battle. We must determine its **assertion status** (contextual modifier) to prevent critical medical errors:
+*   **Positive (Active):** Conditions the patient currently has (e.g., *"patient has asthma"*).
+*   **Negated (Ruled Out):** Conditions explicitly denied (e.g., *"denies chest pain"*). Misclassifying a negated symptom as an active condition leads to incorrect diagnoses and billing errors.
+*   **Possible (Hypothetical):** Speculative diagnoses under investigation (e.g., *"suspect bronchitis, rule out pneumonia"*), tracking diagnostic uncertainty.
+
+### 3. HIPAA & Data Privacy Architecture
+*   **Data Residency:** All clinical notes are isolated in an encrypted Amazon S3 bucket using KMS Customer Managed Keys (CMKs). DynamoDB stores strictly structured, de-identified annotation offsets and concept mappings.
+*   **Stateless Inferences:** The public sandbox pipeline runs completely stateless with input character caps, ensuring no patient-identifiable data is cached or written to persistent storage.
 
 ## 🏗 AWS Architecture
 
@@ -114,7 +136,18 @@ graph TD
 | **CloudWatch Alarm & SNS** | Monitors total request volume (Invocations + Throttles) in real-time, acting as the circuit breaker sensor. |
 | **Groq AI Integration** | High-performance inference engine running clinical entity recognition models. |
 
-## 🗄️ DynamoDB Single-Table Design
+## 🚨 Financial Warning: The Cost of Infinite Scaling
+
+Unlike traditional servers (EC2, Render, Railway, etc.) that cap their financial damage by crashing under high load, AWS serverless applications scale **infinitely**.
+
+Under high virality or a **DDoS attack**, an unprotected serverless stack will spin up thousands of concurrent containers instantly. This can lead to **runaway AWS bills of hundreds of thousands of dollars overnight**.
+
+To mitigate this, this repository implements a custom **DDoS/DoW Circuit Breaker**:
+1. **Zero-Base-Cost Function URLs** bypass API Gateway completely, eliminating gateway request charges ($3.50/M) for blocked requests.
+2. **CloudWatch Alarm Metric Math** monitors total Lambda traffic (`Invocations + Throttles`) in a 1-minute window.
+3. **Lambda Concurrency Kill Switch** automatically triggers during an anomaly, programmatically throttling the API's reserved concurrency to `0` to drop subsequent request costs to exactly **$0.00**.
+
+## 🗄️ DynamoDB Single-Table Design for Clinical Records
 
 To maximize performance, cut database costs, and eliminate cross-table JOIN latency, this application uses a consolidated **Single-Table Design** layout (`EhrTable`) modeled with **ElectroDB**. ElectroDB provides type-safe schemas, validates attributes, and automatically formats keys and index queries without raw SDK query strings.
 
