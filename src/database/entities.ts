@@ -97,6 +97,19 @@ export const AnnotationEntity = new Entity(
           template: 'DOCUMENT#${documentId}',
         },
       },
+      byAssertionLabel: {
+        index: 'GSI1Index',
+        pk: {
+          field: 'GSI1PK',
+          composite: ['assertion'],
+          template: 'ASSERTION#${assertion}',
+        },
+        sk: {
+          field: 'GSI1SK',
+          composite: ['label'],
+          template: 'LABEL#${label}',
+        },
+      },
     },
   },
   { client, table },
