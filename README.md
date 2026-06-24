@@ -5,7 +5,7 @@ Enterprise-grade serverless backend for clinical document annotation, built with
 ![AWS SAM](https://img.shields.io/badge/AWS%20SAM-FF9900?style=flat-square&logo=amazon-aws&logoColor=white)
 ![Hono](https://img.shields.io/badge/Hono-E36049?style=flat-square&logo=hono&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
-![Inference-Groq](https://img.shields.io/badge/Inference-Groq%20Llama3-orange?style=flat-square)
+![Inference-Groq](https://img.shields.io/badge/Inference-Groq%20GPT--OSS--20B-orange?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
 
 **🚀 Live Demo:** [https://d1pijuvgczqoi4.cloudfront.net/](https://d1pijuvgczqoi4.cloudfront.net/)
