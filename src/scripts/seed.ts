@@ -11,8 +11,19 @@ const BUCKET_NAME = process.env.DOCUMENTS_BUCKET_NAME;
 
 const s3Client = new S3Client({});
 
-function logJson(level: 'info' | 'success' | 'warn' | 'error', event: string, data: Record<string, any> = {}) {
-  console.log(JSON.stringify({ timestamp: new Date().toISOString(), level, event, ...data }));
+function logJson(
+  level: 'info' | 'success' | 'warn' | 'error',
+  event: string,
+  data: Record<string, any> = {},
+) {
+  console.log(
+    JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level,
+      event,
+      ...data,
+    }),
+  );
 }
 
 async function sleep(ms: number) {
@@ -39,14 +50,18 @@ async function isS3Seeded(): Promise<boolean> {
 
 async function seed() {
   if (!BUCKET_NAME) {
-    logJson('error', 'seed_failed_credentials', { reason: 'missing_bucket_name_env' });
+    logJson('error', 'seed_failed_credentials', {
+      reason: 'missing_bucket_name_env',
+    });
     process.exit(1);
   }
 
   logJson('info', 'seed_check_start', { bucket: BUCKET_NAME });
-  
+
   if (await isS3Seeded()) {
-    logJson('success', 'seed_skipped', { reason: 's3_already_contains_documents' });
+    logJson('success', 'seed_skipped', {
+      reason: 's3_already_contains_documents',
+    });
     return;
   }
 
@@ -75,14 +90,20 @@ async function seed() {
       );
       logJson('success', 'seed_upload_success', { docId: note.id, key: s3Key });
     } catch (error: any) {
-      logJson('error', 'seed_upload_failed', { docId: note.id, key: s3Key, error: error.message });
+      logJson('error', 'seed_upload_failed', {
+        docId: note.id,
+        key: s3Key,
+        error: error.message,
+      });
       throw error;
     }
 
     await sleep(200);
   }
 
-  logJson('success', 'seed_complete', { summary: { documents_seeded: notes.length } });
+  logJson('success', 'seed_complete', {
+    summary: { documents_seeded: notes.length },
+  });
 }
 
 seed().catch((err) => {

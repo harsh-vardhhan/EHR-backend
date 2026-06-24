@@ -52,7 +52,10 @@ export class AnnotationsService {
 
   async createAnnotations(
     documentId: string,
-    annotationsData: Omit<Annotation, 'annotationId' | 'createdAt' | 'documentId'>[],
+    annotationsData: Omit<
+      Annotation,
+      'annotationId' | 'createdAt' | 'documentId'
+    >[],
   ): Promise<Annotation[]> {
     if (annotationsData.length === 0) return [];
 
@@ -129,7 +132,7 @@ export class AnnotationsService {
   }): Promise<Annotation[]> {
     try {
       let query;
-      
+
       if (filters.assertion && filters.label) {
         query = AnnotationEntity.query.byAssertionLabel({
           assertion: filters.assertion,
@@ -143,7 +146,9 @@ export class AnnotationsService {
 
       if (query) {
         if (filters.conceptCode) {
-          query.where(({ conceptCode }, { eq }) => eq(conceptCode, filters.conceptCode!));
+          query.where(({ conceptCode }, { eq }) =>
+            eq(conceptCode, filters.conceptCode!),
+          );
         }
         const response = await query.go();
         return (response.data as Annotation[]) || [];
@@ -151,7 +156,11 @@ export class AnnotationsService {
 
       // If assertion is not provided but label is, query across all assertion partitions in parallel
       if (filters.label) {
-        const assertions: Array<'positive' | 'negated' | 'possible'> = ['positive', 'negated', 'possible'];
+        const assertions: Array<'positive' | 'negated' | 'possible'> = [
+          'positive',
+          'negated',
+          'possible',
+        ];
         const results = await Promise.all(
           assertions.map(async (assertion) => {
             const q = AnnotationEntity.query.byAssertionLabel({
@@ -159,25 +168,33 @@ export class AnnotationsService {
               label: filters.label,
             });
             if (filters.conceptCode) {
-              q.where(({ conceptCode }, { eq }) => eq(conceptCode, filters.conceptCode!));
+              q.where(({ conceptCode }, { eq }) =>
+                eq(conceptCode, filters.conceptCode!),
+              );
             }
             const res = await q.go();
             return res.data || [];
-          })
+          }),
         );
         return results.flat() as Annotation[];
       }
 
       // If only conceptCode is provided, query across all assertion partitions in parallel
       if (filters.conceptCode) {
-        const assertions: Array<'positive' | 'negated' | 'possible'> = ['positive', 'negated', 'possible'];
+        const assertions: Array<'positive' | 'negated' | 'possible'> = [
+          'positive',
+          'negated',
+          'possible',
+        ];
         const results = await Promise.all(
           assertions.map(async (assertion) => {
             const q = AnnotationEntity.query.byAssertionLabel({ assertion });
-            q.where(({ conceptCode }, { eq }) => eq(conceptCode, filters.conceptCode!));
+            q.where(({ conceptCode }, { eq }) =>
+              eq(conceptCode, filters.conceptCode!),
+            );
             const res = await q.go();
             return res.data || [];
-          })
+          }),
         );
         return results.flat() as Annotation[];
       }
@@ -189,4 +206,3 @@ export class AnnotationsService {
     }
   }
 }
-

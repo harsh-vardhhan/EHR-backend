@@ -7,7 +7,10 @@ import type { MiddlewareHandler } from 'hono';
 export const documentsApp = new Hono();
 
 // Reusable parameter validator middleware
-const validateParam = (paramName: string, schema: z.ZodSchema): MiddlewareHandler => {
+const validateParam = (
+  paramName: string,
+  schema: z.ZodSchema,
+): MiddlewareHandler => {
   return async (c, next) => {
     const value = c.req.param(paramName);
     const result = schema.safeParse(value);
@@ -29,14 +32,20 @@ const idSchema = z
   .string()
   .min(1, 'id is required')
   .max(100, 'id is too long')
-  .regex(/^[a-zA-Z0-9_-]+$/, 'id must only contain alphanumeric characters, dashes, or underscores');
+  .regex(
+    /^[a-zA-Z0-9_-]+$/,
+    'id must only contain alphanumeric characters, dashes, or underscores',
+  );
 
 documentsApp.onError((err, c) => {
   if (err instanceof HTTPException) return err.getResponse();
 
   const status = err.message?.includes('not found') ? 404 : 500;
   return c.json(
-    { error: status === 404 ? 'Not Found' : 'Internal Server Error', message: err.message },
+    {
+      error: status === 404 ? 'Not Found' : 'Internal Server Error',
+      message: err.message,
+    },
     status,
   );
 });
