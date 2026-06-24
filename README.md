@@ -1,12 +1,24 @@
-# EHR Annotation Platform - Backend
+# EHR Annotation Platform - Cloud-Native Clinical NLP Backend
 
 Enterprise-grade serverless backend for clinical document annotation, built with Hono and deployed on AWS.
 
+![AWS SAM](https://img.shields.io/badge/AWS%20SAM-FF9900?style=flat-square&logo=amazon-aws&logoColor=white)
+![Hono](https://img.shields.io/badge/Hono-E36049?style=flat-square&logo=hono&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Inference-Groq](https://img.shields.io/badge/Inference-Groq%20Llama3-orange?style=flat-square)
+![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
+
 **🚀 Live Demo:** [https://d1pijuvgczqoi4.cloudfront.net/](https://d1pijuvgczqoi4.cloudfront.net/)
 
+### Key Capabilities
+*   **Clinical Named Entity Recognition (NER):** Parse raw EHR notes to identify critical health variables.
+*   **Medical Ontology Tagging:** Automated ICD-10, RxNorm, and SNOMED-CT dictionary code lookups.
+*   **Clinical Assertion Parsing:** Distinguish positive, negated (ruled-out), and speculated medical claims.
+*   **Stateless De-identification Sandbox:** HIPAA-aligned safe-harbor clinical preview engine.
+
 ## 🔗 Repository Links
-- **Backend**: [https://github.com/harsh-vardhhan/EHR-backend](https://github.com/harsh-vardhhan/EHR-backend)
-- **Frontend**: [https://github.com/harsh-vardhhan/EHR-frontend](https://github.com/harsh-vardhhan/EHR-frontend)
+*   🖥️ **Frontend React UI:** [EHR Annotation Client Dashboard Repository](https://github.com/harsh-vardhhan/EHR-frontend)
+*   ⚙️ **Backend API Service:** [AWS Serverless Clinical NLP Backend Repository](https://github.com/harsh-vardhhan/EHR-backend)
 
 ## 🏥 Clinical NLP & Health-Tech Domain Design
 
@@ -135,7 +147,7 @@ To mitigate this, this repository implements a custom **DDoS/DoW Circuit Breaker
 2. **CloudWatch Alarm Metric Math** monitors total Lambda traffic (`Invocations + Throttles`) in a 1-minute window.
 3. **Lambda Concurrency Kill Switch** automatically triggers during an anomaly, programmatically throttling the API's reserved concurrency to `0` to drop subsequent request costs to exactly **$0.00**.
 
-## 🗄️ DynamoDB Single-Table Design
+## 🗄️ DynamoDB Single-Table Design for Clinical Records
 
 To maximize performance, cut database costs, and eliminate cross-table JOIN latency, this application uses a consolidated **Single-Table Design** layout (`EhrTable`) modeled with **ElectroDB**. ElectroDB provides type-safe schemas, validates attributes, and automatically formats keys and index queries without raw SDK query strings.
 
