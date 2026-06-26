@@ -1,4 +1,5 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
+import { Mastra } from '@mastra/core';
 import { z } from 'zod';
 import { AnnotationsService, Annotation } from './annotations.service';
 import { extractClinicalEntities } from './extractor.client';
@@ -6,10 +7,15 @@ import { OmopHubClient } from './omophub.client';
 
 export class MastraService {
   private omophubClient = new OmopHubClient();
-  private workflow;
+  private mastra: Mastra;
 
   constructor(private annotationsService: AnnotationsService) {
-    this.workflow = this.initWorkflow();
+    const workflow = this.initWorkflow();
+    this.mastra = new Mastra({
+      workflows: {
+        clinicalAnalysis: workflow,
+      },
+    });
   }
 
   /**
@@ -24,7 +30,8 @@ export class MastraService {
       console.log(
         `[MastraService] Starting clinical analysis workflow for document: ${documentId}`,
       );
-      const run = await this.workflow.createRun();
+      const workflow = this.mastra.getWorkflow('clinicalAnalysis');
+      const run = await workflow.createRun();
       const result = await run.start({
         inputData: {
           documentId,
@@ -37,7 +44,7 @@ export class MastraService {
       );
 
       const saveResult = result.steps['resolve-and-save'];
-      if (saveResult) {
+      if (saveResult && saveResult.status === 'success') {
         console.log(
           `[MastraService] resolve-and-save step result:`,
           JSON.stringify(saveResult.output),
