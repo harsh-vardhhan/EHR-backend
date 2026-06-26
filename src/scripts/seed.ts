@@ -124,7 +124,7 @@ async function seed() {
             attempts_remaining: attempts,
           });
           if (attempts === 0) throw err;
-          await sleep(3000);
+          await sleep(15000);
         }
       }
       logJson('success', 'seed_llm_extraction_success', { docId: note.id, count: entities.length });
@@ -182,8 +182,8 @@ async function seed() {
       throw error;
     }
 
-    // Rate-limiting delay to sleep 2 seconds between note processings
-    await sleep(2000);
+    // Rate-limiting delay to sleep 12 seconds between note processings to respect Groq TPM/RPM limits
+    await sleep(12000);
   }
 
   logJson('success', 'seed_complete', {
