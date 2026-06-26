@@ -73,9 +73,10 @@ async function seed() {
 
   for (const note of notes) {
     const s3Key = `documents/${note.id}.txt`;
-    logJson('info', 'seed_upload_item', { docId: note.id, key: s3Key });
+    logJson('info', 'seed_processing_note', { docId: note.id, key: s3Key });
 
     try {
+      // 1. Upload Note text to S3 with metadata (this triggers the S3 event notification rule)
       await s3Client.send(
         new PutObjectCommand({
           Bucket: BUCKET_NAME,
@@ -88,9 +89,9 @@ async function seed() {
           },
         }),
       );
-      logJson('success', 'seed_upload_success', { docId: note.id, key: s3Key });
+      logJson('success', 'seed_s3_upload_success', { docId: note.id, key: s3Key });
     } catch (error: any) {
-      logJson('error', 'seed_upload_failed', {
+      logJson('error', 'seed_processing_failed', {
         docId: note.id,
         key: s3Key,
         error: error.message,
@@ -98,6 +99,7 @@ async function seed() {
       throw error;
     }
 
+    // Small delay between uploads to avoid S3 API spikes
     await sleep(200);
   }
 

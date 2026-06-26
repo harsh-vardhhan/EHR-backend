@@ -53,6 +53,7 @@ jobs:
               GroqApiKey=${{ secrets.GROQ_API_KEY }} \
               NotificationEmail=${{ secrets.NOTIFICATION_EMAIL }} \
               EhrApiKeyVal=${{ secrets.VITE_API_KEY }} \
+              OmopHubApiKey=${{ secrets.OMOPHUB_API_KEY }} \
               DdosRequestThreshold=2000
 
 

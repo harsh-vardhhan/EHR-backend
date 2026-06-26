@@ -30,6 +30,10 @@ Parameters:
   EhrApiKeyVal:
     Type: String
     Description: API Key for Hono authentication
+  OmopHubApiKey:
+    Type: String
+    Description: OMOPHub API Key
+
 
 Resources:
   EhrBackendFunction:
@@ -48,6 +52,7 @@ Resources:
           DOCUMENTS_BUCKET_NAME: !Ref DocumentsBucketName
           ANNOTATION_QUEUE_URL: !Ref EhrAnnotationQueue
           API_KEY: !Ref EhrApiKeyVal
+          OMOPHUB_API_KEY: !Ref OmopHubApiKey
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref DocumentsBucketName
@@ -67,6 +72,7 @@ Resources:
     Properties:
       CodeUri: dist/
       Handler: worker-bundle.handler
+      Timeout: 120
       ReservedConcurrentExecutions: 2 # Hard cap on LLM parallel processing
       Events:
         SQSEvent:
@@ -81,6 +87,7 @@ Resources:
           GROQ_API_KEY: !Ref GroqApiKey
           EHR_TABLE_NAME: !Ref EhrTableName
           DOCUMENTS_BUCKET_NAME: !Ref DocumentsBucketName
+          OMOPHUB_API_KEY: !Ref OmopHubApiKey
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref DocumentsBucketName

@@ -1,7 +1,10 @@
 import { AnnotationsService, Annotation } from './annotations.service';
 import { extractClinicalEntities } from './extractor.client';
+import { OmopHubClient } from './omophub.client';
 
 export class MastraService {
+  private omophubClient = new OmopHubClient();
+
   constructor(private annotationsService: AnnotationsService) {}
 
   analyzeDocumentBackground(documentId: string, text: string) {
@@ -19,7 +22,24 @@ export class MastraService {
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     try {
+      // 1. Check if annotations already exist in DynamoDB (Skip if seeded/pre-processed)
+      const existing = await this.annotationsService.getAnnotationsByDocument(documentId);
+      if (existing && existing.length > 0) {
+        console.log(
+          `[MastraService] Document ${documentId} already has ${existing.length} annotations in DDB. Skipping analysis.`,
+        );
+        return;
+      }
+
+      // 2. Run LLM Clinical Entity extraction
       const entities = await extractClinicalEntities(text);
+
+      // 3. Resolve standard concept codes in bulk from OMOPHub
+      const queries = entities.map((entity) => ({
+        text: entity.text,
+        label: entity.label,
+      }));
+      const resolvedMap = await this.omophubClient.resolveBulkConcepts(queries);
 
       const annotationsToCreate: Omit<
         Annotation,
@@ -36,6 +56,10 @@ export class MastraService {
           continue;
         }
 
+        // Map resolved concept code, fallback to LLM-generated code if unmapped
+        const resolved = resolvedMap.get(entity.text.toLowerCase());
+        const conceptCode = resolved?.conceptCode || entity.conceptCode;
+
         annotationsToCreate.push({
           text: entity.text,
           label: entity.label,
@@ -45,7 +69,7 @@ export class MastraService {
           status: 'suggested' as const,
           confidence: entity.confidence,
           assertion: entity.assertion,
-          conceptCode: entity.conceptCode,
+          conceptCode,
         });
       }
 
@@ -54,7 +78,7 @@ export class MastraService {
         annotationsToCreate,
       );
     } catch (error: any) {
-      console.error('[MastraService] Error calling Groq / AI SDK', error);
+      console.error('[MastraService] Error calling Groq / AI SDK / OMOPHub', error);
       throw error;
     }
   }

@@ -22,39 +22,59 @@ export async function extractClinicalEntities(
     apiKey: process.env.GROQ_API_KEY,
   });
 
-  const { output } = await generateText({
-    model: groq('openai/gpt-oss-20b'),
-    abortSignal: AbortSignal.timeout(8000),
-    output: Output.object({
-      schema: z.object({
-        entities: z.array(
-          z.object({
-            text: z.string(),
-            label: z.enum([
-              MEDICAL_ENTITIES.CONDITION,
-              MEDICAL_ENTITIES.MEDICATION,
-              MEDICAL_ENTITIES.FINDING,
-              MEDICAL_ENTITIES.PROCEDURE,
-            ]),
-            confidence: z.number(),
-            assertion: z
-              .enum(['positive', 'negated', 'possible'])
-              .describe(
-                "Determines the assertion status of the entity: 'negated' if the text denies the condition/finding (e.g. 'no history of chest pain'), 'possible' if it is uncertain or hypothetical (e.g. 'rule out pneumonia', 'suspect fracture'), or 'positive' if it is present and confirmed.",
-              ),
-            conceptCode: z
-              .string()
-              .describe(
-                'The standard medical ontology code for the entity. Provide an ICD-10-CM code for Conditions, an RxNorm CUI code for Medications, or a SNOMED-CT code for Clinical Findings and Medical Procedures.',
-              ),
-          }),
-        ),
-      }),
-    }),
-    prompt: buildExtractionPrompt(text),
-  });
+  let attempts = 5;
+  let delayMs = 3000;
 
-  return output.entities;
+  while (attempts > 0) {
+    try {
+      const { output } = await generateText({
+        model: groq('openai/gpt-oss-20b'),
+        abortSignal: AbortSignal.timeout(30000),
+        output: Output.object({
+          schema: z.object({
+            entities: z.array(
+              z.object({
+                text: z.string(),
+                label: z.enum([
+                  MEDICAL_ENTITIES.CONDITION,
+                  MEDICAL_ENTITIES.MEDICATION,
+                  MEDICAL_ENTITIES.FINDING,
+                  MEDICAL_ENTITIES.PROCEDURE,
+                ]),
+                confidence: z.number(),
+                assertion: z
+                  .enum(['positive', 'negated', 'possible'])
+                  .describe(
+                    "Determines the assertion status of the entity: 'negated' if the text denies the condition/finding (e.g. 'no history of chest pain'), 'possible' if it is uncertain or hypothetical (e.g. 'rule out pneumonia', 'suspect fracture'), or 'positive' if it is present and confirmed.",
+                  ),
+                conceptCode: z
+                  .string()
+                  .describe(
+                    'The standard medical ontology code for the entity. Provide an ICD-10-CM code for Conditions, an RxNorm CUI code for Medications, or a SNOMED-CT code for Clinical Findings and Medical Procedures.',
+                  ),
+              }),
+            ),
+          }),
+        }),
+        prompt: buildExtractionPrompt(text),
+      });
+
+      return output.entities;
+    } catch (err: any) {
+      attempts--;
+      console.warn(
+        `[extractClinicalEntities] LLM extraction attempt failed. Error: ${err.message || err}. Attempts remaining: ${attempts}`,
+      );
+      if (attempts === 0) {
+        throw err;
+      }
+      // Wait with back-off
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      delayMs *= 2;
+    }
+  }
+
+  throw new Error('Failed to extract clinical entities after all attempts');
 }
 
 const buildExtractionPrompt = (

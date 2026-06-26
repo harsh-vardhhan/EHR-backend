@@ -25,7 +25,7 @@ Enterprise-grade serverless backend for clinical document annotation, built with
 This platform is engineered to mirror real-world EHR aggregation pipelines. It handles the parsing, validation, and structuring of raw clinical narratives into standardized, research-ready health datasets.
 
 ### 1. Clinical Entity Recognition (NER) & Taxonomy Mapping
-Raw medical notes are unstructured. The platform parses these text streams and automatically extracts clinical concepts, mapping them to standard health-tech ontologies:
+Raw medical notes are unstructured. The platform parses these text streams and automatically extracts clinical concepts, mapping them to standard health-tech ontologies. To eliminate model hallucinations and ensure accurate coding, the extracted terms are resolved in bulk against standard vocabularies using **OMOPHub** (https://omophub.com):
 *   **Clinical Conditions** (e.g., *"Type 2 Diabetes"*): Mapped to **ICD-10-CM** (International Classification of Diseases, 10th Revision, Clinical Modification) codes, the gold standard for clinical classification and diagnostic billing.
 *   **Medication Statements** (e.g., *"Metformin 500mg daily"*): Mapped to **RxNorm** Concept Unique Identifiers (CUIs), ensuring precise drug-name normalization and interaction safety checks.
 *   **Clinical Findings & Symptoms** (e.g., *"Chest tightness"*): Mapped to **SNOMED-CT** (Systematized Nomenclature of Medicine—Clinical Terms) codes to ensure vocabulary consistency across clinical records.
@@ -61,6 +61,7 @@ graph TD
         SQS -.->|Failures| DLQ([AWS SQS - Dead Letter Queue])
         
         LambdaWorker -->|Inference| Groq{{Groq AI - LLM Inference}}
+        LambdaWorker -->|Concept Grounding| OMOPHub{{OMOPHub - Vocabulary API}}
         LambdaWorker -->|Save Annotations| DynamoDB
 
         %% Stateless Sandbox Preview Flow
@@ -112,7 +113,7 @@ graph TD
     class SQS,DLQ,EB,SNS integration;
     class CWAlarm monitor;
     class User,Visitor userNode;
-    class Groq external;
+    class Groq,OMOPHub external;
     
     %% Apply Classes to Legend
     class L_Comp compute;
@@ -193,7 +194,7 @@ This backend incorporates a robust, multi-layered security architecture designed
 | **Asynchronous Decoupling** | SQS-backed queue hand-off (`EhrAnnotationQueue`) with `BatchSize: 5`. | Prevents container runtime crashes; processes spikes in document uploads sequentially rather than in parallel. |
 | **Infinite Retry Defense** | SQS Dead Letter Queue (`EhrAnnotationDLQ`) with `maxReceiveCount: 3`. | Quarantines failing payloads (poison pills) to prevent endless execution retry loops. |
 | **Partial Batch Isolation** | SQS batch response processing with `ReportBatchItemFailures`. | Prevents successfully processed records in a batch from being re-executed when a sibling record in the same batch fails, saving redundant LLM API costs. |
-| **External API Timeouts** | Groq NLP call `AbortController` (strictly capped at **8 seconds**). | Prevents hung external LLM endpoints from keeping the worker Lambda running up to its 30-second cap. |
+| **External API Timeouts** | Groq NLP call `AbortController` (capped at **30 seconds**). | Prevents hung external LLM endpoints from keeping the worker Lambda running up to its 30-second cap, while allowing ample time for large-document entity extractions. |
 | **Database Cost Ceiling** | DynamoDB configured with on-demand capacity (`PAY_PER_REQUEST`). Active costs are only incurred per request (pennies for a Reddit spike) and drop to exactly $0.00 during dormancy. | Combined with the API Kill Switch, this acts as a hard budget boundary preventing runaway database scaling costs. |
 | **Compute Efficiency** | Parallel database writes via `Promise.all` instead of sequential writes. | Grouped DB actions run concurrently, reducing billable Lambda active execution time by over 80%. |
 | **S3 Read-Only Worker** | SQS Lambda worker has read-only S3 permissions (`S3ReadPolicy`) and never writes back to S3. | There is zero risk of an infinite S3 write-event loop. |
@@ -211,8 +212,18 @@ This backend incorporates a robust, multi-layered security architecture designed
 - SAM CLI (optional, for local Lambda emulation)
 
 ### Setup
+1. Clone the repository and install dependencies:
 ```bash
 $ npm install
+```
+
+2. Create a `.env` file in the root of the `backend` directory containing your API keys and configuration parameters:
+```env
+GROQ_API_KEY=your_groq_api_key
+EHR_TABLE_NAME=ehr-table
+DOCUMENTS_BUCKET_NAME=your_s3_bucket_name
+AWS_REGION=your_aws_region
+OMOPHUB_API_KEY=your_omophub_api_key
 ```
 
 ### Running Locally
