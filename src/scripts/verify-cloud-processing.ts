@@ -3,11 +3,21 @@ import { DocumentEntity, AnnotationEntity } from '../database/entities';
 
 async function verifyCloudIngestion() {
   console.log('🔍 Starting Cloud Ingestion Verification...');
-  console.log('⏳ Polling DynamoDB to check the processing progress of the 10 documents...');
+  console.log(
+    '⏳ Polling DynamoDB to check the processing progress of the 10 documents...',
+  );
 
   const expectedDocs = [
-    'doc-001', 'doc-002', 'doc-003', 'doc-004', 'doc-005',
-    'doc-006', 'doc-007', 'doc-008', 'doc-009', 'doc-010'
+    'doc-001',
+    'doc-002',
+    'doc-003',
+    'doc-004',
+    'doc-005',
+    'doc-006',
+    'doc-007',
+    'doc-008',
+    'doc-009',
+    'doc-010',
   ];
 
   const maxAttempts = 18; // 3 minutes total polling time
@@ -18,7 +28,11 @@ async function verifyCloudIngestion() {
     console.log(`\nChecking database (Attempt ${attempt}/${maxAttempts})...`);
 
     let processedCount = 0;
-    const details: { docId: string; status: string; annotationsCount: number }[] = [];
+    const details: {
+      docId: string;
+      status: string;
+      annotationsCount: number;
+    }[] = [];
 
     // Query Document and Annotation records concurrently for all 10 documents
     await Promise.all(
@@ -53,7 +67,7 @@ async function verifyCloudIngestion() {
             annotationsCount: 0,
           });
         }
-      })
+      }),
     );
 
     // Sort details by docId
@@ -62,14 +76,17 @@ async function verifyCloudIngestion() {
     console.log('------------------------------------------------------');
     for (const detail of details) {
       console.log(
-        `📄 ${detail.docId}: Ingested Status = [${detail.status}], Annotations = [${detail.annotationsCount}]`
+        `📄 ${detail.docId}: Ingested Status = [${detail.status}], Annotations = [${detail.annotationsCount}]`,
       );
     }
     console.log('------------------------------------------------------');
 
-    const allProcessed = processedCount === 10 && details.every(d => d.annotationsCount > 0);
+    const allProcessed =
+      processedCount === 10 && details.every((d) => d.annotationsCount > 0);
     if (allProcessed) {
-      console.log('\n🎉 SUCCESS! All 10 documents have been fully ingested and annotated in the cloud!');
+      console.log(
+        '\n🎉 SUCCESS! All 10 documents have been fully ingested and annotated in the cloud!',
+      );
       return;
     }
 
@@ -79,7 +96,9 @@ async function verifyCloudIngestion() {
     }
   }
 
-  console.log('\n⚠️ TIMEOUT: Some documents were not fully processed in the cloud yet. Check CloudWatch logs for worker errors.');
+  console.log(
+    '\n⚠️ TIMEOUT: Some documents were not fully processed in the cloud yet. Check CloudWatch logs for worker errors.',
+  );
 }
 
 verifyCloudIngestion().catch(console.error);
