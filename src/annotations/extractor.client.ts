@@ -24,7 +24,7 @@ export async function extractClinicalEntities(
 
   const { output } = await generateText({
     model: groq('openai/gpt-oss-20b'),
-    abortSignal: AbortSignal.timeout(8000),
+    abortSignal: AbortSignal.timeout(30000),
     output: Output.object({
       schema: z.object({
         entities: z.array(
