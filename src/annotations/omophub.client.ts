@@ -59,7 +59,9 @@ export class OmopHubClient {
    * Resolves a batch of queries in a single bulk API request to OMOPHub.
    * If the API key is missing or the request fails, it returns empty resolved concepts gracefully.
    */
-  async resolveBulkConcepts(queries: ConceptQuery[]): Promise<Map<string, ResolvedConcept>> {
+  async resolveBulkConcepts(
+    queries: ConceptQuery[],
+  ): Promise<Map<string, ResolvedConcept>> {
     const resultMap = new Map<string, ResolvedConcept>();
 
     // Prepopulate map with original terms
@@ -68,7 +70,9 @@ export class OmopHubClient {
     }
 
     if (!this.apiKey) {
-      console.warn('[OmopHubClient] OMOPHUB_API_KEY is not set. Skipping resolution.');
+      console.warn(
+        '[OmopHubClient] OMOPHUB_API_KEY is not set. Skipping resolution.',
+      );
       return resultMap;
     }
 
@@ -92,12 +96,14 @@ export class OmopHubClient {
         searches,
       };
 
-      console.log(`[OmopHubClient] Querying OMOPHub bulk search with ${queries.length} terms...`);
+      console.log(
+        `[OmopHubClient] Querying OMOPHub bulk search with ${queries.length} terms...`,
+      );
       const response = await fetch(`${this.baseUrl}/search/bulk`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify(payload),
       });
@@ -106,10 +112,14 @@ export class OmopHubClient {
         throw new Error(`OMOPHub HTTP error! status: ${response.status}`);
       }
 
-      const body = (await response.json()) as any;
+      const body = await response.json();
       if (body.success && Array.isArray(body.data)) {
         for (const item of body.data) {
-          if (item.status === 'completed' && Array.isArray(item.results) && item.results.length > 0) {
+          if (
+            item.status === 'completed' &&
+            Array.isArray(item.results) &&
+            item.results.length > 0
+          ) {
             const best = item.results[0];
             resultMap.set(item.query.toLowerCase(), {
               queryText: item.query,
@@ -123,7 +133,10 @@ export class OmopHubClient {
         }
       }
     } catch (error: any) {
-      console.error('[OmopHubClient] Failed to resolve bulk concepts from OMOPHub:', error.message);
+      console.error(
+        '[OmopHubClient] Failed to resolve bulk concepts from OMOPHub:',
+        error.message,
+      );
     }
 
     return resultMap;

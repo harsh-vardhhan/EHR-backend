@@ -89,7 +89,10 @@ async function seed() {
           },
         }),
       );
-      logJson('success', 'seed_s3_upload_success', { docId: note.id, key: s3Key });
+      logJson('success', 'seed_s3_upload_success', {
+        docId: note.id,
+        key: s3Key,
+      });
     } catch (error: any) {
       logJson('error', 'seed_processing_failed', {
         docId: note.id,

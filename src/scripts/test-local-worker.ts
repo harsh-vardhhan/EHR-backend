@@ -45,7 +45,9 @@ async function runLocalWorkerTest() {
   const batchSize = 5;
   for (let i = 0; i < records.length; i += batchSize) {
     const batchRecords = records.slice(i, i + batchSize);
-    console.log(`\n📦 Processing batch ${Math.floor(i / batchSize) + 1} with ${batchRecords.length} records...`);
+    console.log(
+      `\n📦 Processing batch ${Math.floor(i / batchSize) + 1} with ${batchRecords.length} records...`,
+    );
 
     const mockEvent: SQSEvent = {
       Records: batchRecords,
@@ -53,7 +55,10 @@ async function runLocalWorkerTest() {
 
     try {
       const response = await handler(mockEvent);
-      console.log(`✅ Batch complete. Failures reported:`, response.batchItemFailures);
+      console.log(
+        `✅ Batch complete. Failures reported:`,
+        response.batchItemFailures,
+      );
     } catch (error) {
       console.error(`❌ Batch failed with error:`, error);
     }

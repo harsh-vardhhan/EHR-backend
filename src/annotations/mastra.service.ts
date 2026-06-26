@@ -27,7 +27,9 @@ export class MastraService {
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     try {
-      console.log(`[MastraService] Starting clinical analysis workflow for document: ${documentId}`);
+      console.log(
+        `[MastraService] Starting clinical analysis workflow for document: ${documentId}`,
+      );
       const run = await this.workflow.createRun();
       const result = await run.start({
         inputData: {
@@ -64,10 +66,14 @@ export class MastraService {
       outputSchema: z.object({
         isDuplicate: z.boolean(),
       }),
-      execute: async ({ getInitData }) => {
-        const initData = getInitData<{ documentId: string; text: string }>();
+      execute: async (context) => {
+        const initData = context.getInitData<{
+          documentId: string;
+          text: string;
+        }>();
         const { documentId } = initData;
-        const existing = await this.annotationsService.getAnnotationsByDocument(documentId);
+        const existing =
+          await this.annotationsService.getAnnotationsByDocument(documentId);
         const isDuplicate = !!(existing && existing.length > 0);
 
         if (isDuplicate) {
@@ -87,9 +93,14 @@ export class MastraService {
         entities: z.array(z.any()),
         skipped: z.boolean(),
       }),
-      execute: async ({ getInitData, getStepResult }) => {
-        const initData = getInitData<{ documentId: string; text: string }>();
-        const checkResult = getStepResult<{ isDuplicate: boolean }>('check-duplicate');
+      execute: async (context) => {
+        const initData = context.getInitData<{
+          documentId: string;
+          text: string;
+        }>();
+        const checkResult = context.getStepResult<{ isDuplicate: boolean }>(
+          'check-duplicate',
+        );
 
         if (checkResult?.isDuplicate) {
           return { entities: [], skipped: true };
@@ -108,10 +119,18 @@ export class MastraService {
         success: z.boolean(),
         count: z.number(),
       }),
-      execute: async ({ getInitData, getStepResult }) => {
-        const initData = getInitData<{ documentId: string; text: string }>();
-        const checkResult = getStepResult<{ isDuplicate: boolean }>('check-duplicate');
-        const extractResult = getStepResult<{ entities: any[]; skipped: boolean }>('extract-entities');
+      execute: async (context) => {
+        const initData = context.getInitData<{
+          documentId: string;
+          text: string;
+        }>();
+        const checkResult = context.getStepResult<{ isDuplicate: boolean }>(
+          'check-duplicate',
+        );
+        const extractResult = context.getStepResult<{
+          entities: any[];
+          skipped: boolean;
+        }>('extract-entities');
 
         if (
           checkResult?.isDuplicate ||
@@ -130,7 +149,8 @@ export class MastraService {
           text: entity.text,
           label: entity.label,
         }));
-        const resolvedMap = await this.omophubClient.resolveBulkConcepts(queries);
+        const resolvedMap =
+          await this.omophubClient.resolveBulkConcepts(queries);
 
         const annotationsToCreate: Omit<
           Annotation,
