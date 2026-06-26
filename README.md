@@ -61,6 +61,7 @@ graph TD
         SQS -.->|Failures| DLQ([AWS SQS - Dead Letter Queue])
         
         LambdaWorker -->|Inference| Groq{{Groq AI - LLM Inference}}
+        LambdaWorker -->|Concept Grounding| OMOPHub{{OMOPHub - Vocabulary API}}
         LambdaWorker -->|Save Annotations| DynamoDB
 
         %% Stateless Sandbox Preview Flow
@@ -112,7 +113,7 @@ graph TD
     class SQS,DLQ,EB,SNS integration;
     class CWAlarm monitor;
     class User,Visitor userNode;
-    class Groq external;
+    class Groq,OMOPHub external;
     
     %% Apply Classes to Legend
     class L_Comp compute;
