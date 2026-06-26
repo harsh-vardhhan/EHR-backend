@@ -12,12 +12,6 @@ export class MastraService {
     this.workflow = this.initWorkflow();
   }
 
-  analyzeDocumentBackground(documentId: string, text: string) {
-    void this.runAnalysis(documentId, text).catch((err) => {
-      console.error('[MastraService] Failed to run LLM analysis', err);
-    });
-  }
-
   /**
    * Orchestrates clinical note extraction using a Mastra Workflow.
    * Runs the duplicate check, NER extraction, and code resolution steps.
