@@ -67,6 +67,7 @@ Resources:
     Properties:
       CodeUri: dist/
       Handler: worker-bundle.handler
+      Timeout: 120
       ReservedConcurrentExecutions: 2 # Hard cap on LLM parallel processing
       Events:
         SQSEvent:
