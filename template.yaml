@@ -292,7 +292,7 @@ Resources:
   EhrFirehoseRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "ehr-annotation-backend-FirehoseRole-${AWS::Region}-${AWS::StackName}"
+      RoleName: !Sub "ehr-annotation-backend-firehose-${AWS::Region}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
