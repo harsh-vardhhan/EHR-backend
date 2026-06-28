@@ -31,6 +31,7 @@
             "Resource": [
                 "arn:aws:s3:::ehr-demo-docs-bucket",
                 "arn:aws:s3:::ehr-demo-processed-bucket",
+                "arn:aws:s3:::ehr-annotation-backend-*",
                 "arn:aws:s3:::ehr-*frontend*",
                 "arn:aws:s3:::aws-sam-cli-managed-default-*"
             ]
@@ -208,6 +209,21 @@
             ],
             "Resource": [
                 "arn:aws:iam::<AWS_ACCOUNT_ID>:role/ehr-annotation-backend-*"
+            ]
+        },
+        {
+            "Sid": "FirehoseDeliveryStreamManagement",
+            "Effect": "Allow",
+            "Action": [
+                "firehose:CreateDeliveryStream",
+                "firehose:DeleteDeliveryStream",
+                "firehose:DescribeDeliveryStream",
+                "firehose:UpdateDeliveryStream",
+                "firehose:TagDeliveryStream",
+                "firehose:UntagDeliveryStream"
+            ],
+            "Resource": [
+                "arn:aws:firehose:ap-south-1:<AWS_ACCOUNT_ID>:deliverystream/ehr-annotation-backend-*"
             ]
         }
     ]

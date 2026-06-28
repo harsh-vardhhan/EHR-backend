@@ -4,9 +4,11 @@ import { z } from 'zod';
 import { AnnotationsService, Annotation } from './annotations.service';
 import { extractClinicalEntities } from './extractor.client';
 import { OmopHubClient } from './omophub.client';
+import { PiiScrubberService } from './pii-scrubber.service';
 
 export class MastraService {
   private omophubClient = new OmopHubClient();
+  private piiScrubber = new PiiScrubberService();
   private mastra: Mastra;
 
   constructor(private annotationsService: AnnotationsService) {
@@ -107,7 +109,10 @@ export class MastraService {
           return { entities: [], skipped: true };
         }
 
-        const entities = await extractClinicalEntities(initData.text);
+        // Scrub text for HIPAA PII protection using equal-length masking
+        const { scrubbedText } = this.piiScrubber.scrubText(initData.text);
+
+        const entities = await extractClinicalEntities(scrubbedText);
         return { entities, skipped: false };
       },
     });

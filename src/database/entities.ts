@@ -115,7 +115,40 @@ export const AnnotationEntity = new Entity(
   { client, table },
 );
 
+export const AuditLogEntity = new Entity(
+  {
+    model: {
+      entity: 'auditLog',
+      service: 'ehr',
+      version: '1',
+    },
+    attributes: {
+      logId: { type: 'string', required: true },
+      documentId: { type: 'string', required: true },
+      actionType: { type: 'string', required: true },
+      description: { type: 'string', required: true },
+      createdAt: { type: 'string', required: true },
+    },
+    indexes: {
+      primary: {
+        pk: {
+          field: 'PK',
+          composite: ['documentId'],
+          template: 'DOCUMENT#${documentId}',
+        },
+        sk: {
+          field: 'SK',
+          composite: ['logId'],
+          template: 'AUDIT#${logId}',
+        },
+      },
+    },
+  },
+  { client, table },
+);
+
 export const EhrService = new Service({
   document: DocumentEntity,
   annotation: AnnotationEntity,
+  auditLog: AuditLogEntity,
 });

@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { MedicalEntityLabel } from '../constants/labels';
-import { AnnotationEntity, DocumentEntity } from '../database/entities';
+import { AnnotationEntity, DocumentEntity, AuditLogEntity } from '../database/entities';
 
 export interface Annotation {
   annotationId: string;
@@ -47,6 +47,11 @@ export class AnnotationsService {
     };
 
     await AnnotationEntity.create(newAnnotation).go();
+    await this.createAuditLog(
+      data.documentId,
+      'ANNOTATION_CREATED',
+      `Clinician manually created ${data.label} annotation: "${data.text}"`,
+    );
     return newAnnotation;
   }
 
@@ -73,6 +78,11 @@ export class AnnotationsService {
     }));
 
     await AnnotationEntity.put(newAnnotations).go();
+    await this.createAuditLog(
+      documentId,
+      'LLM_EXTRACTION_SUCCESS',
+      `AI pipeline successfully completed clinical NER and extracted ${newAnnotations.length} concepts.`,
+    );
     return newAnnotations;
   }
 
@@ -118,6 +128,22 @@ export class AnnotationsService {
       if (!response.data) {
         throw new Error(`Annotation with id ${annotationId} not found`);
       }
+
+      let actionType = 'ANNOTATION_UPDATED';
+      let desc = `Clinician updated annotation "${response.data.text}"`;
+      if (updates.status === 'accepted') {
+        actionType = 'ANNOTATION_ACCEPTED';
+        desc = `Clinician accepted suggested ${response.data.label}: "${response.data.text}"`;
+      } else if (updates.status === 'rejected') {
+        actionType = 'ANNOTATION_REJECTED';
+        desc = `Clinician rejected suggested ${response.data.label}: "${response.data.text}"`;
+      } else if (updates.status === 'corrected') {
+        actionType = 'ANNOTATION_CORRECTED';
+        desc = `Clinician corrected suggested ${response.data.label}: "${response.data.text}"`;
+      }
+
+      await this.createAuditLog(documentId, actionType, desc);
+
       return response.data as Annotation;
     } catch (error) {
       console.error('Error updating annotation', error);
@@ -203,6 +229,37 @@ export class AnnotationsService {
     } catch (error) {
       console.error('Error searching annotations', error);
       return [];
+    }
+  }
+
+  async getAuditLogs(documentId: string) {
+    try {
+      const response = await AuditLogEntity.query
+        .primary({ documentId })
+        .go();
+      return (response.data || []).sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+    } catch (error) {
+      console.error('Error fetching audit logs', error);
+      return [];
+    }
+  }
+
+  async createAuditLog(documentId: string, actionType: string, description: string) {
+    try {
+      const logId = randomUUID();
+      const log = {
+        logId,
+        documentId,
+        actionType,
+        description,
+        createdAt: new Date().toISOString(),
+      };
+      await AuditLogEntity.create(log).go();
+      return log;
+    } catch (error) {
+      console.error('Error creating audit log in DynamoDB', error);
     }
   }
 }
