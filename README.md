@@ -204,10 +204,11 @@ To maximize performance, cut database costs, and eliminate cross-table JOIN late
 
 | PK (Partition Key) | SK (Sort Key) | Index Name | Entity Type | Attributes & Schema |
 | :--- | :--- | :--- | :--- | :--- |
-| `DOCUMENT#<docId>` | `METADATA` | Primary | **Document** | `id`, `title`, `category`, `s3Key`, `status`, `createdAt` |
-| `DOCUMENT#<docId>` | `ANNOTATION#<annotationId>` | Primary | **Annotation** | `annotationId`, `documentId`, `text`, `label`, `startOffset`, `endOffset`, `createdAt`, `source`, `status`, `confidence`, `assertion`, `conceptCode` |
-| `SK` (Inverted) | `PK` | `SKIndex` (GSI) | **Annotation** | Mapped for inverted parent-key resolution. |
-| `ASSERTION#<assertion>` | `LABEL#<label>` | `GSI1Index` (GSI) | **Annotation** | Secondary index optimized for clinical cohort filtering. |
+| `document#<docId>` | `metadata` | Primary | **Document** | `id`, `title`, `category`, `s3Key`, `status`, `createdAt` |
+| `document#<docId>` | `annotation#<annotationId>` | Primary | **Annotation** | `annotationId`, `documentId`, `text`, `label`, `startOffset`, `endOffset`, `createdAt`, `source`, `status`, `confidence`, `assertion`, `conceptCode` |
+| `document#<docId>` | `audit#<logId>` | Primary | **Audit Log** | `logId`, `documentId`, `actionType`, `description`, `createdAt` |
+| `SK` (Inverted) | `PK` | `SKIndex` (GSI) | **Annotation / Audit** | Mapped for inverted parent-key resolution. |
+| `assertion#<assertion>` | `label#<label>` | `GSI1Index` (GSI) | **Annotation** | Secondary index optimized for clinical cohort filtering. |
 
 ### Query Optimizations
 
