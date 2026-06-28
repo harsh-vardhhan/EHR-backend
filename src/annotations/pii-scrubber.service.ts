@@ -36,9 +36,9 @@ export class PiiScrubberService {
 
     // 1. Dynamic metadata extraction (Names to scrub globally)
     // Patient Name: <Name>
-    const patientNameRegex = /Patient\s*Name:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/gi;
+    const patientNameRegex = /[Pp]atient\s*[Nn]ame:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/g;
     // Physician: <Name> or Dr. <Name>
-    const physicianNameRegex = /(?:Physician:\s*|Dr\.\s*)([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/gi;
+    const physicianNameRegex = /(?:[Pp]hysician:\s*(?:Dr\.\s*)?|Dr\.\s*)([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/g;
 
     const namesToScrub = new Set<string>();
 
