@@ -175,9 +175,12 @@ sequenceDiagram
 | **AWS Lambda (API)** | Executes the Hono application, handling UI interactions and document metadata orchestration. |
 | **AWS Lambda (NLP Worker)** | Dedicated asynchronous worker triggered by SQS to perform LLM clinical entity extraction. |
 | **AWS Lambda (Kill Switch)** | Administrative helper triggered by SNS to throttle the API Lambda reserved concurrency to 0. |
+| **AWS Lambda (Stream Consumer)** | Asynchronous event consumer triggered by DynamoDB Streams to filter and forward audit logs to Firehose. |
+| **Amazon Kinesis Data Firehose** | Delivery stream buffering and compressing NDJSON audit events, writing them in GZIP format to S3. |
 | **Amazon SQS & DLQ** | Decouples document ingestion from analysis, buffers surges, and quarantines failed tasks in a Dead Letter Queue. |
 | **Amazon DynamoDB** | Managed NoSQL storage for ultra-low latency storage of clinical annotation metadata and document status. |
-| **Amazon S3** | Encrypted object storage for raw clinical document text, acting as the event source for the ingestion pipeline. |
+| **Amazon S3 (Medical Notes)** | Encrypted object storage for raw clinical document text, acting as the event source for the ingestion pipeline. |
+| **Amazon S3 (Audit WORM Bucket)** | Secure compliance bucket protected by S3 Object Lock (Compliance Mode) storing immutable audit logs. |
 | **Lambda Function URL** | Public HTTPS endpoint routing requests directly to the Hono backend. |
 | **CloudWatch Alarm & SNS** | Monitors total request volume (Invocations + Throttles) in real-time, acting as the circuit breaker sensor. |
 | **Groq AI Integration** | High-performance inference engine running clinical entity recognition models. |
