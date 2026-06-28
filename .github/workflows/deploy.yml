@@ -45,7 +45,7 @@ jobs:
           sam deploy --no-confirm-changeset \
             --no-fail-on-empty-changeset \
             --stack-name ehr-annotation-backend \
-            --capabilities CAPABILITY_IAM \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
             --resolve-s3 \
             --parameter-overrides \
               DocumentsBucketName=${{ secrets.DOCUMENTS_BUCKET_NAME }} \
