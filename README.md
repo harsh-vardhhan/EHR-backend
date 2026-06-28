@@ -60,13 +60,27 @@ graph TD
         SQS -->|Trigger| LambdaWorker[AWS Lambda - NLP Worker]
         SQS -.->|Failures| DLQ([AWS SQS - Dead Letter Queue])
         
-        LambdaWorker -->|Inference| Groq{{Groq AI - LLM Inference}}
-        LambdaWorker -->|Concept Grounding| OMOPHub{{OMOPHub - Vocabulary API}}
-        LambdaWorker -->|Save Annotations| DynamoDB
+        LambdaWorker -->|1. Mask PII| Scrubber[PII Scrubber Service]
+        LambdaWorker -->|2. Inference (Scrubbed)| Groq{{Groq AI - LLM Inference}}
+        LambdaWorker -->|3. Concept Grounding| OMOPHub{{OMOPHub - Vocabulary API}}
+        LambdaWorker -->|4. Save Annotations| DynamoDB
 
         %% Stateless Sandbox Preview Flow
         Visitor((Portfolio Visitor)) -->|Unauthenticated Request| LambdaURL
         LambdaAPI -->|Stateless Inference| Groq
+    end
+
+    %% Auditing Pipeline Subgraph (Middle)
+    subgraph Auditing ["Compliance & Audit Trail (WORM)"]
+        DynamoDBStream[DynamoDB Stream]
+        LambdaConsumer[AWS Lambda - Stream Consumer]
+        Firehose[Kinesis Data Firehose]
+        S3Audit[(Amazon S3 - Audit WORM Bucket)]
+        
+        DynamoDB -->|Detect Writes| DynamoDBStream
+        DynamoDBStream -->|Trigger| LambdaConsumer
+        LambdaConsumer -->|Stream Log Event| Firehose
+        Firehose -->|Compressed NDJSON Batch| S3Audit
     end
 
     %% DDoS/DoW Circuit Breaker Subgraph (Right Side)
@@ -95,6 +109,7 @@ graph TD
 
     %% Subgraph Styling
     style Core fill:#888888,fill-opacity:0.05,stroke:#D1D5DB,stroke-width:2px,stroke-dasharray: 5 5;
+    style Auditing fill:#1D8102,fill-opacity:0.05,stroke:#D1D5DB,stroke-width:2px,stroke-dasharray: 5 5;
     style DDoS fill:#FF3333,fill-opacity:0.05,stroke:#FECACA,stroke-width:2px,stroke-dasharray: 5 5;
 
     %% AWS Styling Classes
@@ -107,13 +122,13 @@ graph TD
     classDef external fill:#6B7280,fill-opacity:0.15,stroke:#6B7280,stroke-width:2px;
 
     %% Apply Classes
-    class LambdaURL,LambdaAPI,LambdaWorker,LambdaKillSwitch compute;
-    class DynamoDB database;
-    class S3 storage;
-    class SQS,DLQ,EB,SNS integration;
+    class LambdaURL,LambdaAPI,LambdaWorker,LambdaKillSwitch,LambdaConsumer compute;
+    class DynamoDB,DynamoDBStream database;
+    class S3,S3Audit storage;
+    class SQS,DLQ,EB,SNS,Firehose integration;
     class CWAlarm monitor;
     class User,Visitor userNode;
-    class Groq,OMOPHub external;
+    class Groq,OMOPHub,Scrubber external;
     
     %% Apply Classes to Legend
     class L_Comp compute;
@@ -121,6 +136,36 @@ graph TD
     class L_Stor storage;
     class L_Int integration;
     class L_Mon monitor;
+```
+
+## 🏥 Compliance Business Workflow
+
+This simplified sequence diagram tracks the lifecycle of a clinical note from raw ingestion through AI scrubbing, clinician verification, and immutable auditing:
+
+```mermaid
+sequenceDiagram
+    actor Clinician as Clinician
+    participant System as EHR Platform
+    participant Shield as HIPAA PII Shield
+    participant AI as Clinical AI
+    participant Audit as Compliance Audit Trail
+
+    %% 1. Ingestion & Sanitization
+    Note over System, AI: 1. Ingestion & AI Extraction
+    System->>Shield: Scan Note for PII (Names, DOB, SSN)
+    Shield-->>System: Mask PII (e.g. John Doe -> [NAME____X])
+    System->>AI: Send Sanitized Note for Annotation
+    AI-->>System: Return Suggested Codes (ICD-10, RxNorm, SNOMED)
+
+    %% 2. Review
+    Note over Clinician, System: 2. Clinician Review
+    Clinician->>System: Open Document Review Dashboard
+    Clinician->>System: Approve or Correct AI suggestions
+
+    %% 3. Immutable Log
+    Note over System, Audit: 3. Operations Auditing
+    System->>Audit: Record Ingestion, AI parsing, and Clinician approvals
+    Note right of Audit: Event saved permanently and immutably
 ```
 
 ### Infrastructure Components

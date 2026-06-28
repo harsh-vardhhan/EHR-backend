@@ -1,6 +1,7 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
-import { DocumentEntity, AnnotationEntity } from '../database/entities';
+import { randomUUID } from 'crypto';
+import { DocumentEntity, AnnotationEntity, AuditLogEntity } from '../database/entities';
 
 export class DocumentsService {
   private s3Client: S3Client;
@@ -158,6 +159,19 @@ export class DocumentsService {
       try {
         const response = await DocumentEntity.create(newDoc).go();
         metadata = response.data;
+
+        // Log INGESTION_COMPLETED audit event
+        try {
+          await AuditLogEntity.create({
+            logId: randomUUID(),
+            documentId: id,
+            actionType: 'INGESTION_COMPLETED',
+            description: `Document "${newDoc.title}" ingested from S3. PII Scrubbing execution complete.`,
+            createdAt: new Date().toISOString(),
+          }).go();
+        } catch (auditError) {
+          console.error('Failed to log ingestion audit event', auditError);
+        }
       } catch (error) {
         console.error(`Failed to save metadata to DynamoDB for ${id}`, error);
         throw error;

@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
-import { documentsService } from '../services';
+import { documentsService, annotationsService } from '../services';
 import { z } from 'zod';
 import type { MiddlewareHandler } from 'hono';
 
@@ -58,6 +58,12 @@ documentsApp.get('/', async (c) => {
 documentsApp.get('/:id', validateParam('id', idSchema), async (c) => {
   const doc = await documentsService.getDocument(c.req.param('id'));
   return c.json(doc);
+});
+
+documentsApp.get('/:id/audit', validateParam('id', idSchema), async (c) => {
+  const id = c.req.param('id');
+  const auditLogs = await annotationsService.getAuditLogs(id);
+  return c.json(auditLogs);
 });
 
 documentsApp.post('/:id/analyze', validateParam('id', idSchema), async (c) => {

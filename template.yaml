@@ -150,6 +150,8 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: !Ref EhrTableName
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
       AttributeDefinitions:
         - AttributeName: PK
           AttributeType: S
@@ -269,6 +271,90 @@ Resources:
           Type: SNS
           Properties:
             Topic: !Ref EhrKillSwitchTopic
+
+  EhrAuditLogsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-audit-logs-${AWS::AccountId}"
+      ObjectLockEnabled: true
+      ObjectLockConfiguration:
+        ObjectLockEnabled: Enabled
+        Rule:
+          DefaultRetention:
+            Mode: COMPLIANCE
+            Days: 1
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  EhrFirehoseRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "ehr-annotation-backend-FirehoseRole-${AWS::Region}-${AWS::StackName}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: firehose.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: FirehoseWriteS3
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:AbortMultipartUpload
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:ListBucketMultipartUploads
+                  - s3:PutObject
+                Resource:
+                  - !GetAtt EhrAuditLogsBucket.Arn
+                  - !Sub "${EhrAuditLogsBucket.Arn}/*"
+
+  EhrAuditDeliveryStream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamName: !Sub "${AWS::StackName}-AuditDeliveryStream"
+      DeliveryStreamType: DirectPut
+      ExtendedS3DestinationConfiguration:
+        BucketARN: !GetAtt EhrAuditLogsBucket.Arn
+        BufferingHints:
+          IntervalInSeconds: 60
+          SizeInMBs: 1
+        CompressionFormat: GZIP
+        RoleARN: !GetAtt EhrFirehoseRole.Arn
+
+  EhrAuditStreamFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: audit-consumer-bundle.handler
+      Timeout: 30
+      MemorySize: 128
+      Events:
+        DynamoDBStream:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt EhrTable.StreamArn
+            StartingPosition: LATEST
+            BatchSize: 100
+      Environment:
+        Variables:
+          AUDIT_DELIVERY_STREAM_NAME: !Ref EhrAuditDeliveryStream
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - firehose:PutRecord
+                - firehose:PutRecordBatch
+              Resource: !GetAtt EhrAuditDeliveryStream.Arn
 
 Outputs:
   ApiEndpoint:

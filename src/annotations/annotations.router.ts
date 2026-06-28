@@ -6,6 +6,9 @@ import { MEDICAL_ENTITIES } from '../constants/labels';
 import type { MiddlewareHandler } from 'hono';
 import { extractClinicalEntities } from './extractor.client';
 import { findEntityOffsets } from './mastra.service';
+import { PiiScrubberService } from './pii-scrubber.service';
+
+const piiScrubber = new PiiScrubberService();
 
 export const annotationsApp = new Hono();
 
@@ -199,7 +202,8 @@ annotationsApp.post('/preview', async (c) => {
   const { text } = result.data;
 
   try {
-    const entities = await extractClinicalEntities(text);
+    const { scrubbedText } = piiScrubber.scrubText(text);
+    const entities = await extractClinicalEntities(scrubbedText);
 
     const annotations = entities.map((entity, index) => {
       const offsets = findEntityOffsets(text, entity.text);
