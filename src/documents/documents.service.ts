@@ -1,7 +1,11 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { randomUUID } from 'crypto';
-import { DocumentEntity, AnnotationEntity, AuditLogEntity } from '../database/entities';
+import {
+  DocumentEntity,
+  AnnotationEntity,
+  AuditLogEntity,
+} from '../database/entities';
 
 export class DocumentsService {
   private s3Client: S3Client;

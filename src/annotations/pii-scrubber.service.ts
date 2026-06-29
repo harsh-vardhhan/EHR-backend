@@ -30,15 +30,20 @@ export class PiiScrubberService {
   /**
    * Scrubs PII from the text, returning the scrubbed text and details of detections.
    */
-  scrubText(text: string): { scrubbedText: string; detections: PiiDetection[] } {
+  scrubText(text: string): {
+    scrubbedText: string;
+    detections: PiiDetection[];
+  } {
     let scrubbed = text;
     const detections: PiiDetection[] = [];
 
     // 1. Dynamic metadata extraction (Names to scrub globally)
     // Patient Name: <Name>
-    const patientNameRegex = /[Pp]atient\s*[Nn]ame:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/g;
+    const patientNameRegex =
+      /[Pp]atient\s*[Nn]ame:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/g;
     // Physician: <Name> or Dr. <Name>
-    const physicianNameRegex = /(?:[Pp]hysician:\s*(?:Dr\.\s*)?|Dr\.\s*)([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/g;
+    const physicianNameRegex =
+      /(?:[Pp]hysician:\s*(?:Dr\.\s*)?|Dr\.\s*)([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/g;
 
     const namesToScrub = new Set<string>();
 
@@ -90,7 +95,8 @@ export class PiiScrubberService {
       {
         // DOB: 10/24/1966 or Dates of birth
         type: 'DATE',
-        regex: /(?:DOB|Birthdate|Date of Birth):\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/gi,
+        regex:
+          /(?:DOB|Birthdate|Date of Birth):\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/gi,
       },
       {
         // Standalone Date formats (e.g. 10/24/1966)
@@ -112,10 +118,14 @@ export class PiiScrubberService {
       regex.lastIndex = 0;
       while ((m = regex.exec(text)) !== null) {
         const fullMatchStr = m[0];
-        const matchStr = captureGroupIndex > 0 && m[captureGroupIndex] ? m[captureGroupIndex] : fullMatchStr;
-        
+        const matchStr =
+          captureGroupIndex > 0 && m[captureGroupIndex]
+            ? m[captureGroupIndex]
+            : fullMatchStr;
+
         // Find offset in original text
-        const start = m.index + (captureGroupIndex > 0 ? m[0].indexOf(matchStr) : 0);
+        const start =
+          m.index + (captureGroupIndex > 0 ? m[0].indexOf(matchStr) : 0);
         const end = start + matchStr.length;
 
         // Only add if not already covered
@@ -132,12 +142,17 @@ export class PiiScrubberService {
 
     // Apply patterns
     for (const p of patterns) {
-      const captureGroup = p.regex.source.includes('(') && !p.regex.source.startsWith('\\b(') ? 1 : 0;
+      const captureGroup =
+        p.regex.source.includes('(') && !p.regex.source.startsWith('\\b(')
+          ? 1
+          : 0;
       applyRegexReplacement(p.regex, p.type, captureGroup);
     }
 
     // Apply Name matching for extracted names
-    const allNameTokens = [...namesToScrub, ...individualNames].sort((a, b) => b.length - a.length);
+    const allNameTokens = [...namesToScrub, ...individualNames].sort(
+      (a, b) => b.length - a.length,
+    );
     for (const name of allNameTokens) {
       if (name.length < 3) continue;
       const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

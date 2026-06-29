@@ -8,7 +8,9 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
   console.log('Audit Consumer received event:', JSON.stringify(event, null, 2));
 
   if (!DELIVERY_STREAM_NAME) {
-    console.error('AUDIT_DELIVERY_STREAM_NAME environment variable is not set. Cannot stream logs.');
+    console.error(
+      'AUDIT_DELIVERY_STREAM_NAME environment variable is not set. Cannot stream logs.',
+    );
     return;
   }
 
@@ -27,7 +29,8 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
     const entityType = newImage.__edb_e__?.S;
     const sk = newImage.SK?.S;
 
-    const isAuditLog = entityType === 'auditLog' || (sk && sk.startsWith('AUDIT#'));
+    const isAuditLog =
+      entityType === 'auditLog' || (sk && sk.startsWith('AUDIT#'));
     if (!isAuditLog) {
       continue;
     }
@@ -42,7 +45,9 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
         createdAt: newImage.createdAt?.S,
       };
 
-      console.log(`Forwarding audit log ${auditRecord.logId} to Kinesis Firehose...`);
+      console.log(
+        `Forwarding audit log ${auditRecord.logId} to Kinesis Firehose...`,
+      );
 
       // Append newline to support JSON Lines (NDJSON) format in S3
       const recordData = JSON.stringify(auditRecord) + '\n';
@@ -55,9 +60,14 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
       });
 
       await firehoseClient.send(command);
-      console.log(`Successfully streamed log ${auditRecord.logId} to Firehose.`);
+      console.log(
+        `Successfully streamed log ${auditRecord.logId} to Firehose.`,
+      );
     } catch (error) {
-      console.error(`Failed to process stream record: ${JSON.stringify(record)}`, error);
+      console.error(
+        `Failed to process stream record: ${JSON.stringify(record)}`,
+        error,
+      );
     }
   }
 };
