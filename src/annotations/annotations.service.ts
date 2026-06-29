@@ -1,6 +1,10 @@
 import { randomUUID } from 'crypto';
 import { MedicalEntityLabel } from '../constants/labels';
-import { AnnotationEntity, DocumentEntity, AuditLogEntity } from '../database/entities';
+import {
+  AnnotationEntity,
+  DocumentEntity,
+  AuditLogEntity,
+} from '../database/entities';
 
 export interface Annotation {
   annotationId: string;
@@ -234,11 +238,10 @@ export class AnnotationsService {
 
   async getAuditLogs(documentId: string) {
     try {
-      const response = await AuditLogEntity.query
-        .primary({ documentId })
-        .go();
+      const response = await AuditLogEntity.query.primary({ documentId }).go();
       return (response.data || []).sort(
-        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       );
     } catch (error) {
       console.error('Error fetching audit logs', error);
@@ -246,7 +249,11 @@ export class AnnotationsService {
     }
   }
 
-  async createAuditLog(documentId: string, actionType: string, description: string) {
+  async createAuditLog(
+    documentId: string,
+    actionType: string,
+    description: string,
+  ) {
     try {
       const logId = randomUUID();
       const log = {

@@ -22,8 +22,7 @@ export async function extractClinicalEntities(
     apiKey: process.env.GROQ_API_KEY,
   });
 
-  let attempts = 5;
-  let delayMs = 3000;
+  const attempts = 1;
 
   while (attempts > 0) {
     try {
@@ -61,20 +60,14 @@ export async function extractClinicalEntities(
 
       return output.entities;
     } catch (err: any) {
-      attempts--;
-      console.warn(
-        `[extractClinicalEntities] LLM extraction attempt failed. Error: ${err.message || err}. Attempts remaining: ${attempts}`,
+      console.error(
+        `[extractClinicalEntities] LLM extraction failed. Error: ${err.message || err}`,
       );
-      if (attempts === 0) {
-        throw err;
-      }
-      // Wait with back-off
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-      delayMs *= 2;
+      throw err;
     }
   }
 
-  throw new Error('Failed to extract clinical entities after all attempts');
+  throw new Error('Failed to extract clinical entities');
 }
 
 const buildExtractionPrompt = (

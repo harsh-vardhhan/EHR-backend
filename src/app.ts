@@ -8,7 +8,9 @@ import { annotationsApp } from './annotations/annotations.router';
 export const app = new Hono();
 
 // Global middleware
-app.use('*', logger());
+if (process.env.NODE_ENV !== 'production') {
+  app.use('*', logger());
+}
 app.use(
   '*',
   cors({
