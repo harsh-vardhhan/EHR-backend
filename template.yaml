@@ -325,8 +325,8 @@ Resources:
       ExtendedS3DestinationConfiguration:
         BucketARN: !GetAtt EhrAuditLogsBucket.Arn
         BufferingHints:
-          IntervalInSeconds: 60
-          SizeInMBs: 1
+          IntervalInSeconds: 900
+          SizeInMBs: 5
         CompressionFormat: GZIP
         RoleARN: !GetAtt EhrFirehoseRole.Arn
 
