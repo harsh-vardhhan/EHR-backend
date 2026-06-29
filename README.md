@@ -8,7 +8,7 @@ Enterprise-grade serverless backend for clinical document annotation, built with
 ![Inference-Groq](https://img.shields.io/badge/Inference-Groq%20GPT--OSS--20B-orange?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
 
-**🚀 Live Demo:** [https://d1pijuvgczqoi4.cloudfront.net/](https://d1pijuvgczqoi4.cloudfront.net/)
+**🚀 Live Demo:** [https://ehr-frontend-hazel.vercel.app/](https://ehr-frontend-hazel.vercel.app/)
 
 ### Key Capabilities
 *   **Clinical Named Entity Recognition (NER):** Parse raw EHR notes to identify critical health variables.
