@@ -7,7 +7,6 @@ import { annotationsApp } from './annotations/annotations.router';
 
 export const app = new Hono();
 
-// Global middleware
 if (process.env.NODE_ENV !== 'production') {
   app.use('*', logger());
 }
@@ -26,8 +25,6 @@ app.use(
   }),
 );
 
-// Route registration
-// Global API Key validation middleware
 app.use('*', async (c, next) => {
   if (
     c.req.path === '/' ||
@@ -54,5 +51,4 @@ app.use('*', async (c, next) => {
 app.route('/documents', documentsApp);
 app.route('/annotations', annotationsApp);
 
-// Root route
 app.get('/', (c) => c.json({ status: 'ok', framework: 'hono' }));
