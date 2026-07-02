@@ -32,3 +32,13 @@ jobs:
       
     - name: Build application
       run: npm run build
+
+  lint-python:
+    name: Lint Python (Ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Ruff Linter
+        uses: astral-sh/ruff-action@v3
+        with:
+          src: "./ml"
