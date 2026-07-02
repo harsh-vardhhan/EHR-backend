@@ -61,7 +61,7 @@ graph TD
         SQS -.->|Failures| DLQ([AWS SQS - Dead Letter Queue])
         
         LambdaWorker -->|1. Mask PII| Scrubber[PII Scrubber Service]
-        LambdaWorker -->|"2. Inference (Scrubbed)"| SageMaker{{"Amazon SageMaker - Serverless (ONNX)"}}
+        LambdaWorker -->|"2. Inference (Scrubbed)"| SageMaker{{"Amazon SageMaker - Serverless (PyTorch)"}}
         LambdaWorker -->|3. Concept Grounding| OMOPHub{{OMOPHub - Vocabulary API}}
         LambdaWorker -->|4. Save Annotations| DynamoDB
 
@@ -183,7 +183,7 @@ sequenceDiagram
 | **Amazon S3 (Audit WORM Bucket)** | Secure compliance bucket protected by S3 Object Lock (Compliance Mode) storing immutable audit logs. |
 | **Lambda Function URL** | Public HTTPS endpoint routing requests directly to the Hono backend. |
 | **CloudWatch Alarm & SNS** | Monitors total request volume (Invocations + Throttles) in real-time, acting as the circuit breaker sensor. |
-| **SageMaker Serverless (ONNX)** | High-performance machine learning inference endpoint running our custom GLiNER-ReLex clinical relation extraction model. |
+| **SageMaker Serverless (PyTorch)** | High-performance machine learning inference endpoint running our custom GLiNER-ReLex clinical relation extraction model. |
 
 ## 🚨 Financial Warning: The Cost of Infinite Scaling
 
