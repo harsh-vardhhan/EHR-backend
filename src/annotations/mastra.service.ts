@@ -29,9 +29,6 @@ export class MastraService {
    * Runs the duplicate check, NER extraction, and code resolution steps.
    */
   async runAnalysis(documentId: string, text: string) {
-    // Wait for 2 seconds to simulate "2-3 seconds" wait time
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
     try {
       console.log(
         `[MastraService] Starting clinical analysis workflow for document: ${documentId}`,
