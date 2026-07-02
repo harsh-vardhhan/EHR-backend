@@ -387,7 +387,7 @@ Resources:
         Image: !Sub "763104351884.dkr.ecr.${AWS::Region}.amazonaws.com/huggingface-pytorch-inference:2.1.0-transformers4.37.0-cpu-py310-ubuntu22.04"
         ModelDataUrl: !Ref SageMakerModelDataUrl
         Environment:
-          HF_MODEL_ID: "knowledgator/gliner-relex-large-v0.5"
+          HF_MODEL_ID: "knowledgator/gliner-relex-base-v1.0"
           SAGEMAKER_PROGRAM: "inference.py"
           SAGEMAKER_SUBMIT_DIRECTORY: !Ref SageMakerModelDataUrl
 
