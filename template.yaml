@@ -394,7 +394,6 @@ Resources:
   SageMakerEndpointConfig:
     Type: AWS::SageMaker::EndpointConfig
     Properties:
-      EndpointConfigName: gliner-relex-endpoint-config
       ProductionVariants:
         - VariantName: AllTraffic
           ModelName: !GetAtt SageMakerModel.ModelName
