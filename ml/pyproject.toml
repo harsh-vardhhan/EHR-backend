@@ -1,0 +1,11 @@
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "ASYNC"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
