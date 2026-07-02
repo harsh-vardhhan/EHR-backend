@@ -381,7 +381,6 @@ Resources:
   SageMakerModel:
     Type: AWS::SageMaker::Model
     Properties:
-      ModelName: gliner-relex-model
       ExecutionRoleArn: !GetAtt SageMakerExecutionRole.Arn
       PrimaryContainer:
         Image: !Sub "763104351884.dkr.ecr.${AWS::Region}.amazonaws.com/huggingface-pytorch-inference:2.1.0-transformers4.37.0-cpu-py310-ubuntu22.04"

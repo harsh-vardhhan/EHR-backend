@@ -217,7 +217,7 @@ Resources:
                   - sagemaker:UpdateEndpoint
                   - sagemaker:DescribeEndpoint
                 Resource:
-                  - !Sub "arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:model/gliner-relex-model"
+                  - !Sub "arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:model/SageMakerModel-*"
                   - !Sub "arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:endpoint-config/SageMakerEndpointConfig-*"
                   - !Sub "arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:endpoint/gliner-relex-endpoint"
               - Sid: IAMRoleDeployment
