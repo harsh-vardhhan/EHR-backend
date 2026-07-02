@@ -61,7 +61,7 @@ graph TD
         SQS -.->|Failures| DLQ([AWS SQS - Dead Letter Queue])
         
         LambdaWorker -->|1. Mask PII| Scrubber[PII Scrubber Service]
-        LambdaWorker -->|"2. Inference (Scrubbed)"| SageMaker{{Amazon SageMaker - Serverless (ONNX)}}
+        LambdaWorker -->|"2. Inference (Scrubbed)"| SageMaker{{"Amazon SageMaker - Serverless (ONNX)"}}
         LambdaWorker -->|3. Concept Grounding| OMOPHub{{OMOPHub - Vocabulary API}}
         LambdaWorker -->|4. Save Annotations| DynamoDB
 
