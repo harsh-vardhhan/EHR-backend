@@ -2,3 +2,7 @@ node_modules
 .env
 dist/
 .aws-sam/
+ml/model/
+ml/download_model.py
+ml/model.tar.gz
+

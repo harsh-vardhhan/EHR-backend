@@ -5,7 +5,9 @@ from gliner import GLiNER
 def model_fn(model_dir):
     print("Loading GLiNER-ReLex from pretrained model...")
     # Knowledgator GLiNER-ReLex model
-    model = GLiNER.from_pretrained("knowledgator/gliner-relex-base-v1.0")
+    import os
+    model_path = os.path.join(model_dir, "model")
+    model = GLiNER.from_pretrained(model_path)
     
     print("Loading SpaCy and NegEx...")
     nlp = spacy.load("en_core_web_sm")

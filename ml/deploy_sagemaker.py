@@ -38,10 +38,11 @@ if os.path.exists(tar_path):
 
 with tarfile.open(tar_path, "w:gz") as tar:
     tar.add("code", arcname="code")
+    tar.add("model", arcname="model")
 print(f"✅ Created {tar_path} successfully.")
 
 # 2. Upload model tarball to S3
-s3_key = "models/gliner-relex/model.tar.gz"
+s3_key = "models/gliner-relex/model-base-v1.0.tar.gz"
 print(f"\n📤 Step 2: Uploading {tar_path} to S3...")
 s3.upload_file(tar_path, BUCKET_NAME, s3_key)
 model_data_url = f"s3://{BUCKET_NAME}/{s3_key}"
