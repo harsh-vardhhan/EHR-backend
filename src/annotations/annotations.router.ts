@@ -4,12 +4,6 @@ import { z } from 'zod';
 import { annotationsService } from '../services';
 import { MEDICAL_ENTITIES } from '../constants/labels';
 import type { MiddlewareHandler } from 'hono';
-import { extractClinicalEntities } from './extractor.client';
-import { findEntityOffsets } from './mastra.service';
-import { PiiScrubberService } from './pii-scrubber.service';
-
-const piiScrubber = new PiiScrubberService();
-
 export const annotationsApp = new Hono();
 
 // Validation middlewares
@@ -181,16 +175,34 @@ annotationsApp.patch('/:id', validateParam('id', uuidSchema), async (c) => {
   return c.json(updatedAnnotation);
 });
 
-const previewRequestSchema = z.object({
-  text: z
+const createRelationshipSchema = z.object({
+  documentId: z.string().min(1, 'documentId is required'),
+  sourceAnnotationId: z
     .string()
-    .min(10, 'Text must be at least 10 characters')
-    .max(3000, 'Text must be 3000 characters or less'),
+    .uuid('sourceAnnotationId must be a valid UUID'),
+  targetAnnotationId: z
+    .string()
+    .uuid('targetAnnotationId must be a valid UUID'),
+  relationType: z.string().min(1, 'relationType is required'),
+  confidence: z.number().min(0).max(1).optional(),
 });
 
-annotationsApp.post('/preview', async (c) => {
+// GET relationships for a document
+annotationsApp.get(
+  '/relationships',
+  validateQuery('documentId', documentIdQuerySchema),
+  async (c) => {
+    const documentId = c.req.query('documentId') || '';
+    const relationships =
+      await annotationsService.getRelationshipsByDocument(documentId);
+    return c.json(relationships);
+  },
+);
+
+// POST create a new relationship
+annotationsApp.post('/relationships', async (c) => {
   const body = await c.req.json();
-  const result = previewRequestSchema.safeParse(body);
+  const result = createRelationshipSchema.safeParse(body);
 
   if (!result.success) {
     const errors = result.error.errors
@@ -199,36 +211,37 @@ annotationsApp.post('/preview', async (c) => {
     return c.json({ error: 'Validation failed', message: errors }, 400);
   }
 
-  const { text } = result.data;
-
   try {
-    const { scrubbedText } = piiScrubber.scrubText(text);
-    const entities = await extractClinicalEntities(scrubbedText);
-
-    const annotations = entities.map((entity, index) => {
-      const offsets = findEntityOffsets(text, entity.text);
-      return {
-        annotationId: `temp-${index}-${Date.now()}`,
-        documentId: 'preview',
-        text: entity.text,
-        label: entity.label,
-        startOffset: offsets?.startOffset ?? 0,
-        endOffset: offsets?.endOffset ?? 0,
-        source: 'llm' as const,
-        status: 'suggested' as const,
-        confidence: entity.confidence,
-        assertion: entity.assertion,
-        conceptCode: entity.conceptCode,
-        createdAt: new Date().toISOString(),
-      };
-    });
-
-    return c.json(annotations);
+    const newRel = await annotationsService.createRelationship(result.data);
+    return c.json(newRel, 201);
   } catch (error: any) {
-    console.error('Failed to run preview analysis', error);
-    return c.json(
-      { error: 'Failed to run preview analysis', message: error.message },
-      500,
-    );
+    return c.json({ error: 'Validation failed', message: error.message }, 400);
   }
 });
+
+// DELETE a relationship
+annotationsApp.delete(
+  '/relationships/:relationshipId',
+  validateParam('relationshipId', uuidSchema),
+  async (c) => {
+    const relationshipId = c.req.param('relationshipId');
+    const documentId = c.req.query('documentId');
+
+    if (!documentId) {
+      return c.json(
+        {
+          error: 'Bad Request',
+          message: 'documentId query parameter is required',
+        },
+        400,
+      );
+    }
+
+    try {
+      await annotationsService.deleteRelationship(documentId, relationshipId);
+      return c.json({ success: true });
+    } catch (error: any) {
+      return c.json({ error: 'Not Found', message: error.message }, 404);
+    }
+  },
+);

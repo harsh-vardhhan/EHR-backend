@@ -32,6 +32,7 @@
     "@aws-sdk/client-firehose": "^3.1045.0",
     "@aws-sdk/client-lambda": "^3.1063.0",
     "@aws-sdk/client-s3": "^3.1045.0",
+    "@aws-sdk/client-sagemaker-runtime": "^3.1063.0",
     "@aws-sdk/client-sqs": "^3.1052.0",
     "@aws-sdk/lib-dynamodb": "^3.1045.0",
     "@hono/node-server": "^1.13.8",

@@ -147,8 +147,43 @@ export const AuditLogEntity = new Entity(
   { client, table },
 );
 
+export const RelationshipEntity = new Entity(
+  {
+    model: {
+      entity: 'relationship',
+      service: 'ehr',
+      version: '1',
+    },
+    attributes: {
+      relationshipId: { type: 'string', required: true },
+      documentId: { type: 'string', required: true },
+      sourceAnnotationId: { type: 'string', required: true },
+      targetAnnotationId: { type: 'string', required: true },
+      relationType: { type: 'string', required: true },
+      confidence: { type: 'number' },
+      createdAt: { type: 'string', required: true },
+    },
+    indexes: {
+      primary: {
+        pk: {
+          field: 'PK',
+          composite: ['documentId'],
+          template: 'DOCUMENT#${documentId}',
+        },
+        sk: {
+          field: 'SK',
+          composite: ['relationshipId'],
+          template: 'RELATIONSHIP#${relationshipId}',
+        },
+      },
+    },
+  },
+  { client, table },
+);
+
 export const EhrService = new Service({
   document: DocumentEntity,
   annotation: AnnotationEntity,
+  relationship: RelationshipEntity,
   auditLog: AuditLogEntity,
 });

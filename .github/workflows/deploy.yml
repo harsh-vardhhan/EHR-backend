@@ -40,6 +40,11 @@ jobs:
       - name: SAM Build
         run: npm install -g esbuild && sam build
 
+      - name: Package and upload SageMaker custom inference code
+        run: |
+          tar -czf model.tar.gz -C ml code
+          aws s3 cp model.tar.gz s3://${{ secrets.DOCUMENTS_BUCKET_NAME }}/models/gliner-relex/model.tar.gz
+
       - name: SAM Deploy
         run: |
           sam deploy --no-confirm-changeset \
@@ -54,6 +59,7 @@ jobs:
               NotificationEmail=${{ secrets.NOTIFICATION_EMAIL }} \
               EhrApiKeyVal=${{ secrets.VITE_API_KEY }} \
               OmopHubApiKey=${{ secrets.OMOPHUB_API_KEY }} \
+              SageMakerModelDataUrl=s3://${{ secrets.DOCUMENTS_BUCKET_NAME }}/models/gliner-relex/model.tar.gz \
               DdosRequestThreshold=2000
 
 

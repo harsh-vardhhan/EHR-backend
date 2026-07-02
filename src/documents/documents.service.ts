@@ -5,6 +5,7 @@ import {
   DocumentEntity,
   AnnotationEntity,
   AuditLogEntity,
+  RelationshipEntity,
 } from '../database/entities';
 
 export class DocumentsService {
@@ -38,15 +39,17 @@ export class DocumentsService {
           status: 'ready_for_review',
           s3Key: 'mock-key',
           annotations: [],
+          relationships: [],
         };
       }
       throw new Error(`Document with id ${id} not found`);
     }
 
-    // Query Document Entity and Annotation Entity concurrently using ElectroDB
-    const [docRes, annotationsRes] = await Promise.all([
+    // Query Document Entity, Annotation Entity, and Relationship Entity concurrently using ElectroDB
+    const [docRes, annotationsRes, relationshipsRes] = await Promise.all([
       DocumentEntity.get({ id }).go(),
       AnnotationEntity.query.primary({ documentId: id }).go(),
+      RelationshipEntity.query.primary({ documentId: id }).go(),
     ]);
 
     const metadata = docRes.data;
@@ -57,6 +60,11 @@ export class DocumentsService {
     const annotations = (annotationsRes.data || []).map((item) => ({
       ...item,
       id: item.annotationId || item.annotationId, // Map database key to frontend key 'id'
+    }));
+
+    const relationships = (relationshipsRes.data || []).map((item) => ({
+      ...item,
+      id: item.relationshipId,
     }));
 
     const getS3Command = new GetObjectCommand({
@@ -72,6 +80,7 @@ export class DocumentsService {
         ...metadata,
         text,
         annotations,
+        relationships,
       };
     } catch (error) {
       console.error('Error fetching from S3', error);
