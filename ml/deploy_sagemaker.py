@@ -16,10 +16,9 @@ ENDPOINT_NAME = "gliner-relex-endpoint"
 MODEL_NAME = "gliner-relex-model"
 CONFIG_NAME = "gliner-relex-endpoint-config"
 
-# Hugging Face CPU Inference DLC URI for ap-south-1
 IMAGE_URI = (
     f"763104351884.dkr.ecr.{REGION}.amazonaws.com/"
-    "huggingface-pytorch-inference:2.1.0-transformers4.37.0-cpu-py310"
+    "huggingface-pytorch-inference:2.6.0-transformers4.49.0-cpu-py312"
     "-ubuntu22.04"
 )
 
