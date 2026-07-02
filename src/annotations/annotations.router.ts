@@ -211,8 +211,12 @@ annotationsApp.post('/relationships', async (c) => {
     return c.json({ error: 'Validation failed', message: errors }, 400);
   }
 
-  const newRel = await annotationsService.createRelationship(result.data);
-  return c.json(newRel, 201);
+  try {
+    const newRel = await annotationsService.createRelationship(result.data);
+    return c.json(newRel, 201);
+  } catch (error: any) {
+    return c.json({ error: 'Validation failed', message: error.message }, 400);
+  }
 });
 
 // DELETE a relationship
@@ -233,7 +237,11 @@ annotationsApp.delete(
       );
     }
 
-    await annotationsService.deleteRelationship(documentId, relationshipId);
-    return c.json({ success: true });
+    try {
+      await annotationsService.deleteRelationship(documentId, relationshipId);
+      return c.json({ success: true });
+    } catch (error: any) {
+      return c.json({ error: 'Not Found', message: error.message }, 404);
+    }
   },
 );

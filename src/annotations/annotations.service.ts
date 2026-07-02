@@ -294,12 +294,14 @@ export class AnnotationsService {
     }
   }
 
-  async getRelationshipsByDocument(documentId: string): Promise<Relationship[]> {
+  async getRelationshipsByDocument(
+    documentId: string,
+  ): Promise<Relationship[]> {
     try {
       const response = await RelationshipEntity.query
         .primary({ documentId })
         .go();
-      return (response.data as Relationship[]) || [];
+      return response.data || [];
     } catch (error) {
       console.error('Error fetching relationships', error);
       return [];
@@ -312,6 +314,28 @@ export class AnnotationsService {
     const docRes = await DocumentEntity.get({ id: data.documentId }).go();
     if (!docRes.data) {
       throw new Error(`Document with id ${data.documentId} not found`);
+    }
+
+    // Verify source annotation exists and belongs to the document
+    const sourceAnn = await AnnotationEntity.get({
+      documentId: data.documentId,
+      annotationId: data.sourceAnnotationId,
+    }).go();
+    if (!sourceAnn.data) {
+      throw new Error(
+        `Source annotation with ID ${data.sourceAnnotationId} not found in document ${data.documentId}`,
+      );
+    }
+
+    // Verify target annotation exists and belongs to the document
+    const targetAnn = await AnnotationEntity.get({
+      documentId: data.documentId,
+      annotationId: data.targetAnnotationId,
+    }).go();
+    if (!targetAnn.data) {
+      throw new Error(
+        `Target annotation with ID ${data.targetAnnotationId} not found in document ${data.documentId}`,
+      );
     }
 
     const relationshipId = randomUUID();
@@ -365,6 +389,15 @@ export class AnnotationsService {
     documentId: string,
     relationshipId: string,
   ): Promise<void> {
+    const existing = await RelationshipEntity.get({
+      documentId,
+      relationshipId,
+    }).go();
+    if (!existing.data) {
+      throw new Error(
+        `Relationship with ID ${relationshipId} not found in document ${documentId}`,
+      );
+    }
     await RelationshipEntity.delete({ documentId, relationshipId }).go();
     await this.createAuditLog(
       documentId,
@@ -401,7 +434,10 @@ export class AnnotationsService {
       );
       return toDelete.length;
     } catch (error) {
-      console.error('Failed to run cascading deletion for relationships', error);
+      console.error(
+        'Failed to run cascading deletion for relationships',
+        error,
+      );
       return 0;
     }
   }
