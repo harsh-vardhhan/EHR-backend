@@ -203,6 +203,23 @@ Resources:
                   - cloudfront:DeleteOriginAccessControl
                   - cloudfront:CreateInvalidation
                 Resource: "*"
+              - Sid: SageMakerManagement
+                Effect: Allow
+                Action:
+                  - sagemaker:CreateModel
+                  - sagemaker:DeleteModel
+                  - sagemaker:DescribeModel
+                  - sagemaker:CreateEndpointConfig
+                  - sagemaker:DeleteEndpointConfig
+                  - sagemaker:DescribeEndpointConfig
+                  - sagemaker:CreateEndpoint
+                  - sagemaker:DeleteEndpoint
+                  - sagemaker:UpdateEndpoint
+                  - sagemaker:DescribeEndpoint
+                Resource:
+                  - !Sub "arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:model/gliner-relex-model"
+                  - !Sub "arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:endpoint-config/gliner-relex-endpoint-config"
+                  - !Sub "arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:endpoint/gliner-relex-endpoint"
               - Sid: IAMRoleDeployment
                 Effect: Allow
                 Action:
