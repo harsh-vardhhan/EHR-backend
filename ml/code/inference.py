@@ -1,9 +1,5 @@
-import os
-import json
 from gliner import GLiNER
 import spacy
-from negspacy.negation import Negspacy
-from spacy.tokens import Span
 
 def model_fn(model_dir):
     print("Loading GLiNER-ReLex from pretrained model...")
@@ -12,7 +8,17 @@ def model_fn(model_dir):
     
     print("Loading SpaCy and NegEx...")
     nlp = spacy.load("en_core_web_sm")
-    nlp.add_pipe("negex", config={"ent_types": ["Clinical Condition", "Medication Statement", "Clinical Finding", "Medical Procedure"]})
+    nlp.add_pipe(
+        "negex",
+        config={
+            "ent_types": [
+                "Clinical Condition",
+                "Medication Statement",
+                "Clinical Finding",
+                "Medical Procedure",
+            ]
+        },
+    )
     
     return {"gliner": model, "spacy": nlp}
 
@@ -28,7 +34,10 @@ def predict_fn(data, model_dict):
     elif isinstance(data, str):
         text = data
     else:
-        raise ValueError("Invalid input format. Expected dict with 'inputs' or 'text' key, or raw string.")
+        raise ValueError(
+            "Invalid input format. Expected dict with 'inputs' or "
+            "'text' key, or raw string."
+        )
 
     # Run negation and suspension check
     doc = nlp(text)
@@ -44,8 +53,18 @@ def predict_fn(data, model_dict):
             possible_spans.add((ent.start_char, ent.end_char))
 
     # Run GLiNER relation extraction
-    labels = ["Clinical Condition", "Medication Statement", "Clinical Finding", "Medical Procedure"]
-    relations = ["treatment_for", "contraindicated_with", "associated_with", "relates_to"]
+    labels = [
+        "Clinical Condition",
+        "Medication Statement",
+        "Clinical Finding",
+        "Medical Procedure",
+    ]
+    relations = [
+        "treatment_for",
+        "contraindicated_with",
+        "associated_with",
+        "relates_to",
+    ]
     
     entities_res, relations_res = model.extracted_relations(
         text,

@@ -1,7 +1,11 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { Mastra } from '@mastra/core';
 import { z } from 'zod';
-import { AnnotationsService, Annotation, Relationship } from './annotations.service';
+import {
+  AnnotationsService,
+  Annotation,
+  Relationship,
+} from './annotations.service';
 import { extractClinicalEntities } from './extractor.client';
 import { OmopHubClient } from './omophub.client';
 import { PiiScrubberService } from './pii-scrubber.service';
@@ -114,7 +118,8 @@ export class MastraService {
         // Scrub text for HIPAA PII protection using equal-length masking
         const { scrubbedText } = this.piiScrubber.scrubText(initData.text);
 
-        const { entities, relations } = await extractClinicalEntities(scrubbedText);
+        const { entities, relations } =
+          await extractClinicalEntities(scrubbedText);
         return { entities, relations, skipped: false };
       },
     });

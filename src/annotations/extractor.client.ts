@@ -1,4 +1,7 @@
-import { SageMakerRuntimeClient, InvokeEndpointCommand } from '@aws-sdk/client-sagemaker-runtime';
+import {
+  SageMakerRuntimeClient,
+  InvokeEndpointCommand,
+} from '@aws-sdk/client-sagemaker-runtime';
 import { z } from 'zod';
 import { MedicalEntityLabel } from '../constants/labels';
 
@@ -56,11 +59,12 @@ const client = new SageMakerRuntimeClient({
 export async function extractClinicalEntities(
   text: string,
 ): Promise<ExtractionResult> {
-  const endpointName = process.env.SAGEMAKER_ENDPOINT_NAME || 'gliner-relex-endpoint';
+  const endpointName =
+    process.env.SAGEMAKER_ENDPOINT_NAME || 'gliner-relex-endpoint';
 
   try {
     const payload = { text };
-    
+
     console.log(
       `[extractClinicalEntities] Invoking SageMaker Endpoint: "${endpointName}"...`,
     );
@@ -79,7 +83,7 @@ export async function extractClinicalEntities(
 
     const responseText = Buffer.from(response.Body).toString('utf-8');
     const parsedData = JSON.parse(responseText);
-    
+
     const validated = sagemakerResponseSchema.parse(parsedData);
 
     const entities: ExtractedEntity[] = validated.entities.map((ent) => ({

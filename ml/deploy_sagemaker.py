@@ -1,7 +1,8 @@
+import json
 import os
 import tarfile
 import time
-import json
+
 import boto3
 from dotenv import load_dotenv
 
