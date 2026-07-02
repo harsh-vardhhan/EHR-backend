@@ -18,7 +18,7 @@ CONFIG_NAME = "gliner-relex-endpoint-config"
 
 IMAGE_URI = (
     f"763104351884.dkr.ecr.{REGION}.amazonaws.com/"
-    "huggingface-pytorch-inference:2.6.0-transformers4.49.0-cpu-py312"
+    "huggingface-pytorch-inference:2.3.0-transformers4.48.0-cpu-py311"
     "-ubuntu22.04"
 )
 
