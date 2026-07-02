@@ -16,7 +16,11 @@ MODEL_NAME = "gliner-relex-model"
 CONFIG_NAME = "gliner-relex-endpoint-config"
 
 # Hugging Face CPU Inference DLC URI for ap-south-1
-IMAGE_URI = f"763104351884.dkr.ecr.{REGION}.amazonaws.com/huggingface-pytorch-inference:2.1.0-transformers4.37.0-cpu-py310-ubuntu20.04"
+IMAGE_URI = (
+    f"763104351884.dkr.ecr.{REGION}.amazonaws.com/"
+    "huggingface-pytorch-inference:2.1.0-transformers4.37.0-cpu-py310"
+    "-ubuntu20.04"
+)
 
 print("🚀 Starting SageMaker Serverless GLiNER-ReLex Deployment Script...")
 print(f"📍 AWS Region: {REGION}")
@@ -72,9 +76,14 @@ except iam.exceptions.NoSuchEntityException:
     )
     role_arn = create_res["Role"]["Arn"]
     
-    # Attach standard permissions policies
-    iam.attach_role_policy(RoleName=role_name, PolicyArn="arn:aws:iam::aws:policy/AmazonSageMakerFullAccess")
-    iam.attach_role_policy(RoleName=role_name, PolicyArn="arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess")
+    iam.attach_role_policy(
+        RoleName=role_name,
+        PolicyArn="arn:aws:iam::aws:policy/AmazonSageMakerFullAccess",
+    )
+    iam.attach_role_policy(
+        RoleName=role_name,
+        PolicyArn="arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess",
+    )
     print(f"✅ Created role: {role_arn}")
     # Wait a brief moment for IAM replication
     time.sleep(10)
@@ -141,16 +150,25 @@ sagemaker.create_endpoint(
 print(f"✅ Requested SageMaker Endpoint creation: {ENDPOINT_NAME}")
 
 # 7. Wait for deployment completion
-print("\n⏳ Step 7: Waiting for endpoint to deploy (this can take up to 2-3 minutes)...")
+print(
+    "\n⏳ Step 7: Waiting for endpoint to deploy "
+    "(this can take up to 2-3 minutes)..."
+)
 while True:
     status_res = sagemaker.describe_endpoint(EndpointName=ENDPOINT_NAME)
     status = status_res["EndpointStatus"]
     print(f"Current Endpoint Status: {status}...")
     
     if status == "InService":
-        print("\n🎉 SUCCESS! SageMaker Serverless Endpoint is now IN_SERVICE and ready for invocations!")
+        print(
+            "\n🎉 SUCCESS! SageMaker Serverless Endpoint is now "
+            "IN_SERVICE and ready for invocations!"
+        )
         break
     elif status in ["Failed", "OutOfService"]:
-        raise Exception(f"Endpoint creation failed with status: {status}. Check CloudWatch Logs.")
+        raise Exception(
+            f"Endpoint creation failed with status: {status}. "
+            "Check CloudWatch Logs."
+        )
     
     time.sleep(15)
