@@ -33,10 +33,9 @@ Parameters:
   OmopHubApiKey:
     Type: String
     Description: OMOPHub API Key
-  SageMakerEndpointName:
+  SageMakerModelDataUrl:
     Type: String
-    Default: gliner-relex-endpoint
-    Description: Name of the SageMaker Endpoint hosting GLiNER-ReLex
+    Description: S3 URI of the packaged model.tar.gz containing custom inference code
 
 
 Resources:
@@ -92,7 +91,7 @@ Resources:
           EHR_TABLE_NAME: !Ref EhrTableName
           DOCUMENTS_BUCKET_NAME: !Ref DocumentsBucketName
           OMOPHUB_API_KEY: !Ref OmopHubApiKey
-          SAGEMAKER_ENDPOINT_NAME: !Ref SageMakerEndpointName
+          SAGEMAKER_ENDPOINT_NAME: !Ref SageMakerEndpoint
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref DocumentsBucketName
@@ -364,6 +363,50 @@ Resources:
                 - firehose:PutRecord
                 - firehose:PutRecordBatch
               Resource: !GetAtt EhrAuditDeliveryStream.Arn
+
+  SageMakerExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: sagemaker.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+
+  SageMakerModel:
+    Type: AWS::SageMaker::Model
+    Properties:
+      ModelName: gliner-relex-model
+      ExecutionRoleArn: !GetAtt SageMakerExecutionRole.Arn
+      PrimaryContainer:
+        Image: !Sub "763104351884.dkr.ecr.${AWS::Region}.amazonaws.com/huggingface-pytorch-inference:2.1.0-transformers4.37.0-cpu-py310-ubuntu20.04"
+        ModelDataUrl: !Ref SageMakerModelDataUrl
+        Environment:
+          HF_MODEL_ID: "knowledgator/gliner-relex-large-v0.5"
+          SAGEMAKER_PROGRAM: "inference.py"
+          SAGEMAKER_SUBMIT_DIRECTORY: !Ref SageMakerModelDataUrl
+
+  SageMakerEndpointConfig:
+    Type: AWS::SageMaker::EndpointConfig
+    Properties:
+      EndpointConfigName: gliner-relex-endpoint-config
+      ProductionVariants:
+        - VariantName: AllTraffic
+          ModelName: !GetAtt SageMakerModel.ModelName
+          ServerlessConfig:
+            MemorySizeInMB: 2048
+            MaxConcurrency: 5
+
+  SageMakerEndpoint:
+    Type: AWS::SageMaker::Endpoint
+    Properties:
+      EndpointName: gliner-relex-endpoint
+      EndpointConfigName: !GetAtt SageMakerEndpointConfig.EndpointConfigName
 
 Outputs:
   ApiEndpoint:
