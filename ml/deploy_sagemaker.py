@@ -19,7 +19,7 @@ CONFIG_NAME = "gliner-relex-endpoint-config"
 IMAGE_URI = (
     f"763104351884.dkr.ecr.{REGION}.amazonaws.com/"
     "huggingface-pytorch-inference:2.1.0-transformers4.37.0-cpu-py310"
-    "-ubuntu20.04"
+    "-ubuntu22.04"
 )
 
 print("🚀 Starting SageMaker Serverless GLiNER-ReLex Deployment Script...")
