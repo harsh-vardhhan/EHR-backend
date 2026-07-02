@@ -4,8 +4,6 @@ import { z } from 'zod';
 import { annotationsService } from '../services';
 import { MEDICAL_ENTITIES } from '../constants/labels';
 import type { MiddlewareHandler } from 'hono';
-import { extractClinicalEntities } from './extractor.client';
-
 export const annotationsApp = new Hono();
 
 // Validation middlewares
@@ -179,8 +177,12 @@ annotationsApp.patch('/:id', validateParam('id', uuidSchema), async (c) => {
 
 const createRelationshipSchema = z.object({
   documentId: z.string().min(1, 'documentId is required'),
-  sourceAnnotationId: z.string().uuid('sourceAnnotationId must be a valid UUID'),
-  targetAnnotationId: z.string().uuid('targetAnnotationId must be a valid UUID'),
+  sourceAnnotationId: z
+    .string()
+    .uuid('sourceAnnotationId must be a valid UUID'),
+  targetAnnotationId: z
+    .string()
+    .uuid('targetAnnotationId must be a valid UUID'),
   relationType: z.string().min(1, 'relationType is required'),
   confidence: z.number().min(0).max(1).optional(),
 });
@@ -220,11 +222,17 @@ annotationsApp.delete(
   async (c) => {
     const relationshipId = c.req.param('relationshipId');
     const documentId = c.req.query('documentId');
-    
+
     if (!documentId) {
-      return c.json({ error: 'Bad Request', message: 'documentId query parameter is required' }, 400);
+      return c.json(
+        {
+          error: 'Bad Request',
+          message: 'documentId query parameter is required',
+        },
+        400,
+      );
     }
-    
+
     await annotationsService.deleteRelationship(documentId, relationshipId);
     return c.json({ success: true });
   },
