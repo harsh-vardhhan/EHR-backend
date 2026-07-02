@@ -46,7 +46,8 @@
             ],
             "Resource": [
                 "arn:aws:s3:::ehr-*frontend*/*",
-                "arn:aws:s3:::aws-sam-cli-managed-default-*/*"
+                "arn:aws:s3:::aws-sam-cli-managed-default-*/*",
+                "arn:aws:s3:::ehr-demo-docs-bucket/*"
             ]
         },
         {
