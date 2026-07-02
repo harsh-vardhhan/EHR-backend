@@ -48,6 +48,8 @@ s3.upload_file(tar_path, BUCKET_NAME, s3_key)
 model_data_url = f"s3://{BUCKET_NAME}/{s3_key}"
 print(f"✅ Uploaded to: {model_data_url}")
 os.remove(tar_path)
+import sys
+sys.exit(0)
 
 # 3. Create or resolve SageMaker execution role
 role_name = "EhrSageMakerExecutionRole"
