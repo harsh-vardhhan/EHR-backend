@@ -383,13 +383,13 @@ Resources:
     Properties:
       ExecutionRoleArn: !GetAtt SageMakerExecutionRole.Arn
       PrimaryContainer:
-        Image: !Sub "763104351884.dkr.ecr.${AWS::Region}.amazonaws.com/huggingface-pytorch-inference:2.6.0-transformers4.49.0-cpu-py312-ubuntu22.04"
+        Image: !Sub "763104351884.dkr.ecr.${AWS::Region}.amazonaws.com/huggingface-pytorch-inference:2.3.0-transformers4.48.0-cpu-py311-ubuntu22.04"
         ModelDataUrl: !Ref SageMakerModelDataUrl
         Environment:
           HF_MODEL_ID: "knowledgator/gliner-relex-base-v1.0"
           SAGEMAKER_PROGRAM: "inference.py"
           SAGEMAKER_SUBMIT_DIRECTORY: !Ref SageMakerModelDataUrl
-          MODEL_VERSION: "1.0.2"
+          MODEL_VERSION: "1.0.3"
 
   SageMakerEndpointConfig:
     Type: AWS::SageMaker::EndpointConfig
