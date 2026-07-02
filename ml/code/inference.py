@@ -1,6 +1,7 @@
 import spacy
 from gliner import GLiNER
 
+
 def model_fn(model_dir):
     print("Loading GLiNER-ReLex from pretrained model...")
     # Knowledgator GLiNER-ReLex model
