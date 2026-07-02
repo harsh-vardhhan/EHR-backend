@@ -90,6 +90,7 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:s3:::ehr-*frontend*/*"
                   - !Sub "arn:aws:s3:::aws-sam-cli-managed-default-*/*"
+                  - !Sub "arn:aws:s3:::ehr-demo-docs-bucket/*"
               - Sid: DynamoDBTableManagement
                 Effect: Allow
                 Action:
