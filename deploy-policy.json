@@ -226,6 +226,27 @@
             "Resource": [
                 "arn:aws:firehose:ap-south-1:<AWS_ACCOUNT_ID>:deliverystream/ehr-annotation-backend-*"
             ]
+        },
+        {
+            "Sid": "SageMakerManagement",
+            "Effect": "Allow",
+            "Action": [
+                "sagemaker:CreateModel",
+                "sagemaker:DeleteModel",
+                "sagemaker:DescribeModel",
+                "sagemaker:CreateEndpointConfig",
+                "sagemaker:DeleteEndpointConfig",
+                "sagemaker:DescribeEndpointConfig",
+                "sagemaker:CreateEndpoint",
+                "sagemaker:DeleteEndpoint",
+                "sagemaker:UpdateEndpoint",
+                "sagemaker:DescribeEndpoint"
+            ],
+            "Resource": [
+                "arn:aws:sagemaker:ap-south-1:<AWS_ACCOUNT_ID>:model/gliner-relex-model",
+                "arn:aws:sagemaker:ap-south-1:<AWS_ACCOUNT_ID>:endpoint-config/gliner-relex-endpoint-config",
+                "arn:aws:sagemaker:ap-south-1:<AWS_ACCOUNT_ID>:endpoint/gliner-relex-endpoint"
+            ]
         }
     ]
 }
