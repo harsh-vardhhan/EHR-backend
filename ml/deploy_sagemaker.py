@@ -127,7 +127,7 @@ sagemaker.create_endpoint_config(
             "VariantName": "AllTraffic",
             "ModelName": MODEL_NAME,
             "ServerlessConfig": {
-                "MemorySizeInMB": 4096,
+                "MemorySizeInMB": 3072,
                 "MaxConcurrency": 5
             }
         }
