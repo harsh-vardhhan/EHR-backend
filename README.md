@@ -61,13 +61,13 @@ graph TD
         SQS -.->|Failures| DLQ([AWS SQS - Dead Letter Queue])
         
         LambdaWorker -->|1. Mask PII| Scrubber[PII Scrubber Service]
-        LambdaWorker -->|"2. Inference (Scrubbed)"| Groq{{Groq AI - LLM Inference}}
+        LambdaWorker -->|"2. Inference (Scrubbed)"| SageMaker{{Amazon SageMaker - Serverless (ONNX)}}
         LambdaWorker -->|3. Concept Grounding| OMOPHub{{OMOPHub - Vocabulary API}}
         LambdaWorker -->|4. Save Annotations| DynamoDB
 
         %% Stateless Sandbox Preview Flow
         Visitor((Portfolio Visitor)) -->|Unauthenticated Request| LambdaURL
-        LambdaAPI -->|Stateless Inference| Groq
+        LambdaAPI -->|Stateless Inference| SageMaker
     end
 
     %% Auditing Pipeline Subgraph (Middle)
@@ -128,7 +128,7 @@ graph TD
     class SQS,DLQ,EB,SNS,Firehose integration;
     class CWAlarm monitor;
     class User,Visitor userNode;
-    class Groq,OMOPHub,Scrubber external;
+    class SageMaker,OMOPHub,Scrubber external;
     
     %% Apply Classes to Legend
     class L_Comp compute;
@@ -183,7 +183,7 @@ sequenceDiagram
 | **Amazon S3 (Audit WORM Bucket)** | Secure compliance bucket protected by S3 Object Lock (Compliance Mode) storing immutable audit logs. |
 | **Lambda Function URL** | Public HTTPS endpoint routing requests directly to the Hono backend. |
 | **CloudWatch Alarm & SNS** | Monitors total request volume (Invocations + Throttles) in real-time, acting as the circuit breaker sensor. |
-| **Groq AI Integration** | High-performance inference engine running clinical entity recognition models. |
+| **SageMaker Serverless (ONNX)** | High-performance machine learning inference endpoint running our custom GLiNER-ReLex clinical relation extraction model. |
 
 ## 🚨 Financial Warning: The Cost of Infinite Scaling
 
@@ -243,7 +243,7 @@ This backend incorporates a robust, multi-layered security architecture designed
 | **Asynchronous Decoupling** | SQS-backed queue hand-off (`EhrAnnotationQueue`) with `BatchSize: 5`. | Prevents container runtime crashes; processes spikes in document uploads sequentially rather than in parallel. |
 | **Infinite Retry Defense** | SQS Dead Letter Queue (`EhrAnnotationDLQ`) with `maxReceiveCount: 3`. | Quarantines failing payloads (poison pills) to prevent endless execution retry loops. |
 | **Partial Batch Isolation** | SQS batch response processing with `ReportBatchItemFailures`. | Prevents successfully processed records in a batch from being re-executed when a sibling record in the same batch fails, saving redundant LLM API costs. |
-| **External API Timeouts** | Groq NLP call `AbortController` (capped at **30 seconds**). | Prevents hung external LLM endpoints from keeping the worker Lambda running up to its 30-second cap, while allowing ample time for large-document entity extractions. |
+| **External API Timeouts** | SageMaker NLP call `AbortController` (capped at **30 seconds**). | Prevents hung external endpoints from keeping the worker Lambda running up to its 30-second cap, while allowing ample time for large-document entity extractions. |
 | **Database Cost Ceiling** | DynamoDB configured with on-demand capacity (`PAY_PER_REQUEST`). Active costs are only incurred per request (pennies for a Reddit spike) and drop to exactly $0.00 during dormancy. | Combined with the API Kill Switch, this acts as a hard budget boundary preventing runaway database scaling costs. |
 | **Compute Efficiency** | Parallel database writes via `Promise.all` instead of sequential writes. | Grouped DB actions run concurrently, reducing billable Lambda active execution time by over 80%. |
 | **S3 Read-Only Worker** | SQS Lambda worker has read-only S3 permissions (`S3ReadPolicy`) and never writes back to S3. | There is zero risk of an infinite S3 write-event loop. |
