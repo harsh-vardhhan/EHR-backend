@@ -24,6 +24,16 @@
 			]
 		},
 		{
+			"Sid": "AllowSageMakerInvocations",
+			"Effect": "Allow",
+			"Action": [
+				"sagemaker:InvokeEndpoint"
+			],
+			"Resource": [
+				"arn:aws:sagemaker:ap-south-1:<AWS_ACCOUNT_ID>:endpoint/gliner-relex-endpoint"
+			]
+		},
+		{
 			"Sid": "AllowListAndDescribeOnDataResources",
 			"Effect": "Allow",
 			"Action": [
