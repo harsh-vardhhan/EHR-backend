@@ -218,7 +218,7 @@ Resources:
                   - sagemaker:DescribeEndpoint
                 Resource:
                   - !Sub "arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:model/gliner-relex-model"
-                  - !Sub "arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:endpoint-config/gliner-relex-endpoint-config"
+                  - !Sub "arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:endpoint-config/ehr-annotation-backend-*"
                   - !Sub "arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:endpoint/gliner-relex-endpoint"
               - Sid: IAMRoleDeployment
                 Effect: Allow
