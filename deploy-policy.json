@@ -244,7 +244,7 @@
             ],
             "Resource": [
                 "arn:aws:sagemaker:ap-south-1:<AWS_ACCOUNT_ID>:model/gliner-relex-model",
-                "arn:aws:sagemaker:ap-south-1:<AWS_ACCOUNT_ID>:endpoint-config/ehr-annotation-backend-*",
+                "arn:aws:sagemaker:ap-south-1:<AWS_ACCOUNT_ID>:endpoint-config/SageMakerEndpointConfig-*",
                 "arn:aws:sagemaker:ap-south-1:<AWS_ACCOUNT_ID>:endpoint/gliner-relex-endpoint"
             ]
         }
