@@ -31,7 +31,6 @@ app.use(
 app.use('*', async (c, next) => {
   if (
     c.req.path === '/' ||
-    c.req.path === '/annotations/preview' ||
     c.req.method === 'OPTIONS'
   ) {
     await next();

@@ -1,9 +1,10 @@
 import { randomUUID } from 'crypto';
-import { MedicalEntityLabel } from '../constants/labels';
+import { MEDICAL_ENTITIES, MedicalEntityLabel } from '../constants/labels';
 import {
   AnnotationEntity,
   DocumentEntity,
   AuditLogEntity,
+  RelationshipEntity,
 } from '../database/entities';
 
 export interface Annotation {
@@ -19,6 +20,16 @@ export interface Annotation {
   confidence?: number;
   assertion?: 'positive' | 'negated' | 'possible';
   conceptCode?: string;
+}
+
+export interface Relationship {
+  relationshipId: string;
+  documentId: string;
+  sourceAnnotationId: string;
+  targetAnnotationId: string;
+  relationType: string;
+  confidence?: number;
+  createdAt: string;
 }
 
 export class AnnotationsService {
@@ -141,6 +152,7 @@ export class AnnotationsService {
       } else if (updates.status === 'rejected') {
         actionType = 'ANNOTATION_REJECTED';
         desc = `Clinician rejected suggested ${response.data.label}: "${response.data.text}"`;
+        await this.deleteRelationshipsByAnnotation(documentId, annotationId);
       } else if (updates.status === 'corrected') {
         actionType = 'ANNOTATION_CORRECTED';
         desc = `Clinician corrected suggested ${response.data.label}: "${response.data.text}"`;
@@ -161,27 +173,39 @@ export class AnnotationsService {
     conceptCode?: string;
   }): Promise<Annotation[]> {
     try {
-      let query;
-
       if (filters.assertion && filters.label) {
-        query = AnnotationEntity.query.byAssertionLabel({
+        const query = AnnotationEntity.query.byAssertionLabel({
           assertion: filters.assertion,
           label: filters.label,
         });
-      } else if (filters.assertion) {
-        query = AnnotationEntity.query.byAssertionLabel({
-          assertion: filters.assertion,
-        });
-      }
-
-      if (query) {
         if (filters.conceptCode) {
           query.where(({ conceptCode }, { eq }) =>
             eq(conceptCode, filters.conceptCode!),
           );
         }
-        const response = await query.go();
-        return (response.data as Annotation[]) || [];
+        const res = await query.go();
+        return (res.data as Annotation[]) || [];
+      }
+
+      // If only assertion is provided, query across all labels in parallel
+      if (filters.assertion) {
+        const labels = Object.values(MEDICAL_ENTITIES);
+        const results = await Promise.all(
+          labels.map(async (label) => {
+            const q = AnnotationEntity.query.byAssertionLabel({
+              assertion: filters.assertion!,
+              label,
+            });
+            if (filters.conceptCode) {
+              q.where(({ conceptCode }, { eq }) =>
+                eq(conceptCode, filters.conceptCode!),
+              );
+            }
+            const res = await q.go();
+            return (res.data as Annotation[]) || [];
+          }),
+        );
+        return results.flat();
       }
 
       // If assertion is not provided but label is, query across all assertion partitions in parallel
@@ -267,6 +291,118 @@ export class AnnotationsService {
       return log;
     } catch (error) {
       console.error('Error creating audit log in DynamoDB', error);
+    }
+  }
+
+  async getRelationshipsByDocument(documentId: string): Promise<Relationship[]> {
+    try {
+      const response = await RelationshipEntity.query
+        .primary({ documentId })
+        .go();
+      return (response.data as Relationship[]) || [];
+    } catch (error) {
+      console.error('Error fetching relationships', error);
+      return [];
+    }
+  }
+
+  async createRelationship(
+    data: Omit<Relationship, 'relationshipId' | 'createdAt'>,
+  ): Promise<Relationship> {
+    const docRes = await DocumentEntity.get({ id: data.documentId }).go();
+    if (!docRes.data) {
+      throw new Error(`Document with id ${data.documentId} not found`);
+    }
+
+    const relationshipId = randomUUID();
+    const newRelationship: Relationship = {
+      ...data,
+      relationshipId,
+      createdAt: new Date().toISOString(),
+    };
+
+    await RelationshipEntity.create(newRelationship).go();
+    await this.createAuditLog(
+      data.documentId,
+      'RELATIONSHIP_CREATED',
+      `Clinician manually linked annotation ${data.sourceAnnotationId} to ${data.targetAnnotationId} as ${data.relationType}`,
+    );
+    return newRelationship;
+  }
+
+  async createRelationships(
+    documentId: string,
+    relationshipsData: Omit<
+      Relationship,
+      'relationshipId' | 'createdAt' | 'documentId'
+    >[],
+  ): Promise<Relationship[]> {
+    if (relationshipsData.length === 0) return [];
+
+    const docRes = await DocumentEntity.get({ id: documentId }).go();
+    if (!docRes.data) {
+      throw new Error(`Document with id ${documentId} not found`);
+    }
+
+    const timestamp = new Date().toISOString();
+    const newRelationships: Relationship[] = relationshipsData.map((data) => ({
+      ...data,
+      documentId,
+      relationshipId: randomUUID(),
+      createdAt: timestamp,
+    }));
+
+    await RelationshipEntity.put(newRelationships).go();
+    await this.createAuditLog(
+      documentId,
+      'LLM_RELATIONS_EXTRACTED',
+      `AI pipeline successfully extracted and saved ${newRelationships.length} relationships.`,
+    );
+    return newRelationships;
+  }
+
+  async deleteRelationship(
+    documentId: string,
+    relationshipId: string,
+  ): Promise<void> {
+    await RelationshipEntity.delete({ documentId, relationshipId }).go();
+    await this.createAuditLog(
+      documentId,
+      'RELATIONSHIP_DELETED',
+      `Relationship ${relationshipId} was deleted.`,
+    );
+  }
+
+  async deleteRelationshipsByAnnotation(
+    documentId: string,
+    annotationId: string,
+  ): Promise<number> {
+    try {
+      const relationships = await this.getRelationshipsByDocument(documentId);
+      const toDelete = relationships.filter(
+        (rel) =>
+          rel.sourceAnnotationId === annotationId ||
+          rel.targetAnnotationId === annotationId,
+      );
+
+      if (toDelete.length === 0) return 0;
+
+      for (const rel of toDelete) {
+        await RelationshipEntity.delete({
+          documentId,
+          relationshipId: rel.relationshipId,
+        }).go();
+      }
+
+      await this.createAuditLog(
+        documentId,
+        'CASCADING_RELATIONSHIPS_DELETED',
+        `Cleaned up ${toDelete.length} linked relationships due to annotation ${annotationId} deletion.`,
+      );
+      return toDelete.length;
+    } catch (error) {
+      console.error('Failed to run cascading deletion for relationships', error);
+      return 0;
     }
   }
 }

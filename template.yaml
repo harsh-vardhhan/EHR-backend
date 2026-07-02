@@ -33,6 +33,10 @@ Parameters:
   OmopHubApiKey:
     Type: String
     Description: OMOPHub API Key
+  SageMakerEndpointName:
+    Type: String
+    Default: gliner-relex-endpoint
+    Description: Name of the SageMaker Endpoint hosting GLiNER-ReLex
 
 
 Resources:
@@ -88,6 +92,7 @@ Resources:
           EHR_TABLE_NAME: !Ref EhrTableName
           DOCUMENTS_BUCKET_NAME: !Ref DocumentsBucketName
           OMOPHUB_API_KEY: !Ref OmopHubApiKey
+          SAGEMAKER_ENDPOINT_NAME: !Ref SageMakerEndpointName
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref DocumentsBucketName
@@ -99,6 +104,10 @@ Resources:
                 - dynamodb:Query
                 - dynamodb:Scan
               Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EhrTableName}/index/*"
+            - Effect: Allow
+              Action:
+                - sagemaker:InvokeEndpoint
+              Resource: "*"
 
   EhrAnnotationQueue:
     Type: AWS::SQS::Queue

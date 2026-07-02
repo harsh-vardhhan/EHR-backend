@@ -1,7 +1,7 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { Mastra } from '@mastra/core';
 import { z } from 'zod';
-import { AnnotationsService, Annotation } from './annotations.service';
+import { AnnotationsService, Annotation, Relationship } from './annotations.service';
 import { extractClinicalEntities } from './extractor.client';
 import { OmopHubClient } from './omophub.client';
 import { PiiScrubberService } from './pii-scrubber.service';
@@ -89,11 +89,13 @@ export class MastraService {
     });
 
     // Step 2: Run LLM Clinical Entity extraction (if not a duplicate)
+    // Step 2: Run LLM Clinical Entity extraction (if not a duplicate)
     const extractionStep = createStep({
       id: 'extract-entities',
       inputSchema: z.object({}),
       outputSchema: z.object({
         entities: z.array(z.any()),
+        relations: z.array(z.any()),
         skipped: z.boolean(),
       }),
       execute: async (context) => {
@@ -106,14 +108,14 @@ export class MastraService {
         );
 
         if (checkResult?.isDuplicate) {
-          return { entities: [], skipped: true };
+          return { entities: [], relations: [], skipped: true };
         }
 
         // Scrub text for HIPAA PII protection using equal-length masking
         const { scrubbedText } = this.piiScrubber.scrubText(initData.text);
 
-        const entities = await extractClinicalEntities(scrubbedText);
-        return { entities, skipped: false };
+        const { entities, relations } = await extractClinicalEntities(scrubbedText);
+        return { entities, relations, skipped: false };
       },
     });
 
@@ -135,6 +137,7 @@ export class MastraService {
         );
         const extractResult = context.getStepResult<{
           entities: any[];
+          relations: any[];
           skipped: boolean;
         }>('extract-entities');
 
@@ -147,8 +150,9 @@ export class MastraService {
           return { success: true, count: 0 };
         }
 
-        const { documentId, text } = initData;
+        const { documentId } = initData;
         const entities = extractResult.entities;
+        const relations = extractResult.relations || [];
 
         // Map resolved concept codes in bulk from OMOPHub
         const queries = entities.map((entity) => ({
@@ -164,22 +168,14 @@ export class MastraService {
         >[] = [];
 
         for (const entity of entities) {
-          const offsets = findEntityOffsets(text, entity.text);
-          if (!offsets) {
-            console.warn(
-              `[MastraService:resolve-and-save] Entity text not found in document: ${entity.text}`,
-            );
-            continue;
-          }
-
           const resolved = resolvedMap.get(entity.text.toLowerCase());
-          const conceptCode = resolved?.conceptCode || entity.conceptCode;
+          const conceptCode = resolved?.conceptCode || entity.conceptCode || '';
 
           annotationsToCreate.push({
             text: entity.text,
             label: entity.label,
-            startOffset: offsets.startOffset,
-            endOffset: offsets.endOffset,
+            startOffset: entity.startOffset,
+            endOffset: entity.endOffset,
             source: 'llm' as const,
             status: 'suggested' as const,
             confidence: entity.confidence,
@@ -188,14 +184,50 @@ export class MastraService {
           });
         }
 
+        let savedAnnotations: Annotation[] = [];
         if (annotationsToCreate.length > 0) {
-          await this.annotationsService.createAnnotations(
+          savedAnnotations = await this.annotationsService.createAnnotations(
             documentId,
             annotationsToCreate,
           );
         }
 
-        return { success: true, count: annotationsToCreate.length };
+        // Bridge extracted relations using character offsets to resolved DB UUID annotationIds
+        const relationshipsToCreate: Omit<
+          Relationship,
+          'relationshipId' | 'createdAt' | 'documentId'
+        >[] = [];
+
+        for (const rel of relations) {
+          const sourceAnn = savedAnnotations.find(
+            (ann) =>
+              ann.startOffset === rel.sourceStart &&
+              ann.endOffset === rel.sourceEnd,
+          );
+          const targetAnn = savedAnnotations.find(
+            (ann) =>
+              ann.startOffset === rel.targetStart &&
+              ann.endOffset === rel.targetEnd,
+          );
+
+          if (sourceAnn && targetAnn) {
+            relationshipsToCreate.push({
+              sourceAnnotationId: sourceAnn.annotationId,
+              targetAnnotationId: targetAnn.annotationId,
+              relationType: rel.relation,
+              confidence: rel.confidence,
+            });
+          }
+        }
+
+        if (relationshipsToCreate.length > 0) {
+          await this.annotationsService.createRelationships(
+            documentId,
+            relationshipsToCreate,
+          );
+        }
+
+        return { success: true, count: savedAnnotations.length };
       },
     });
 
