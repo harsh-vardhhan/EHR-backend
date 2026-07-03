@@ -61,7 +61,7 @@ graph TD
         SQS -.->|Failures| DLQ([AWS SQS - Dead Letter Queue])
         
         LambdaWorker -->|1. Mask PII| Scrubber[PII Scrubber Service]
-        LambdaWorker -->|"2. Inference (Scrubbed)"| SageMaker{{"Amazon SageMaker - Serverless (PyTorch)"}}
+        LambdaWorker -->|"2. Inference (Scrubbed)"| SageMaker["Amazon SageMaker - Serverless (PyTorch)"]
         LambdaWorker -->|3. Concept Grounding| OMOPHub{{OMOPHub - Vocabulary API}}
         LambdaWorker -->|4. Save Annotations| DynamoDB
 
@@ -122,13 +122,13 @@ graph TD
     classDef external fill:#6B7280,fill-opacity:0.15,stroke:#6B7280,stroke-width:2px;
 
     %% Apply Classes
-    class LambdaURL,LambdaAPI,LambdaWorker,LambdaKillSwitch,LambdaConsumer compute;
+    class LambdaURL,LambdaAPI,LambdaWorker,LambdaKillSwitch,LambdaConsumer,SageMaker compute;
     class DynamoDB,DynamoDBStream database;
     class S3,S3Audit storage;
     class SQS,DLQ,EB,SNS,Firehose integration;
     class CWAlarm monitor;
     class User,Visitor userNode;
-    class SageMaker,OMOPHub,Scrubber external;
+    class OMOPHub,Scrubber external;
     
     %% Apply Classes to Legend
     class L_Comp compute;
