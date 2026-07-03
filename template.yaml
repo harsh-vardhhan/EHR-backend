@@ -398,8 +398,8 @@ Resources:
         - VariantName: AllTraffic
           ModelName: !GetAtt SageMakerModel.ModelName
           ServerlessConfig:
-            MemorySizeInMB: 3072
-            MaxConcurrency: 5
+            MemorySizeInMB: 6144
+            MaxConcurrency: 1
 
   SageMakerEndpoint:
     Type: AWS::SageMaker::Endpoint

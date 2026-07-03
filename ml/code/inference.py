@@ -3,20 +3,11 @@ from gliner import GLiNER
 
 
 def model_fn(model_dir):
-    import torch
-    torch.set_grad_enabled(False)
-    torch.set_num_threads(1)
-    torch.set_num_interop_threads(1)
-
-    print("Loading GLiNER-ReLex from pretrained ONNX model...")
+    print("Loading GLiNER-ReLex from pretrained model...")
     # Knowledgator GLiNER-ReLex model
     import os
     model_path = os.path.join(model_dir, "model")
-    model = GLiNER.from_pretrained(
-        model_path,
-        load_onnx_model=True,
-        load_tokenizer=True
-    )
+    model = GLiNER.from_pretrained(model_path)
     
     print("Loading SpaCy and NegEx...")
     nlp = spacy.load("en_core_web_sm")
@@ -32,8 +23,6 @@ def model_fn(model_dir):
         },
     )
     
-    import gc
-    gc.collect()
     return {"gliner": model, "spacy": nlp}
 
 def predict_fn(data, model_dict):
@@ -80,15 +69,13 @@ def predict_fn(data, model_dict):
         "relates_to",
     ]
     
-    import torch
-    with torch.no_grad():
-        entities_res, relations_res = model.predict_relations(
-            text,
-            labels=labels,
-            relations=relations,
-            threshold=0.3,
-            relation_threshold=0.3
-        )
+    entities_res, relations_res = model.extracted_relations(
+        text,
+        labels=labels,
+        relations=relations,
+        threshold=0.3,
+        entity_threshold=0.3
+    )
 
     # Format entities response
     formatted_entities = []
