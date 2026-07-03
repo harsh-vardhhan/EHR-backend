@@ -1,13 +1,17 @@
-import os
 import json
+import os
+
 from gliner import GLiNER
+
 
 def test_notes():
     # Path to notes.json
-    notes_path = os.path.join(os.path.dirname(__file__), "..", "src", "scripts", "notes.json")
+    notes_path = os.path.join(
+        os.path.dirname(__file__), "..", "src", "scripts", "notes.json"
+    )
     print(f"Reading clinical notes from {notes_path}...")
     
-    with open(notes_path, "r") as f:
+    with open(notes_path) as f:
         notes = json.load(f)
         
     print(f"Loaded {len(notes)} clinical notes.")
@@ -28,8 +32,18 @@ def test_notes():
     )
     print("Model loaded successfully!")
     
-    labels = ["Clinical Condition", "Medication Statement", "Clinical Finding", "Medical Procedure"]
-    relations = ["treatment_for", "contraindicated_with", "associated_with", "relates_to"]
+    labels = [
+        "Clinical Condition",
+        "Medication Statement",
+        "Clinical Finding",
+        "Medical Procedure",
+    ]
+    relations = [
+        "treatment_for",
+        "contraindicated_with",
+        "associated_with",
+        "relates_to",
+    ]
     
     results = []
     # Run on first 2 notes

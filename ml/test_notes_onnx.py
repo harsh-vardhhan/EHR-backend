@@ -1,8 +1,10 @@
-import os
-import json
-import resource
 import gc
+import json
+import os
+import resource
+
 from gliner import GLiNER
+
 
 def get_memory_usage_mb():
     maxrss_bytes = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
@@ -11,9 +13,11 @@ def get_memory_usage_mb():
 def test_notes_onnx():
     print(f"1. Baseline memory usage: {get_memory_usage_mb():.2f} MB")
     
-    notes_path = os.path.join(os.path.dirname(__file__), "..", "src", "scripts", "notes.json")
+    notes_path = os.path.join(
+        os.path.dirname(__file__), "..", "src", "scripts", "notes.json"
+    )
     print(f"Reading clinical notes from {notes_path}...")
-    with open(notes_path, "r") as f:
+    with open(notes_path) as f:
         notes = json.load(f)
     print(f"Loaded {len(notes)} clinical notes.")
     
@@ -34,8 +38,18 @@ def test_notes_onnx():
     print("Model loaded successfully!")
     print(f"2. After loading ONNX model: {get_memory_usage_mb():.2f} MB")
     
-    labels = ["Clinical Condition", "Medication Statement", "Clinical Finding", "Medical Procedure"]
-    relations = ["treatment_for", "contraindicated_with", "associated_with", "relates_to"]
+    labels = [
+        "Clinical Condition",
+        "Medication Statement",
+        "Clinical Finding",
+        "Medical Procedure",
+    ]
+    relations = [
+        "treatment_for",
+        "contraindicated_with",
+        "associated_with",
+        "relates_to",
+    ]
     
     results = []
     # Run on first 2 notes
