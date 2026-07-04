@@ -1,8 +1,7 @@
-/**
- * HIPAA-aligned PII Scrubber Service
- * Replaces sensitive identifiers with equal-length masked strings
- * to preserve character index offsets for downstream NLP annotations.
- */
+import {
+  SageMakerRuntimeClient,
+  InvokeEndpointCommand,
+} from '@aws-sdk/client-sagemaker-runtime';
 
 export interface PiiDetection {
   text: string;
@@ -12,6 +11,10 @@ export interface PiiDetection {
 }
 
 export class PiiScrubberService {
+  private sagemakerClient = new SageMakerRuntimeClient({
+    region: process.env.AWS_REGION || 'ap-south-1',
+  });
+
   /**
    * Helper to replace a matched string with a label-embedded mask of equal length.
    * e.g., "Robert Miller" (length 13) with label "NAME" -> "[NAMEXXXXXXX]" (length 13)
@@ -185,6 +188,116 @@ export class PiiScrubberService {
     scrubbed = chars.join('');
 
     // Return sorted ascending by start offset
+    detections.sort((a, b) => a.start - b.start);
+
+    return {
+      scrubbedText: scrubbed,
+      detections,
+    };
+  }
+
+  /**
+   * Asynchronously scrubs PII from the text, using the SageMaker GLiNER endpoint
+   * to perform ML-based Named Entity Recognition (NER) for high-accuracy contextual scrubbing.
+   */
+  async scrubTextMl(text: string): Promise<{
+    scrubbedText: string;
+    detections: PiiDetection[];
+  }> {
+    // 1. Run the standard regex-based scrubber first (acts as baseline)
+    const { detections } = this.scrubText(text);
+
+    const endpointName =
+      process.env.SAGEMAKER_ENDPOINT_NAME || 'gliner-relex-endpoint';
+
+    // If endpoint name is configured and we are in an AWS environment, run ML PII detection
+    try {
+      const piiLabels = [
+        'Patient Name',
+        'Doctor Name',
+        'Phone Number',
+        'Social Security Number',
+        'Date of Birth',
+        'Physical Address',
+        'Email Address',
+      ];
+
+      const payload = {
+        text,
+        labels: piiLabels,
+        relations: [], // Empty relations array triggers entity-only mode in inference.py
+        threshold: 0.35,
+      };
+
+      console.log(
+        `[PiiScrubberService] Invoking SageMaker for PII detection: "${endpointName}"...`,
+      );
+
+      const command = new InvokeEndpointCommand({
+        EndpointName: endpointName,
+        ContentType: 'application/json',
+        Body: Buffer.from(JSON.stringify(payload)),
+      });
+
+      const response = await this.sagemakerClient.send(command);
+
+      if (response.Body) {
+        const responseText = Buffer.from(response.Body).toString('utf-8');
+        const parsedData = JSON.parse(responseText);
+
+        const labelMap: Record<string, PiiDetection['type']> = {
+          'Patient Name': 'NAME',
+          'Doctor Name': 'NAME',
+          'Phone Number': 'PHONE',
+          'Social Security Number': 'SSN',
+          'Date of Birth': 'DATE',
+          'Physical Address': 'EMAIL',
+          'Email Address': 'EMAIL',
+        };
+
+        if (parsedData.entities && Array.isArray(parsedData.entities)) {
+          for (const ent of parsedData.entities) {
+            const start = ent.start;
+            const end = ent.end;
+            const type = labelMap[ent.label] || 'NAME';
+
+            // Check if this offset is already covered by our regex scrubber
+            const isOverlap = detections.some(
+              (d) =>
+                (start >= d.start && start < d.end) ||
+                (end > d.start && end <= d.end) ||
+                (d.start >= start && d.start < end),
+            );
+
+            if (!isOverlap) {
+              detections.push({
+                text: ent.text,
+                type,
+                start,
+                end,
+              });
+            }
+          }
+        }
+      }
+    } catch (err: any) {
+      console.warn(
+        `[PiiScrubberService] ML-based PII scrubbing failed/skipped (falling back to regex-only). Error: ${err.message || err}`,
+      );
+    }
+
+    // Sort detections descending by start offset to perform replacement right-to-left
+    detections.sort((a, b) => b.start - a.start);
+
+    const chars = [...text];
+    for (const det of detections) {
+      const mask = this.maskString(det.text, det.type);
+      chars.splice(det.start, det.text.length, ...mask);
+    }
+
+    const scrubbed = chars.join('');
+
+    // Sort ascending by start offset before returning
     detections.sort((a, b) => a.start - b.start);
 
     return {

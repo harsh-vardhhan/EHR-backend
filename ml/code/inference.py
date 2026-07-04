@@ -56,26 +56,48 @@ def predict_fn(data, model_dict):
             possible_spans.add((ent.start_char, ent.end_char))
 
     # Run GLiNER relation extraction
-    labels = [
-        "Clinical Condition",
-        "Medication Statement",
-        "Clinical Finding",
-        "Medical Procedure",
-    ]
-    relations = [
-        "treatment_for",
-        "contraindicated_with",
-        "associated_with",
-        "relates_to",
-    ]
+    labels = None
+    relations = None
+    threshold = 0.3
+    entity_threshold = 0.3
     
-    entities_res, relations_res = model.extracted_relations(
-        text,
-        labels=labels,
-        relations=relations,
-        threshold=0.3,
-        entity_threshold=0.3
-    )
+    if isinstance(data, dict):
+        labels = data.get("labels")
+        relations = data.get("relations")
+        threshold = data.get("threshold", 0.3)
+        entity_threshold = data.get("entity_threshold", 0.3)
+        
+    if labels is None:
+        labels = [
+            "Clinical Condition",
+            "Medication Statement",
+            "Clinical Finding",
+            "Medical Procedure",
+        ]
+    if relations is None:
+        relations = [
+            "treatment_for",
+            "contraindicated_with",
+            "associated_with",
+            "relates_to",
+        ]
+        
+    if not relations:
+        # Entity-only extraction (useful for PII scrubbing)
+        entities_res = model.predict_entities(
+            text,
+            labels=labels,
+            threshold=threshold
+        )
+        relations_res = []
+    else:
+        entities_res, relations_res = model.extracted_relations(
+            text,
+            labels=labels,
+            relations=relations,
+            threshold=threshold,
+            entity_threshold=entity_threshold
+        )
 
     # Format entities response
     formatted_entities = []
@@ -95,7 +117,7 @@ def predict_fn(data, model_dict):
             "label": ent["label"],
             "start": start,
             "end": end,
-            "confidence": float(ent.get("confidence", 1.0)),
+            "confidence": float(ent.get("score", ent.get("confidence", 1.0))),
             "assertion": assertion
         })
 

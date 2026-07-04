@@ -113,7 +113,9 @@ export class MastraService {
         }
 
         // Scrub text for HIPAA PII protection using equal-length masking
-        const { scrubbedText } = this.piiScrubber.scrubText(initData.text);
+        const { scrubbedText } = await this.piiScrubber.scrubTextMl(
+          initData.text,
+        );
 
         const { entities, relations } =
           await extractClinicalEntities(scrubbedText);

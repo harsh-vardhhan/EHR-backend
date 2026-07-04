@@ -7,14 +7,17 @@ import {
   AuditLogEntity,
   RelationshipEntity,
 } from '../database/entities';
+import { PiiScrubberService } from '../annotations/pii-scrubber.service';
 
 export class DocumentsService {
   private s3Client: S3Client;
   private sqsClient: SQSClient;
+  private piiScrubber: PiiScrubberService;
 
   constructor() {
     this.s3Client = new S3Client({});
     this.sqsClient = new SQSClient({});
+    this.piiScrubber = new PiiScrubberService();
   }
 
   async getDocuments() {
@@ -74,11 +77,14 @@ export class DocumentsService {
 
     try {
       const s3Response = await this.s3Client.send(getS3Command);
-      const text = await s3Response.Body?.transformToString();
+      const text = (await s3Response.Body?.transformToString()) || '';
+
+      // Cleanse the document text asynchronously using the ML-backed PII Scrubber
+      const { scrubbedText } = await this.piiScrubber.scrubTextMl(text);
 
       return {
         ...metadata,
-        text,
+        text: scrubbedText,
         annotations,
         relationships,
       };
@@ -191,9 +197,12 @@ export class DocumentsService {
       }
     }
 
+    // Cleanse the document text asynchronously using the ML-backed PII Scrubber
+    const { scrubbedText } = await this.piiScrubber.scrubTextMl(text || '');
+
     return {
       ...metadata,
-      text,
+      text: scrubbedText,
     };
   }
 }
