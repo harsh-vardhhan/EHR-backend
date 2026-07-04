@@ -61,12 +61,14 @@ graph TD
         SQS -.->|Failures| DLQ([AWS SQS - Dead Letter Queue])
         
         LambdaWorker -->|1. Mask PII| Scrubber[PII Scrubber Service]
-        LambdaWorker -->|"2. Inference (Scrubbed)"| SageMaker["Amazon SageMaker - Serverless (PyTorch)"]
+        Scrubber -.->|ML PII Detection| SageMaker
+        LambdaWorker -->|"2. Clinical Inference (Scrubbed)"| SageMaker["Amazon SageMaker - Serverless (PyTorch)"]
         LambdaWorker -->|3. Concept Grounding| OMOPHub{{OMOPHub - Vocabulary API}}
         LambdaWorker -->|4. Save Annotations| DynamoDB
-
+ 
         %% Stateless Sandbox Preview Flow
         Visitor((Portfolio Visitor)) -->|Unauthenticated Request| LambdaURL
+        LambdaAPI -->|Fetch & Scrub| Scrubber
         LambdaAPI -->|Stateless Inference| SageMaker
     end
 
@@ -128,7 +130,7 @@ graph TD
     class SQS,DLQ,EB,SNS,Firehose integration;
     class CWAlarm monitor;
     class User,Visitor userNode;
-    class OMOPHub,Scrubber external;
+    class OMOPHub external;
     
     %% Apply Classes to Legend
     class L_Comp compute;
