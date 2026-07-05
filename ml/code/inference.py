@@ -1,8 +1,9 @@
+import re
+
 import spacy
 from gliner import GLiNER
+from negspacy.negation import Negex  # noqa: F401
 from spacy.util import filter_spans
-from negspacy.negation import Negex # Register 'negex' component in spaCy
-import re
 
 
 def model_fn(model_dir):
@@ -122,8 +123,12 @@ def predict_fn(data, model_dict):
                 part_stripped = part.strip()
                 if not part_stripped:
                     continue
-                # Find start index of this part in the original text (case-insensitive)
-                match = re.search(re.escape(part_stripped), ent_text[current_offset:], re.IGNORECASE)
+                # Find start index of this part in original text (case-insensitive)
+                match = re.search(
+                    re.escape(part_stripped),
+                    ent_text[current_offset:],
+                    re.IGNORECASE,
+                )
                 if not match:
                     continue
                 
@@ -143,7 +148,9 @@ def predict_fn(data, model_dict):
             
             if sub_ents:
                 split_entities.extend(sub_ents)
-                split_map[(ent_start, ent_end)] = [(s["start"], s["end"]) for s in sub_ents]
+                split_map[(ent_start, ent_end)] = [
+                    (s["start"], s["end"]) for s in sub_ents
+                ]
             else:
                 split_entities.append(ent)
         else:
@@ -155,7 +162,12 @@ def predict_fn(data, model_dict):
     doc = nlp(text)
     spans = []
     for ent in entities_res:
-        span = doc.char_span(ent["start"], ent["end"], label=ent["label"], alignment_mode="expand")
+        span = doc.char_span(
+            ent["start"],
+            ent["end"],
+            label=ent["label"],
+            alignment_mode="expand",
+        )
         if span:
             spans.append(span)
             
@@ -216,7 +228,8 @@ def predict_fn(data, model_dict):
             start = start + actual_prefix_len
             assertion = "negated"
             
-            # Auto-correct clinical findings/conditions misclassified as medications due to prefix
+            # Auto-correct clinical findings/conditions misclassified as
+            # medications due to prefix
             if label == "Medication Statement":
                 label = "Clinical Finding"
                 
