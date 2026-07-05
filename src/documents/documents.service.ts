@@ -31,18 +31,9 @@ export class DocumentsService {
     const bucketName = process.env.DOCUMENTS_BUCKET_NAME;
 
     if (!bucketName) {
-      // Mock fallback
-      if (id === 'doc-001') {
-        return {
-          id: 'doc-001',
-          text: 'Mock text',
-          status: 'ready_for_review',
-          s3Key: 'mock-key',
-          annotations: [],
-          relationships: [],
-        };
-      }
-      throw new Error(`Document with id ${id} not found`);
+      throw new Error(
+        'DOCUMENTS_BUCKET_NAME environment variable is not configured',
+      );
     }
 
     // Query Document Entity, Annotation Entity, and Relationship Entity concurrently using ElectroDB

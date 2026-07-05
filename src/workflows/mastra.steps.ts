@@ -1,12 +1,12 @@
 import { createStep } from '@mastra/core/workflows';
 import { z } from 'zod';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { AnnotationsService } from './annotations.service';
-import { PiiScrubberService } from './pii-scrubber.service';
-import { extractClinicalEntities } from './extractor.client';
-import { OmopHubClient } from './omophub.client';
-import { Annotation } from './annotations.service';
-import { Relationship } from './annotations.service';
+import { AnnotationsService } from '../annotations/annotations.service';
+import { PiiScrubberService } from '../annotations/pii-scrubber.service';
+import { extractClinicalEntities } from '../clients/extractor.client';
+import { OmopHubClient } from '../clients/omophub.client';
+import { Annotation } from '../annotations/annotations.service';
+import { Relationship } from '../annotations/annotations.service';
 
 export function createCheckDuplicateStep(
   annotationsService: AnnotationsService,
@@ -69,7 +69,10 @@ export function createScrubPiiStep(piiScrubber: PiiScrubberService) {
 export function createSaveScrubbedTextStep(s3Client: S3Client) {
   return createStep({
     id: 'save-scrubbed-text',
-    inputSchema: z.object({}),
+    inputSchema: z.object({
+      scrubbedText: z.string(),
+      detections: z.array(z.any()),
+    }),
     outputSchema: z.object({
       success: z.boolean(),
     }),
@@ -85,11 +88,9 @@ export function createSaveScrubbedTextStep(s3Client: S3Client) {
         return { success: true };
       }
 
-      const scrubResult = context.getStepResult<{
-        scrubbedText: string;
-      }>('scrub-pii');
+      const { scrubbedText } = context.inputData;
 
-      if (!scrubResult?.scrubbedText) {
+      if (!scrubbedText) {
         return { success: false };
       }
 
@@ -97,7 +98,7 @@ export function createSaveScrubbedTextStep(s3Client: S3Client) {
         new PutObjectCommand({
           Bucket: process.env.DOCUMENTS_BUCKET_NAME,
           Key: `scrubbed/${initData.documentId}.txt`,
-          Body: scrubResult.scrubbedText,
+          Body: scrubbedText,
           ContentType: 'text/plain',
         }),
       );
@@ -110,7 +111,10 @@ export function createSaveScrubbedTextStep(s3Client: S3Client) {
 export function createExtractionStep() {
   return createStep({
     id: 'extract-entities',
-    inputSchema: z.object({}),
+    inputSchema: z.object({
+      scrubbedText: z.string(),
+      detections: z.array(z.any()),
+    }),
     outputSchema: z.object({
       entities: z.array(z.any()),
       relations: z.array(z.any()),
@@ -120,16 +124,14 @@ export function createExtractionStep() {
       const checkResult = context.getStepResult<{ isDuplicate: boolean }>(
         'check-duplicate',
       );
-      const scrubResult = context.getStepResult<{
-        scrubbedText: string;
-      }>('scrub-pii');
+      const { scrubbedText } = context.inputData;
 
-      if (checkResult?.isDuplicate || !scrubResult?.scrubbedText) {
+      if (checkResult?.isDuplicate || !scrubbedText) {
         return { entities: [], relations: [], skipped: true };
       }
 
       const { entities, relations } = await extractClinicalEntities(
-        scrubResult.scrubbedText,
+        scrubbedText,
       );
       return { entities, relations, skipped: false };
     },
@@ -142,7 +144,16 @@ export function createResolveAndSaveStep(
 ) {
   return createStep({
     id: 'resolve-and-save',
-    inputSchema: z.object({}),
+    inputSchema: z.object({
+      'save-scrubbed-text': z.object({
+        success: z.boolean(),
+      }),
+      'extract-entities': z.object({
+        entities: z.array(z.any()),
+        relations: z.array(z.any()),
+        skipped: z.boolean(),
+      }),
+    }),
     outputSchema: z.object({
       success: z.boolean(),
       count: z.number(),
@@ -155,11 +166,7 @@ export function createResolveAndSaveStep(
       const checkResult = context.getStepResult<{ isDuplicate: boolean }>(
         'check-duplicate',
       );
-      const extractResult = context.getStepResult<{
-        entities: any[];
-        relations: any[];
-        skipped: boolean;
-      }>('extract-entities');
+      const extractResult = context.inputData['extract-entities'];
 
       if (
         checkResult?.isDuplicate ||

@@ -1,9 +1,9 @@
 import { createWorkflow } from '@mastra/core/workflows';
 import { Mastra } from '@mastra/core';
 import { z } from 'zod';
-import { AnnotationsService } from './annotations.service';
-import { OmopHubClient } from './omophub.client';
-import { PiiScrubberService } from './pii-scrubber.service';
+import { AnnotationsService } from '../annotations/annotations.service';
+import { OmopHubClient } from '../clients/omophub.client';
+import { PiiScrubberService } from '../annotations/pii-scrubber.service';
 import { S3Client } from '@aws-sdk/client-s3';
 import {
   createCheckDuplicateStep,
@@ -93,8 +93,7 @@ export class MastraService {
     })
       .then(checkDuplicateStep)
       .then(scrubPiiStep)
-      .then(saveScrubbedTextStep)
-      .then(extractionStep)
+      .parallel([saveScrubbedTextStep, extractionStep])
       .then(resolveAndSaveStep)
       .commit();
   }
