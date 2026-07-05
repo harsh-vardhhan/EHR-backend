@@ -99,25 +99,3 @@ export class MastraService {
       .commit();
   }
 }
-
-/**
- * Finds the character start and end offsets of a text match within a document,
- * ignoring casing and treating dynamic whitespace/newlines as simple spaces.
- */
-export function findEntityOffsets(
-  documentText: string,
-  entityText: string,
-): { startOffset: number; endOffset: number } | null {
-  const escapedText = entityText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regexPattern = escapedText.replace(/\\s\+|\\n|\s+/g, '\\s+');
-  const match = documentText.match(new RegExp(regexPattern, 'i'));
-
-  if (!match || match.index === undefined) {
-    return null;
-  }
-
-  return {
-    startOffset: match.index,
-    endOffset: match.index + match[0].length,
-  };
-}

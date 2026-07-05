@@ -7,17 +7,14 @@ import {
   AuditLogEntity,
   RelationshipEntity,
 } from '../database/entities';
-import { PiiScrubberService } from '../annotations/pii-scrubber.service';
 
 export class DocumentsService {
   private s3Client: S3Client;
   private sqsClient: SQSClient;
-  private piiScrubber: PiiScrubberService;
 
   constructor() {
     this.s3Client = new S3Client({});
     this.sqsClient = new SQSClient({});
-    this.piiScrubber = new PiiScrubberService();
   }
 
   async getDocuments() {
