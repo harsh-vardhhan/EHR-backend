@@ -1,12 +1,12 @@
+import json
 import os
 import sys
-import json
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # Add code directory to path to load inference logic
 sys.path.append(os.path.join(os.path.dirname(__file__), "code"))
-from negspacy.negation import Negex
 from inference import model_fn, predict_fn
+from negspacy.negation import Negex  # noqa: F401
 
 # Set model directory
 MODEL_DIR = os.path.dirname(__file__)
