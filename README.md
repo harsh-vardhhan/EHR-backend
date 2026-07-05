@@ -2,11 +2,8 @@
 
 Enterprise-grade serverless backend for clinical document annotation, built with Hono and deployed on AWS.
 
-![AWS SAM](https://img.shields.io/badge/AWS%20SAM-FF9900?style=flat-square&logo=amazon-aws&logoColor=white)
-![Hono](https://img.shields.io/badge/Hono-E36049?style=flat-square&logo=hono&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
-![Inference-Groq](https://img.shields.io/badge/Inference-Groq%20GPT--OSS--20B-orange?style=flat-square)
-![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
+[![Backend CI](https://github.com/harsh-vardhhan/EHR-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/harsh-vardhhan/EHR-backend/actions/workflows/ci.yml)
+[![Deploy Backend](https://github.com/harsh-vardhhan/EHR-backend/actions/workflows/deploy.yml/badge.svg)](https://github.com/harsh-vardhhan/EHR-backend/actions/workflows/deploy.yml)
 
 **🚀 Live Demo:** [https://ehr-frontend-hazel.vercel.app/](https://ehr-frontend-hazel.vercel.app/)
 
@@ -202,11 +199,12 @@ To maximize performance, cut database costs, and eliminate cross-table JOIN late
 
 | PK (Partition Key) | SK (Sort Key) | Index Name | Entity Type | Attributes & Schema |
 | :--- | :--- | :--- | :--- | :--- |
-| `document#<docId>` | `metadata` | Primary | **Document** | `id`, `title`, `category`, `s3Key`, `status`, `createdAt` |
-| `document#<docId>` | `annotation#<annotationId>` | Primary | **Annotation** | `annotationId`, `documentId`, `text`, `label`, `startOffset`, `endOffset`, `createdAt`, `source`, `status`, `confidence`, `assertion`, `conceptCode` |
-| `document#<docId>` | `audit#<logId>` | Primary | **Audit Log** | `logId`, `documentId`, `actionType`, `description`, `createdAt` |
-| `SK` (Inverted) | `PK` | `SKIndex` (GSI) | **Annotation / Audit** | Mapped for inverted parent-key resolution. |
-| `assertion#<assertion>` | `label#<label>` | `GSI1Index` (GSI) | **Annotation** | Secondary index optimized for clinical cohort filtering. |
+| `DOCUMENT#<id>` | `METADATA` | Primary | **Document** | `id`, `title`, `category`, `s3Key`, `status`, `createdAt` |
+| `DOCUMENT#<documentId>` | `ANNOTATION#<annotationId>` | Primary | **Annotation** | `annotationId`, `documentId`, `text`, `label`, `startOffset`, `endOffset`, `createdAt`, `source`, `status`, `confidence`, `assertion`, `conceptCode` |
+| `DOCUMENT#<documentId>` | `RELATIONSHIP#<relationshipId>` | Primary | **Relationship** | `relationshipId`, `documentId`, `sourceAnnotationId`, `targetAnnotationId`, `relationType`, `confidence`, `createdAt` |
+| `DOCUMENT#<documentId>` | `AUDIT#<logId>` | Primary | **Audit Log** | `logId`, `documentId`, `actionType`, `description`, `createdAt` |
+| `SK` (Inverted) | `PK` | `SKIndex` (GSI) | **Annotation / Document** | Mapped for inverted parent-key resolution. |
+| `ASSERTION#<assertion>` | `LABEL#<label>` | `GSI1Index` (GSI) | **Annotation** | Secondary index optimized for clinical cohort filtering. |
 
 ### Query Optimizations
 
@@ -237,7 +235,7 @@ This backend incorporates a robust, multi-layered security architecture designed
 | **Stateless Sandbox Guard** | Unauthenticated `POST /annotations/preview` endpoint with Zod validation. | Allows public portfolio sandbox testing. Capped to **3,000 characters** input limit and **8 seconds execution timeout** to protect LLM token budget. |
 | **Zero-Routing Cost Gateway** | Direct Lambda Function URL (no API Gateway request fees). | Eliminates API Gateway per-request charges ($3.50/million), ensuring throttled requests cost exactly $0.00. |
 | **Automated Circuit Breaker** | CloudWatch Alarm (>2000 req/1m) $\rightarrow$ SNS $\rightarrow$ Kill-Switch Lambda. | Automatically updates backend Lambda reserved concurrency to `0` on breach, dropping resource billing to absolute zero. |
-| **Compute Scaling Caps** | `ReservedConcurrentExecutions` limits (**20** for API Lambda, **2** for SQS NLP Worker). | Caps the maximum number of concurrent running containers AWS can spin up under a flood. |
+| **Compute Scaling Caps** | `ReservedConcurrentExecutions` limits (**2** for API Lambda, **2** for SQS NLP Worker). | Caps the maximum number of concurrent running containers AWS can spin up under a flood. |
 | **Asynchronous Decoupling** | SQS-backed queue hand-off (`EhrAnnotationQueue`) with `BatchSize: 5`. | Prevents container runtime crashes; processes spikes in document uploads sequentially rather than in parallel. |
 | **Infinite Retry Defense** | SQS Dead Letter Queue (`EhrAnnotationDLQ`) with `maxReceiveCount: 3`. | Quarantines failing payloads (poison pills) to prevent endless execution retry loops. |
 | **Partial Batch Isolation** | SQS batch response processing with `ReportBatchItemFailures`. | Prevents successfully processed records in a batch from being re-executed when a sibling record in the same batch fails, saving redundant LLM API costs. |
