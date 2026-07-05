@@ -93,7 +93,7 @@ Resources:
           OMOPHUB_API_KEY: !Ref OmopHubApiKey
           SAGEMAKER_ENDPOINT_NAME: !Ref SageMakerEndpoint
       Policies:
-        - S3ReadPolicy:
+        - S3CrudPolicy:
             BucketName: !Ref DocumentsBucketName
         - DynamoDBCrudPolicy:
             TableName: !Ref EhrTableName
