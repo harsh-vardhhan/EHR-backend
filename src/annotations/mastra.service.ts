@@ -9,10 +9,12 @@ import {
 import { extractClinicalEntities } from './extractor.client';
 import { OmopHubClient } from './omophub.client';
 import { PiiScrubberService } from './pii-scrubber.service';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 export class MastraService {
   private omophubClient = new OmopHubClient();
   private piiScrubber = new PiiScrubberService();
+  private s3Client = new S3Client({});
   private mastra: Mastra;
 
   constructor(private annotationsService: AnnotationsService) {
@@ -89,15 +91,13 @@ export class MastraService {
       },
     });
 
-    // Step 2: Run LLM Clinical Entity extraction (if not a duplicate)
-    // Step 2: Run LLM Clinical Entity extraction (if not a duplicate)
-    const extractionStep = createStep({
-      id: 'extract-entities',
+    // Step 2: Run ML-based PII scrubbing
+    const scrubPiiStep = createStep({
+      id: 'scrub-pii',
       inputSchema: z.object({}),
       outputSchema: z.object({
-        entities: z.array(z.any()),
-        relations: z.array(z.any()),
-        skipped: z.boolean(),
+        scrubbedText: z.string(),
+        detections: z.array(z.any()),
       }),
       execute: async (context) => {
         const initData = context.getInitData<{
@@ -109,16 +109,80 @@ export class MastraService {
         );
 
         if (checkResult?.isDuplicate) {
+          return { scrubbedText: initData.text, detections: [] };
+        }
+
+        const { scrubbedText, detections } = await this.piiScrubber.scrubTextMl(
+          initData.text,
+        );
+        return { scrubbedText, detections };
+      },
+    });
+
+    // Step 3: Save scrubbed text to S3 under safe key 'scrubbed/${documentId}.txt'
+    const saveScrubbedTextStep = createStep({
+      id: 'save-scrubbed-text',
+      inputSchema: z.object({}),
+      outputSchema: z.object({
+        success: z.boolean(),
+      }),
+      execute: async (context) => {
+        const initData = context.getInitData<{
+          documentId: string;
+        }>();
+        const checkResult = context.getStepResult<{ isDuplicate: boolean }>(
+          'check-duplicate',
+        );
+
+        if (checkResult?.isDuplicate) {
+          return { success: true };
+        }
+
+        const scrubResult = context.getStepResult<{
+          scrubbedText: string;
+        }>('scrub-pii');
+
+        if (!scrubResult?.scrubbedText) {
+          return { success: false };
+        }
+
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: process.env.DOCUMENTS_BUCKET_NAME,
+            Key: `scrubbed/${initData.documentId}.txt`,
+            Body: scrubResult.scrubbedText,
+            ContentType: 'text/plain',
+          }),
+        );
+
+        return { success: true };
+      },
+    });
+
+    // Step 4: Run LLM Clinical Entity extraction on the scrubbed text
+    const extractionStep = createStep({
+      id: 'extract-entities',
+      inputSchema: z.object({}),
+      outputSchema: z.object({
+        entities: z.array(z.any()),
+        relations: z.array(z.any()),
+        skipped: z.boolean(),
+      }),
+      execute: async (context) => {
+        const checkResult = context.getStepResult<{ isDuplicate: boolean }>(
+          'check-duplicate',
+        );
+        const scrubResult = context.getStepResult<{
+          scrubbedText: string;
+        }>('scrub-pii');
+
+        if (checkResult?.isDuplicate || !scrubResult?.scrubbedText) {
           return { entities: [], relations: [], skipped: true };
         }
 
-        // Scrub text for HIPAA PII protection using equal-length masking
-        const { scrubbedText } = await this.piiScrubber.scrubTextMl(
-          initData.text,
+        const { entities, relations } = await extractClinicalEntities(
+          scrubResult.scrubbedText,
         );
-
-        const { entities, relations } =
-          await extractClinicalEntities(scrubbedText);
         return { entities, relations, skipped: false };
       },
     });
@@ -247,6 +311,8 @@ export class MastraService {
       }),
     })
       .then(checkDuplicateStep)
+      .then(scrubPiiStep)
+      .then(saveScrubbedTextStep)
       .then(extractionStep)
       .then(resolveAndSaveStep)
       .commit();

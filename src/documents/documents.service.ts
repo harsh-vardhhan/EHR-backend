@@ -72,25 +72,22 @@ export class DocumentsService {
 
     const getS3Command = new GetObjectCommand({
       Bucket: bucketName,
-      Key: metadata.s3Key,
+      Key: `scrubbed/${id}.txt`,
     });
 
     try {
       const s3Response = await this.s3Client.send(getS3Command);
       const text = (await s3Response.Body?.transformToString()) || '';
 
-      // Cleanse the document text asynchronously using the ML-backed PII Scrubber
-      const { scrubbedText } = await this.piiScrubber.scrubTextMl(text);
-
       return {
         ...metadata,
-        text: scrubbedText,
+        text,
         annotations,
         relationships,
       };
     } catch (error) {
       console.error('Error fetching from S3', error);
-      throw new Error(`Document text for ${id} not found in S3`);
+      throw new Error(`Scrubbed document text for ${id} not found in S3`);
     }
   }
 
@@ -197,12 +194,9 @@ export class DocumentsService {
       }
     }
 
-    // Cleanse the document text asynchronously using the ML-backed PII Scrubber
-    const { scrubbedText } = await this.piiScrubber.scrubTextMl(text || '');
-
     return {
       ...metadata,
-      text: scrubbedText,
+      text: text || '',
     };
   }
 }
