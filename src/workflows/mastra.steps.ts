@@ -130,9 +130,8 @@ export function createExtractionStep() {
         return { entities: [], relations: [], skipped: true };
       }
 
-      const { entities, relations } = await extractClinicalEntities(
-        scrubbedText,
-      );
+      const { entities, relations } =
+        await extractClinicalEntities(scrubbedText);
       return { entities, relations, skipped: false };
     },
   });

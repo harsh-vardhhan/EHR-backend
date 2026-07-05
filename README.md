@@ -264,7 +264,6 @@ $ npm install
 
 2. Create a `.env` file in the root of the `backend` directory containing your API keys and configuration parameters:
 ```env
-GROQ_API_KEY=your_groq_api_key
 EHR_TABLE_NAME=ehr-table
 DOCUMENTS_BUCKET_NAME=your_s3_bucket_name
 AWS_REGION=your_aws_region

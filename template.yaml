@@ -17,9 +17,6 @@ Parameters:
   EhrTableName:
     Type: String
     Description: Name of the single DynamoDB table for EHR data
-  GroqApiKey:
-    Type: String
-    Description: Groq API Key
   NotificationEmail:
     Type: String
     Description: Email address to receive DDoS alert notifications
@@ -57,7 +54,6 @@ Resources:
         AuthType: NONE
       Environment:
         Variables:
-          GROQ_API_KEY: !Ref GroqApiKey
           EHR_TABLE_NAME: !Ref EhrTableName
           DOCUMENTS_BUCKET_NAME: !Ref DocumentsBucketName
           ANNOTATION_QUEUE_URL: !Ref EhrAnnotationQueue
@@ -94,7 +90,6 @@ Resources:
               - ReportBatchItemFailures
       Environment:
         Variables:
-          GROQ_API_KEY: !Ref GroqApiKey
           EHR_TABLE_NAME: !Ref EhrTableName
           DOCUMENTS_BUCKET_NAME: !Ref DocumentsBucketName
           OMOPHUB_API_KEY: !Ref OmopHubApiKey
