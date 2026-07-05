@@ -82,6 +82,8 @@ def predict_fn(data, model_dict):
             "relates_to",
         ]
         
+    is_new_gliner = hasattr(model, "predict_relations")
+
     if not relations:
         # Entity-only extraction (useful for PII scrubbing)
         entities_res = model.predict_entities(
@@ -91,13 +93,22 @@ def predict_fn(data, model_dict):
         )
         relations_res = []
     else:
-        entities_res, relations_res = model.extracted_relations(
-            text,
-            labels=labels,
-            relations=relations,
-            threshold=threshold,
-            entity_threshold=entity_threshold
-        )
+        if is_new_gliner:
+            entities_res, relations_res = model.predict_relations(
+                text,
+                labels=labels,
+                relations=relations,
+                threshold=threshold,
+                relation_threshold=entity_threshold
+            )
+        else:
+            entities_res, relations_res = model.extracted_relations(
+                text,
+                labels=labels,
+                relations=relations,
+                threshold=threshold,
+                entity_threshold=entity_threshold
+            )
 
     # Format entities response
     formatted_entities = []
@@ -123,20 +134,33 @@ def predict_fn(data, model_dict):
 
     # Format relations response
     formatted_relations = []
-    for rel in relations_res:
-        head = rel[0] # (start, end, label)
-        tail = rel[1] # (start, end, label)
-        rel_name = rel[2]
-        conf = float(rel[3]) if len(rel) > 3 else 1.0
-        
-        formatted_relations.append({
-            "source_start": head[0],
-            "source_end": head[1],
-            "target_start": tail[0],
-            "target_end": tail[1],
-            "relation": rel_name,
-            "confidence": conf
-        })
+    if is_new_gliner and relations:
+        for rel in relations_res:
+            head = rel["head"]
+            tail = rel["tail"]
+            formatted_relations.append({
+                "source_start": head["start"],
+                "source_end": head["end"],
+                "target_start": tail["start"],
+                "target_end": tail["end"],
+                "relation": rel["relation"],
+                "confidence": float(rel.get("score", 1.0))
+            })
+    else:
+        for rel in relations_res:
+            head = rel[0] # (start, end, label)
+            tail = rel[1] # (start, end, label)
+            rel_name = rel[2]
+            conf = float(rel[3]) if len(rel) > 3 else 1.0
+            
+            formatted_relations.append({
+                "source_start": head[0],
+                "source_end": head[1],
+                "target_start": tail[0],
+                "target_end": tail[1],
+                "relation": rel_name,
+                "confidence": conf
+            })
 
     return {
         "entities": formatted_entities,

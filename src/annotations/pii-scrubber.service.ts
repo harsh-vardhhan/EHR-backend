@@ -207,83 +207,161 @@ export class PiiScrubberService {
     // 1. Run the standard regex-based scrubber first (acts as baseline)
     const { detections } = this.scrubText(text);
 
-    const endpointName =
-      process.env.SAGEMAKER_ENDPOINT_NAME || 'gliner-relex-endpoint';
+    const localMlUrl = process.env.LOCAL_ML_URL;
+    if (localMlUrl) {
+      try {
+        console.log(
+          `[PiiScrubberService] Invoking local Python ML server for PII detection: "${localMlUrl}"...`,
+        );
+        const piiLabels = [
+          'Patient Name',
+          'Doctor Name',
+          'Phone Number',
+          'Social Security Number',
+          'Date of Birth',
+          'Physical Address',
+          'Email Address',
+        ];
 
-    // If endpoint name is configured and we are in an AWS environment, run ML PII detection
-    try {
-      const piiLabels = [
-        'Patient Name',
-        'Doctor Name',
-        'Phone Number',
-        'Social Security Number',
-        'Date of Birth',
-        'Physical Address',
-        'Email Address',
-      ];
-
-      const payload = {
-        text,
-        labels: piiLabels,
-        relations: [], // Empty relations array triggers entity-only mode in inference.py
-        threshold: 0.35,
-      };
-
-      console.log(
-        `[PiiScrubberService] Invoking SageMaker for PII detection: "${endpointName}"...`,
-      );
-
-      const command = new InvokeEndpointCommand({
-        EndpointName: endpointName,
-        ContentType: 'application/json',
-        Body: Buffer.from(JSON.stringify(payload)),
-      });
-
-      const response = await this.sagemakerClient.send(command);
-
-      if (response.Body) {
-        const responseText = Buffer.from(response.Body).toString('utf-8');
-        const parsedData = JSON.parse(responseText);
-
-        const labelMap: Record<string, PiiDetection['type']> = {
-          'Patient Name': 'NAME',
-          'Doctor Name': 'NAME',
-          'Phone Number': 'PHONE',
-          'Social Security Number': 'SSN',
-          'Date of Birth': 'DATE',
-          'Physical Address': 'EMAIL',
-          'Email Address': 'EMAIL',
+        const payload = {
+          text,
+          labels: piiLabels,
+          relations: [],
+          threshold: 0.35,
         };
 
-        if (parsedData.entities && Array.isArray(parsedData.entities)) {
-          for (const ent of parsedData.entities) {
-            const start = ent.start;
-            const end = ent.end;
-            const type = labelMap[ent.label] || 'NAME';
+        const response = await fetch(localMlUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
 
-            // Check if this offset is already covered by our regex scrubber
-            const isOverlap = detections.some(
-              (d) =>
-                (start >= d.start && start < d.end) ||
-                (end > d.start && end <= d.end) ||
-                (d.start >= start && d.start < end),
-            );
+        if (response.ok) {
+          const parsedData = await response.json();
+          const labelMap: Record<string, PiiDetection['type']> = {
+            'Patient Name': 'NAME',
+            'Doctor Name': 'NAME',
+            'Phone Number': 'PHONE',
+            'Social Security Number': 'SSN',
+            'Date of Birth': 'DATE',
+            'Physical Address': 'EMAIL',
+            'Email Address': 'EMAIL',
+          };
 
-            if (!isOverlap) {
-              detections.push({
-                text: ent.text,
-                type,
-                start,
-                end,
-              });
+          if (parsedData.entities && Array.isArray(parsedData.entities)) {
+            for (const ent of parsedData.entities) {
+              const start = ent.start;
+              const end = ent.end;
+              const type = labelMap[ent.label] || 'NAME';
+
+              const isOverlap = detections.some(
+                (d) =>
+                  (start >= d.start && start < d.end) ||
+                  (end > d.start && end <= d.end) ||
+                  (d.start >= start && d.start < end),
+              );
+
+              if (!isOverlap) {
+                detections.push({
+                  text: ent.text,
+                  type,
+                  start,
+                  end,
+                });
+              }
+            }
+          }
+          console.log(
+            `[PiiScrubberService] Local ML PII extraction completed. Total detections: ${detections.length}`,
+          );
+        }
+      } catch (err: any) {
+        console.warn(
+          `[PiiScrubberService] Local ML-based PII scrubbing failed (falling back to regex-only). Error: ${err.message || err}`,
+        );
+      }
+    } else if (process.env.MOCK_SAGEMAKER === 'true') {
+      console.log(
+        '[PiiScrubberService] MOCK_SAGEMAKER is active. Bypassing SageMaker ML PII scrubbing.',
+      );
+    } else {
+      const endpointName =
+        process.env.SAGEMAKER_ENDPOINT_NAME || 'gliner-relex-endpoint';
+
+      try {
+        const piiLabels = [
+          'Patient Name',
+          'Doctor Name',
+          'Phone Number',
+          'Social Security Number',
+          'Date of Birth',
+          'Physical Address',
+          'Email Address',
+        ];
+
+        const payload = {
+          text,
+          labels: piiLabels,
+          relations: [], // Empty relations array triggers entity-only mode in inference.py
+          threshold: 0.35,
+        };
+
+        console.log(
+          `[PiiScrubberService] Invoking SageMaker for PII detection: "${endpointName}"...`,
+        );
+
+        const command = new InvokeEndpointCommand({
+          EndpointName: endpointName,
+          ContentType: 'application/json',
+          Body: Buffer.from(JSON.stringify(payload)),
+        });
+
+        const response = await this.sagemakerClient.send(command);
+
+        if (response.Body) {
+          const responseText = Buffer.from(response.Body).toString('utf-8');
+          const parsedData = JSON.parse(responseText);
+
+          const labelMap: Record<string, PiiDetection['type']> = {
+            'Patient Name': 'NAME',
+            'Doctor Name': 'NAME',
+            'Phone Number': 'PHONE',
+            'Social Security Number': 'SSN',
+            'Date of Birth': 'DATE',
+            'Physical Address': 'EMAIL',
+            'Email Address': 'EMAIL',
+          };
+
+          if (parsedData.entities && Array.isArray(parsedData.entities)) {
+            for (const ent of parsedData.entities) {
+              const start = ent.start;
+              const end = ent.end;
+              const type = labelMap[ent.label] || 'NAME';
+
+              // Check if this offset is already covered by our regex scrubber
+              const isOverlap = detections.some(
+                (d) =>
+                  (start >= d.start && start < d.end) ||
+                  (end > d.start && end <= d.end) ||
+                  (d.start >= start && d.start < end),
+              );
+
+              if (!isOverlap) {
+                detections.push({
+                  text: ent.text,
+                  type,
+                  start,
+                  end,
+                });
+              }
             }
           }
         }
+      } catch (err: any) {
+        console.warn(
+          `[PiiScrubberService] SageMaker ML-based PII scrubbing failed/skipped (falling back to regex-only). Error: ${err.message || err}`,
+        );
       }
-    } catch (err: any) {
-      console.warn(
-        `[PiiScrubberService] ML-based PII scrubbing failed/skipped (falling back to regex-only). Error: ${err.message || err}`,
-      );
     }
 
     // Sort detections descending by start offset to perform replacement right-to-left
