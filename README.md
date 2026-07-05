@@ -52,7 +52,7 @@ graph TD
         User((Clinician)) -->|API Request with API Key| LambdaURL(AWS Lambda Function URL)
         LambdaURL -->|Hono Router & Auth Middleware| LambdaAPI[AWS Lambda - API]
         LambdaAPI -->|Read/Write| DynamoDB[(Amazon DynamoDB)]
-        LambdaAPI -->|Read| S3[(Amazon S3 - Medical Notes)]
+        LambdaAPI -->|Read Scrubbed Notes| S3[(Amazon S3 - Medical Notes)]
         LambdaAPI -->|Manual Trigger| SQS([AWS SQS - Annotation Queue])
 
         S3 -->|Emit Event| EB([Amazon EventBridge - Bus])
@@ -62,14 +62,10 @@ graph TD
         
         LambdaWorker -->|1. Mask PII| Scrubber[PII Scrubber Service]
         Scrubber -.->|ML PII Detection| SageMaker
-        LambdaWorker -->|"2. Clinical Inference (Scrubbed)"| SageMaker["Amazon SageMaker - Serverless (PyTorch)"]
-        LambdaWorker -->|3. Concept Grounding| OMOPHub{{OMOPHub - Vocabulary API}}
-        LambdaWorker -->|4. Save Annotations| DynamoDB
- 
-        %% Stateless Sandbox Preview Flow
-        Visitor((Portfolio Visitor)) -->|Unauthenticated Request| LambdaURL
-        LambdaAPI -->|Fetch & Scrub| Scrubber
-        LambdaAPI -->|Stateless Inference| SageMaker
+        LambdaWorker -->|2. Save Scrubbed Text| S3
+        LambdaWorker -->|"3. Clinical Inference (Scrubbed)"| SageMaker["Amazon SageMaker - Serverless (PyTorch)"]
+        LambdaWorker -->|4. Concept Grounding| OMOPHub{{OMOPHub - Vocabulary API}}
+        LambdaWorker -->|5. Save Annotations| DynamoDB
     end
 
     %% Auditing Pipeline Subgraph (Middle)
@@ -129,7 +125,7 @@ graph TD
     class S3,S3Audit storage;
     class SQS,DLQ,EB,SNS,Firehose integration;
     class CWAlarm monitor;
-    class User,Visitor userNode;
+    class User userNode;
     class OMOPHub external;
     
     %% Apply Classes to Legend
