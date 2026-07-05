@@ -31,18 +31,9 @@ export class DocumentsService {
     const bucketName = process.env.DOCUMENTS_BUCKET_NAME;
 
     if (!bucketName) {
-      // Mock fallback
-      if (id === 'doc-001') {
-        return {
-          id: 'doc-001',
-          text: 'Mock text',
-          status: 'ready_for_review',
-          s3Key: 'mock-key',
-          annotations: [],
-          relationships: [],
-        };
-      }
-      throw new Error(`Document with id ${id} not found`);
+      throw new Error(
+        'DOCUMENTS_BUCKET_NAME environment variable is not configured',
+      );
     }
 
     // Query Document Entity, Annotation Entity, and Relationship Entity concurrently using ElectroDB
@@ -69,12 +60,12 @@ export class DocumentsService {
 
     const getS3Command = new GetObjectCommand({
       Bucket: bucketName,
-      Key: metadata.s3Key,
+      Key: `scrubbed/${id}.txt`,
     });
 
     try {
       const s3Response = await this.s3Client.send(getS3Command);
-      const text = await s3Response.Body?.transformToString();
+      const text = (await s3Response.Body?.transformToString()) || '';
 
       return {
         ...metadata,
@@ -84,7 +75,7 @@ export class DocumentsService {
       };
     } catch (error) {
       console.error('Error fetching from S3', error);
-      throw new Error(`Document text for ${id} not found in S3`);
+      throw new Error(`Scrubbed document text for ${id} not found in S3`);
     }
   }
 
@@ -193,7 +184,7 @@ export class DocumentsService {
 
     return {
       ...metadata,
-      text,
+      text: text || '',
     };
   }
 }
