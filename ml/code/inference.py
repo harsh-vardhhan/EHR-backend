@@ -17,9 +17,7 @@ def model_fn(model_dir):
     if os.path.exists(assertion_path) and os.listdir(assertion_path):
         assertion_tokenizer = AutoTokenizer.from_pretrained(assertion_path)
         assertion_model = (
-            AutoModelForSequenceClassification.from_pretrained(
-                assertion_path, torch_dtype=torch.bfloat16
-            )
+            AutoModelForSequenceClassification.from_pretrained(assertion_path)
         )
     else:
         print(
@@ -31,15 +29,32 @@ def model_fn(model_dir):
         )
         assertion_model = (
             AutoModelForSequenceClassification.from_pretrained(
-                "bvanaken/clinical-assertion-negation-bert",
-                torch_dtype=torch.bfloat16
+                "bvanaken/clinical-assertion-negation-bert"
             )
         )
+    
+    # Configure quantization engine backend dynamically based on CPU architecture
+    if 'fbgemm' in torch.backends.quantized.supported_engines:
+        torch.backends.quantized.engine = 'fbgemm'
+        print("Using fbgemm engine for PyTorch dynamic quantization")
+    elif 'qnnpack' in torch.backends.quantized.supported_engines:
+        torch.backends.quantized.engine = 'qnnpack'
+        print("Using qnnpack engine for PyTorch dynamic quantization")
+
+    print("Applying dynamic quantization to assertion model...")
+    assertion_model_quantized = torch.quantization.quantize_dynamic(
+        assertion_model, {torch.nn.Linear}, dtype=torch.qint8
+    )
+
+    # Clean up standard float32 model to free RAM
+    import gc
+    del assertion_model
+    gc.collect()
     
     return {
         "gliner": model,
         "assertion_tokenizer": assertion_tokenizer,
-        "assertion_model": assertion_model
+        "assertion_model": assertion_model_quantized
     }
 
 
