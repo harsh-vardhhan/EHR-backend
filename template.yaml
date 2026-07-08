@@ -35,7 +35,7 @@ Parameters:
     Description: S3 URI of the packaged model.tar.gz containing custom inference code
   DeploySageMaker:
     Type: String
-    Default: "false"
+    Default: "true"
     AllowedValues: ["true", "false"]
     Description: "Toggle to skip SageMaker deployment due to account quota limits"
 
@@ -395,6 +395,7 @@ Resources:
           SAGEMAKER_PROGRAM: "inference.py"
           SAGEMAKER_SUBMIT_DIRECTORY: !Ref SageMakerModelDataUrl
           MODEL_VERSION: "1.0.3"
+          SAGEMAKER_MODEL_SERVER_WORKERS: "1"
 
   SageMakerEndpointConfig:
     Type: AWS::SageMaker::EndpointConfig
@@ -404,7 +405,7 @@ Resources:
         - VariantName: AllTraffic
           ModelName: !GetAtt SageMakerModel.ModelName
           ServerlessConfig:
-            MemorySizeInMB: 6144
+            MemorySizeInMB: 3072
             MaxConcurrency: 1
 
   SageMakerEndpoint:
