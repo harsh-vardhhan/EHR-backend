@@ -386,7 +386,7 @@ Resources:
           HF_MODEL_ID: "knowledgator/gliner-relex-base-v1.0"
           SAGEMAKER_PROGRAM: "inference.py"
           SAGEMAKER_SUBMIT_DIRECTORY: !Ref SageMakerModelDataUrl
-          MODEL_VERSION: "1.0.3"
+          MODEL_VERSION: "1.0.4"
           SAGEMAKER_MODEL_SERVER_WORKERS: "1"
 
   SageMakerEndpointConfig:
@@ -396,7 +396,7 @@ Resources:
         - VariantName: AllTraffic
           ModelName: !GetAtt SageMakerModel.ModelName
           ServerlessConfig:
-            MemorySizeInMB: 4096
+            MemorySizeInMB: 3072
             MaxConcurrency: 1
 
   SageMakerEndpoint:
