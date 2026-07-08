@@ -14,24 +14,7 @@ def model_fn(model_dir):
     
     print("Loading ClinicalAssertionBERT...")
     assertion_path = os.path.join(model_dir, "model", "assertion")
-    if os.path.exists(assertion_path) and os.listdir(assertion_path):
-        assertion_tokenizer = AutoTokenizer.from_pretrained(assertion_path)
-        assertion_model = (
-            AutoModelForSequenceClassification.from_pretrained(assertion_path)
-        )
-    else:
-        print(
-            "Local assertion model path not found, "
-            "downloading from Hugging Face..."
-        )
-        assertion_tokenizer = AutoTokenizer.from_pretrained(
-            "bvanaken/clinical-assertion-negation-bert"
-        )
-        assertion_model = (
-            AutoModelForSequenceClassification.from_pretrained(
-                "bvanaken/clinical-assertion-negation-bert"
-            )
-        )
+    assertion_tokenizer = AutoTokenizer.from_pretrained(assertion_path)
     
     # Configure quantization engine backend dynamically based on CPU architecture
     if 'fbgemm' in torch.backends.quantized.supported_engines:
@@ -41,20 +24,36 @@ def model_fn(model_dir):
         torch.backends.quantized.engine = 'qnnpack'
         print("Using qnnpack engine for PyTorch dynamic quantization")
 
-    print("Applying dynamic quantization to assertion model...")
-    assertion_model_quantized = torch.quantization.quantize_dynamic(
-        assertion_model, {torch.nn.Linear}, dtype=torch.qint8
-    )
-
-    # Clean up standard float32 model to free RAM
-    import gc
-    del assertion_model
-    gc.collect()
-    
+    quantized_model_path = os.path.join(assertion_path, "quantized_assertion_model.pt")
+    if os.path.exists(quantized_model_path):
+        print(f"Loading pre-quantized model from: {quantized_model_path}...")
+        assertion_model = torch.load(quantized_model_path, weights_only=False)
+    else:
+        print(
+            "Pre-quantized model not found. "
+            "Loading standard model and quantizing on-the-fly..."
+        )
+        if os.path.exists(assertion_path) and os.listdir(assertion_path):
+            standard_model = (
+                AutoModelForSequenceClassification.from_pretrained(
+                    assertion_path
+                )
+            )
+        else:
+            standard_model = AutoModelForSequenceClassification.from_pretrained(
+                "bvanaken/clinical-assertion-negation-bert"
+            )
+        assertion_model = torch.quantization.quantize_dynamic(
+            standard_model, {torch.nn.Linear}, dtype=torch.qint8
+        )
+        del standard_model
+        import gc
+        gc.collect()
+        
     return {
         "gliner": model,
         "assertion_tokenizer": assertion_tokenizer,
-        "assertion_model": assertion_model_quantized
+        "assertion_model": assertion_model
     }
 
 
