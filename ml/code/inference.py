@@ -1,37 +1,50 @@
+import os
 import re
 
-import spacy
+import torch
 from gliner import GLiNER
-from negspacy.negation import Negex  # noqa: F401
-from spacy.util import filter_spans
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 
 def model_fn(model_dir):
     print("Loading GLiNER-ReLex from pretrained model...")
-    import os
     model_path = os.path.join(model_dir, "model")
     model = GLiNER.from_pretrained(model_path)
     
-    print("Loading SpaCy and NegEx...")
-    nlp = spacy.load("en_core_web_sm")
-    nlp.add_pipe(
-        "negex",
-        config={
-            "ent_types": [
-                "Clinical Condition",
-                "Medication Statement",
-                "Clinical Finding",
-                "Medical Procedure",
-            ]
-        },
-    )
+    print("Loading ClinicalAssertionBERT...")
+    assertion_path = os.path.join(model_dir, "model", "assertion")
+    if os.path.exists(assertion_path) and os.listdir(assertion_path):
+        assertion_tokenizer = AutoTokenizer.from_pretrained(assertion_path)
+        assertion_model = (
+            AutoModelForSequenceClassification.from_pretrained(
+                assertion_path
+            )
+        )
+    else:
+        print(
+            "Local assertion model path not found, "
+            "downloading from Hugging Face..."
+        )
+        assertion_tokenizer = AutoTokenizer.from_pretrained(
+            "bvanaken/clinical-assertion-negation-bert"
+        )
+        assertion_model = (
+            AutoModelForSequenceClassification.from_pretrained(
+                "bvanaken/clinical-assertion-negation-bert"
+            )
+        )
     
-    return {"gliner": model, "spacy": nlp}
+    return {
+        "gliner": model,
+        "assertion_tokenizer": assertion_tokenizer,
+        "assertion_model": assertion_model
+    }
 
 
 def predict_fn(data, model_dict):
     model = model_dict["gliner"]
-    nlp = model_dict["spacy"]
+    assertion_tokenizer = model_dict["assertion_tokenizer"]
+    assertion_model = model_dict["assertion_model"]
     
     # Check input data format
     if isinstance(data, dict) and "inputs" in data:
@@ -158,36 +171,74 @@ def predict_fn(data, model_dict):
             
     entities_res = split_entities
 
-    # 4. Map extracted GLiNER entities to SpaCy Spans to run NegEx on them
-    doc = nlp(text)
-    spans = []
-    for ent in entities_res:
-        span = doc.char_span(
-            ent["start"],
-            ent["end"],
-            label=ent["label"],
-            alignment_mode="expand",
-        )
-        if span:
-            spans.append(span)
-            
-    doc.ents = filter_spans(spans)
-    
-    # Run NegEx component manually on the custom document entities
-    if "negex" in nlp.pipe_names:
-        doc = nlp.get_pipe("negex")(doc)
-        
+    # 4. Run ClinicalAssertionBERT on each extracted entity
     negated_spans = set()
     possible_spans = set()
     
-    for ent in doc.ents:
-        if ent._.negex:
-            negated_spans.add((ent.start_char, ent.end_char))
+    for ent in entities_res:
+        start = ent["start"]
+        end = ent["end"]
+        ent_text = ent["text"]
         
-        # Local suspicion heuristic (without "history of")
-        context = text[max(0, ent.start_char - 30):ent.start_char].lower()
-        if "suspicion" in context or "rule out" in context:
-            possible_spans.add((ent.start_char, ent.end_char))
+        # Extract sentence context
+        sent_start = start
+        while sent_start > 0:
+            char = text[sent_start - 1]
+            is_boundary = char in [".", "!", "?"] and (
+                sent_start == len(text) or text[sent_start].isspace()
+            )
+            if char == "\n" or is_boundary:
+                break
+            sent_start -= 1
+            
+        sent_end = end
+        while sent_end < len(text):
+            char = text[sent_end]
+            is_boundary = char in [".", "!", "?"] and (
+                sent_end + 1 == len(text) or text[sent_end + 1].isspace()
+            )
+            if char == "\n" or is_boundary:
+                if char in [".", "!", "?"]:
+                    sent_end += 1
+                break
+            sent_end += 1
+            
+        sentence = text[sent_start:sent_end]
+        offset = start - sent_start
+        
+        # Construct input with [entity] tags
+        formatted_input = (
+            f"{sentence[:offset]} [entity] {ent_text} "
+            f"[entity] {sentence[offset + len(ent_text):]}"
+        )
+        
+        # Run inference
+        inputs = assertion_tokenizer(formatted_input, return_tensors="pt")
+        with torch.no_grad():
+            outputs = assertion_model(**inputs)
+            logits = outputs.logits
+            predicted_class_id = logits.argmax().item()
+            
+        label = ""
+        has_id2label = (
+            hasattr(assertion_model.config, "id2label")
+            and assertion_model.config.id2label
+            and predicted_class_id in assertion_model.config.id2label
+        )
+        if has_id2label:
+            label = str(
+                assertion_model.config.id2label[predicted_class_id]
+            ).lower()
+            
+        if "absent" in label or predicted_class_id == 1:
+            negated_spans.add((start, end))
+        elif "possible" in label or predicted_class_id == 2:
+            possible_spans.add((start, end))
+            
+        # Local suspicion heuristic (without "history of") as a backup
+        context = text[max(0, start - 30):start].lower()
+        if "suspicion" in context or "rule out" in context or "suspect" in context:
+            possible_spans.add((start, end))
 
     # 5. Format entities response and post-process negation prefix anomalies
     formatted_entities = []
