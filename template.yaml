@@ -85,7 +85,7 @@ Resources:
           EHR_TABLE_NAME: !Ref EhrTableName
           DOCUMENTS_BUCKET_NAME: !Ref DocumentsBucketName
           OMOPHUB_API_KEY: !Ref OmopHubApiKey
-          SAGEMAKER_ENDPOINT_NAME: !Ref SageMakerEndpoint
+          SAGEMAKER_ENDPOINT_NAME: !GetAtt SageMakerEndpoint.EndpointName
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DocumentsBucketName
