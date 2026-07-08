@@ -6,7 +6,7 @@ from gliner import GLiNER
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 
-def model_fn(model_dir):
+def model_fn(model_dir, *args, **kwargs):
     print("Loading GLiNER-ReLex from pretrained model...")
     model_path = os.path.join(model_dir, "model")
     model = GLiNER.from_pretrained(model_path)
