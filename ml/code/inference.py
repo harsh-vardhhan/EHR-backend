@@ -29,9 +29,16 @@ def model_fn(model_dir):
         print(f"Loading pre-quantized model from: {quantized_model_path}...")
         assertion_model = torch.load(quantized_model_path, weights_only=False)
     else:
-        print("Pre-quantized model not found. Loading standard model and quantizing on-the-fly...")
+        print(
+            "Pre-quantized model not found. "
+            "Loading standard model and quantizing on-the-fly..."
+        )
         if os.path.exists(assertion_path) and os.listdir(assertion_path):
-            standard_model = AutoModelForSequenceClassification.from_pretrained(assertion_path)
+            standard_model = (
+                AutoModelForSequenceClassification.from_pretrained(
+                    assertion_path
+                )
+            )
         else:
             standard_model = AutoModelForSequenceClassification.from_pretrained(
                 "bvanaken/clinical-assertion-negation-bert"
