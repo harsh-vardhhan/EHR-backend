@@ -51,7 +51,6 @@ jobs:
             --parameter-overrides \
               DocumentsBucketName=${{ secrets.DOCUMENTS_BUCKET_NAME }} \
               EhrTableName=${{ secrets.EHR_TABLE_NAME }} \
-              GroqApiKey=${{ secrets.GROQ_API_KEY }} \
               NotificationEmail=${{ secrets.NOTIFICATION_EMAIL }} \
               EhrApiKeyVal=${{ secrets.VITE_API_KEY }} \
               OmopHubApiKey=${{ secrets.OMOPHUB_API_KEY }} \

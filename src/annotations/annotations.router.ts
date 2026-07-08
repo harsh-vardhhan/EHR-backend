@@ -168,10 +168,72 @@ annotationsApp.post('/', async (c) => {
   return c.json(newAnnotation, 201);
 });
 
+const updateAnnotationSchema = z
+  .object({
+    text: z
+      .string()
+      .min(1, 'text must not be empty')
+      .max(500, 'text must be 500 characters or less')
+      .optional(),
+    label: z
+      .enum(
+        [
+          MEDICAL_ENTITIES.CONDITION,
+          MEDICAL_ENTITIES.MEDICATION,
+          MEDICAL_ENTITIES.FINDING,
+          MEDICAL_ENTITIES.PROCEDURE,
+        ],
+        {
+          errorMap: () => ({ message: 'Invalid label type' }),
+        },
+      )
+      .optional(),
+    startOffset: z
+      .number()
+      .int()
+      .nonnegative('startOffset must be a non-negative integer')
+      .optional(),
+    endOffset: z
+      .number()
+      .int()
+      .nonnegative('endOffset must be a non-negative integer')
+      .optional(),
+    status: z
+      .enum(['suggested', 'accepted', 'rejected', 'corrected'])
+      .optional(),
+    confidence: z.number().min(0).max(1).optional(),
+    assertion: z.enum(['positive', 'negated', 'possible']).optional(),
+    conceptCode: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.startOffset !== undefined && data.endOffset !== undefined) {
+        return data.startOffset <= data.endOffset;
+      }
+      return true;
+    },
+    {
+      message: 'startOffset must be less than or equal to endOffset',
+      path: ['startOffset'],
+    },
+  );
+
 annotationsApp.patch('/:id', validateParam('id', uuidSchema), async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json();
-  const updatedAnnotation = await annotationsService.updateAnnotation(id, body);
+  const result = updateAnnotationSchema.safeParse(body);
+
+  if (!result.success) {
+    const errors = result.error.errors
+      .map((err) => `${err.path.join('.')}: ${err.message}`)
+      .join(', ');
+    return c.json({ error: 'Validation failed', message: errors }, 400);
+  }
+
+  const updatedAnnotation = await annotationsService.updateAnnotation(
+    id,
+    result.data,
+  );
   return c.json(updatedAnnotation);
 });
 

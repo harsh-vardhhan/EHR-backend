@@ -276,14 +276,11 @@ export class PiiScrubberService {
           );
         }
       } catch (err: any) {
-        console.warn(
-          `[PiiScrubberService] Local ML-based PII scrubbing failed (falling back to regex-only). Error: ${err.message || err}`,
+        console.error(
+          `[PiiScrubberService] Local ML-based PII scrubbing failed: ${err.message || err}`,
         );
+        throw err;
       }
-    } else if (process.env.MOCK_SAGEMAKER === 'true') {
-      console.log(
-        '[PiiScrubberService] MOCK_SAGEMAKER is active. Bypassing SageMaker ML PII scrubbing.',
-      );
     } else {
       const endpointName =
         process.env.SAGEMAKER_ENDPOINT_NAME || 'gliner-relex-endpoint';
@@ -358,9 +355,10 @@ export class PiiScrubberService {
           }
         }
       } catch (err: any) {
-        console.warn(
-          `[PiiScrubberService] SageMaker ML-based PII scrubbing failed/skipped (falling back to regex-only). Error: ${err.message || err}`,
+        console.error(
+          `[PiiScrubberService] SageMaker ML-based PII scrubbing failed: ${err.message || err}`,
         );
+        throw err;
       }
     }
 

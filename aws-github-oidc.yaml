@@ -48,8 +48,8 @@ Resources:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
               StringLike:
                 token.actions.githubusercontent.com:sub:
-                  - repo:harsh-vardhhan/EHR-backend:*
-                  - repo:harsh-vardhhan/EHR-frontend:*
+                  - repo:harsh-vardhhan/EHR-backend:ref:refs/heads/main
+                  - repo:harsh-vardhhan/EHR-frontend:ref:refs/heads/main
       Policies:
         - PolicyName: GitHubActionsDeployPolicy
           PolicyDocument:
@@ -138,6 +138,17 @@ Resources:
                   - !Sub "arn:aws:apigateway:${AWS::Region}::/restapis*"
                   - !Sub "arn:aws:apigateway:${AWS::Region}::/apikeys*"
                   - !Sub "arn:aws:apigateway:${AWS::Region}::/usageplans*"
+              - Sid: KinesisFirehoseManagement
+                Effect: Allow
+                Action:
+                  - firehose:CreateDeliveryStream
+                  - firehose:DeleteDeliveryStream
+                  - firehose:DescribeDeliveryStream
+                  - firehose:UpdateDeliveryStream
+                  - firehose:TagDeliveryStream
+                  - firehose:UntagDeliveryStream
+                Resource:
+                  - !Sub "arn:aws:firehose:${AWS::Region}:${AWS::AccountId}:deliverystream/ehr-annotation-backend-*"
               - Sid: SQSSNSAndEventsManagement
                 Effect: Allow
                 Action:
