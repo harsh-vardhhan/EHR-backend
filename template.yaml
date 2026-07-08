@@ -33,14 +33,6 @@ Parameters:
   SageMakerModelDataUrl:
     Type: String
     Description: S3 URI of the packaged model.tar.gz containing custom inference code
-  DeploySageMaker:
-    Type: String
-    Default: "true"
-    AllowedValues: ["true", "false"]
-    Description: "Toggle to skip SageMaker deployment due to account quota limits"
-
-Conditions:
-  ShouldDeploySageMaker: !Equals [ !Ref DeploySageMaker, "true" ]
 
 Resources:
   EhrBackendFunction:
@@ -93,8 +85,7 @@ Resources:
           EHR_TABLE_NAME: !Ref EhrTableName
           DOCUMENTS_BUCKET_NAME: !Ref DocumentsBucketName
           OMOPHUB_API_KEY: !Ref OmopHubApiKey
-          SAGEMAKER_ENDPOINT_NAME: !If [ShouldDeploySageMaker, !Ref SageMakerEndpoint, "gliner-relex-endpoint"]
-          MOCK_SAGEMAKER: !If [ShouldDeploySageMaker, "false", "true"]
+          SAGEMAKER_ENDPOINT_NAME: !Ref SageMakerEndpoint
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DocumentsBucketName
@@ -135,6 +126,9 @@ Resources:
               Service: events.amazonaws.com
             Action: sqs:SendMessage
             Resource: !GetAtt EhrAnnotationQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !GetAtt EhrAnnotationBusRule.Arn
 
   EhrAnnotationBusRule:
     Type: AWS::Events::Rule
@@ -369,7 +363,6 @@ Resources:
 
   SageMakerExecutionRole:
     Type: AWS::IAM::Role
-    Condition: ShouldDeploySageMaker
     Properties:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -384,7 +377,6 @@ Resources:
 
   SageMakerModel:
     Type: AWS::SageMaker::Model
-    Condition: ShouldDeploySageMaker
     Properties:
       ExecutionRoleArn: !GetAtt SageMakerExecutionRole.Arn
       PrimaryContainer:
@@ -399,7 +391,6 @@ Resources:
 
   SageMakerEndpointConfig:
     Type: AWS::SageMaker::EndpointConfig
-    Condition: ShouldDeploySageMaker
     Properties:
       ProductionVariants:
         - VariantName: AllTraffic
@@ -410,7 +401,6 @@ Resources:
 
   SageMakerEndpoint:
     Type: AWS::SageMaker::Endpoint
-    Condition: ShouldDeploySageMaker
     Properties:
       EndpointName: gliner-relex-endpoint
       EndpointConfigName: !GetAtt SageMakerEndpointConfig.EndpointConfigName
