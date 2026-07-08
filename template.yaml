@@ -35,7 +35,7 @@ Parameters:
     Description: S3 URI of the packaged model.tar.gz containing custom inference code
   DeploySageMaker:
     Type: String
-    Default: "false"
+    Default: "true"
     AllowedValues: ["true", "false"]
     Description: "Toggle to skip SageMaker deployment due to account quota limits"
 
