@@ -395,6 +395,7 @@ Resources:
           SAGEMAKER_PROGRAM: "inference.py"
           SAGEMAKER_SUBMIT_DIRECTORY: !Ref SageMakerModelDataUrl
           MODEL_VERSION: "1.0.3"
+          SAGEMAKER_MODEL_SERVER_WORKERS: "1"
 
   SageMakerEndpointConfig:
     Type: AWS::SageMaker::EndpointConfig

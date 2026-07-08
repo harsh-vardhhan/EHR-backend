@@ -106,7 +106,8 @@ sagemaker.create_model(
             "HF_MODEL_ID": "knowledgator/gliner-relex-large-v0.5",
             "SAGEMAKER_CONTAINER_LOG_LEVEL": "20",
             "SAGEMAKER_PROGRAM": "inference.py",
-            "SAGEMAKER_SUBMIT_DIRECTORY": model_data_url
+            "SAGEMAKER_SUBMIT_DIRECTORY": model_data_url,
+            "SAGEMAKER_MODEL_SERVER_WORKERS": "1"
         }
     },
     ExecutionRoleArn=role_arn
