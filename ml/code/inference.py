@@ -10,6 +10,7 @@ def model_fn(model_dir):
     print("Loading GLiNER-ReLex from pretrained model...")
     model_path = os.path.join(model_dir, "model")
     model = GLiNER.from_pretrained(model_path)
+    model.to(torch.bfloat16)
     
     print("Loading ClinicalAssertionBERT...")
     assertion_path = os.path.join(model_dir, "model", "assertion")
@@ -17,7 +18,7 @@ def model_fn(model_dir):
         assertion_tokenizer = AutoTokenizer.from_pretrained(assertion_path)
         assertion_model = (
             AutoModelForSequenceClassification.from_pretrained(
-                assertion_path
+                assertion_path, torch_dtype=torch.bfloat16
             )
         )
     else:
@@ -30,7 +31,8 @@ def model_fn(model_dir):
         )
         assertion_model = (
             AutoModelForSequenceClassification.from_pretrained(
-                "bvanaken/clinical-assertion-negation-bert"
+                "bvanaken/clinical-assertion-negation-bert",
+                torch_dtype=torch.bfloat16
             )
         )
     
