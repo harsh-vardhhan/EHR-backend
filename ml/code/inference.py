@@ -7,8 +7,20 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 
 def model_fn(model_dir, context=None):
-    print("Loading GLiNER-ReLex from pretrained model...")
+    print(f"model_dir path: {model_dir}")
+    try:
+        print("Contents of model_dir:", os.listdir(model_dir))
+    except Exception as e:
+        print(f"Failed to list model_dir: {e}")
+        
     model_path = os.path.join(model_dir, "model")
+    print(f"model_path path: {model_path}")
+    try:
+        print("Contents of model_path:", os.listdir(model_path))
+    except Exception as e:
+        print(f"Failed to list model_path: {e}")
+
+    print("Loading GLiNER-ReLex from pretrained model...")
     model = GLiNER.from_pretrained(model_path)
     model.to(torch.bfloat16)
     
