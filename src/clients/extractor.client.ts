@@ -56,6 +56,31 @@ const client = new SageMakerRuntimeClient({
   region: process.env.AWS_REGION || 'ap-south-1',
 });
 
+function mapMlResponse(parsedData: unknown): ExtractionResult {
+  const validated = sagemakerResponseSchema.parse(parsedData);
+
+  const entities: ExtractedEntity[] = validated.entities.map((ent) => ({
+    text: ent.text,
+    label: ent.label as MedicalEntityLabel,
+    confidence: ent.confidence,
+    assertion: ent.assertion,
+    conceptCode: '',
+    startOffset: ent.start,
+    endOffset: ent.end,
+  }));
+
+  const relations: ExtractedRelation[] = validated.relations.map((rel) => ({
+    sourceStart: rel.source_start,
+    sourceEnd: rel.source_end,
+    targetStart: rel.target_start,
+    targetEnd: rel.target_end,
+    relation: rel.relation,
+    confidence: rel.confidence,
+  }));
+
+  return { entities, relations };
+}
+
 export async function extractClinicalEntities(
   text: string,
 ): Promise<ExtractionResult> {
@@ -78,31 +103,12 @@ export async function extractClinicalEntities(
       }
 
       const parsedData = await response.json();
-      const validated = sagemakerResponseSchema.parse(parsedData);
-
-      const entities: ExtractedEntity[] = validated.entities.map((ent) => ({
-        text: ent.text,
-        label: ent.label as MedicalEntityLabel,
-        confidence: ent.confidence,
-        assertion: ent.assertion,
-        conceptCode: '',
-        startOffset: ent.start,
-        endOffset: ent.end,
-      }));
-
-      const relations: ExtractedRelation[] = validated.relations.map((rel) => ({
-        sourceStart: rel.source_start,
-        sourceEnd: rel.source_end,
-        targetStart: rel.target_start,
-        targetEnd: rel.target_end,
-        relation: rel.relation,
-        confidence: rel.confidence,
-      }));
+      const result = mapMlResponse(parsedData);
 
       console.log(
-        `[extractClinicalEntities] Successfully extracted ${entities.length} entities and ${relations.length} relations from local Python ML server.`,
+        `[extractClinicalEntities] Successfully extracted ${result.entities.length} entities and ${result.relations.length} relations from local Python ML server.`,
       );
-      return { entities, relations };
+      return result;
     } catch (err: any) {
       console.error(
         `[extractClinicalEntities] Local ML server query failed: ${err.message || err}`,
@@ -136,28 +142,7 @@ export async function extractClinicalEntities(
     const responseText = Buffer.from(response.Body).toString('utf-8');
     const parsedData = JSON.parse(responseText);
 
-    const validated = sagemakerResponseSchema.parse(parsedData);
-
-    const entities: ExtractedEntity[] = validated.entities.map((ent) => ({
-      text: ent.text,
-      label: ent.label as MedicalEntityLabel,
-      confidence: ent.confidence,
-      assertion: ent.assertion,
-      conceptCode: '',
-      startOffset: ent.start,
-      endOffset: ent.end,
-    }));
-
-    const relations: ExtractedRelation[] = validated.relations.map((rel) => ({
-      sourceStart: rel.source_start,
-      sourceEnd: rel.source_end,
-      targetStart: rel.target_start,
-      targetEnd: rel.target_end,
-      relation: rel.relation,
-      confidence: rel.confidence,
-    }));
-
-    return { entities, relations };
+    return mapMlResponse(parsedData);
   } catch (err: any) {
     console.error(
       `[extractClinicalEntities] SageMaker extraction failed: ${err.message || err}`,

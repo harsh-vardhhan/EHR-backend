@@ -200,6 +200,44 @@ export class PiiScrubberService {
    * Asynchronously scrubs PII from the text, using the SageMaker GLiNER endpoint
    * to perform ML-based Named Entity Recognition (NER) for high-accuracy contextual scrubbing.
    */
+  private mergeMlEntities(detections: PiiDetection[], entities: any[]): void {
+    const labelMap: Record<string, PiiDetection['type']> = {
+      'Patient Name': 'NAME',
+      'Doctor Name': 'NAME',
+      'Phone Number': 'PHONE',
+      'Social Security Number': 'SSN',
+      'Date of Birth': 'DATE',
+      'Physical Address': 'EMAIL',
+      'Email Address': 'EMAIL',
+    };
+
+    for (const ent of entities) {
+      const start = ent.start;
+      const end = ent.end;
+      const type = labelMap[ent.label] || 'NAME';
+
+      const isOverlap = detections.some(
+        (d) =>
+          (start >= d.start && start < d.end) ||
+          (end > d.start && end <= d.end) ||
+          (d.start >= start && d.start < end),
+      );
+
+      if (!isOverlap) {
+        detections.push({
+          text: ent.text,
+          type,
+          start,
+          end,
+        });
+      }
+    }
+  }
+
+  /**
+   * Asynchronously scrubs PII from the text, using the SageMaker GLiNER endpoint
+   * to perform ML-based Named Entity Recognition (NER) for high-accuracy contextual scrubbing.
+   */
   async scrubTextMl(text: string): Promise<{
     scrubbedText: string;
     detections: PiiDetection[];
@@ -208,27 +246,28 @@ export class PiiScrubberService {
     const { detections } = this.scrubText(text);
 
     const localMlUrl = process.env.LOCAL_ML_URL;
+    const piiLabels = [
+      'Patient Name',
+      'Doctor Name',
+      'Phone Number',
+      'Social Security Number',
+      'Date of Birth',
+      'Physical Address',
+      'Email Address',
+    ];
+
+    const payload = {
+      text,
+      labels: piiLabels,
+      relations: [],
+      threshold: 0.35,
+    };
+
     if (localMlUrl) {
       try {
         console.log(
           `[PiiScrubberService] Invoking local Python ML server for PII detection: "${localMlUrl}"...`,
         );
-        const piiLabels = [
-          'Patient Name',
-          'Doctor Name',
-          'Phone Number',
-          'Social Security Number',
-          'Date of Birth',
-          'Physical Address',
-          'Email Address',
-        ];
-
-        const payload = {
-          text,
-          labels: piiLabels,
-          relations: [],
-          threshold: 0.35,
-        };
 
         const response = await fetch(localMlUrl, {
           method: 'POST',
@@ -238,38 +277,8 @@ export class PiiScrubberService {
 
         if (response.ok) {
           const parsedData = await response.json();
-          const labelMap: Record<string, PiiDetection['type']> = {
-            'Patient Name': 'NAME',
-            'Doctor Name': 'NAME',
-            'Phone Number': 'PHONE',
-            'Social Security Number': 'SSN',
-            'Date of Birth': 'DATE',
-            'Physical Address': 'EMAIL',
-            'Email Address': 'EMAIL',
-          };
-
           if (parsedData.entities && Array.isArray(parsedData.entities)) {
-            for (const ent of parsedData.entities) {
-              const start = ent.start;
-              const end = ent.end;
-              const type = labelMap[ent.label] || 'NAME';
-
-              const isOverlap = detections.some(
-                (d) =>
-                  (start >= d.start && start < d.end) ||
-                  (end > d.start && end <= d.end) ||
-                  (d.start >= start && d.start < end),
-              );
-
-              if (!isOverlap) {
-                detections.push({
-                  text: ent.text,
-                  type,
-                  start,
-                  end,
-                });
-              }
-            }
+            this.mergeMlEntities(detections, parsedData.entities);
           }
           console.log(
             `[PiiScrubberService] Local ML PII extraction completed. Total detections: ${detections.length}`,
@@ -286,23 +295,6 @@ export class PiiScrubberService {
         process.env.SAGEMAKER_ENDPOINT_NAME || 'gliner-relex-endpoint';
 
       try {
-        const piiLabels = [
-          'Patient Name',
-          'Doctor Name',
-          'Phone Number',
-          'Social Security Number',
-          'Date of Birth',
-          'Physical Address',
-          'Email Address',
-        ];
-
-        const payload = {
-          text,
-          labels: piiLabels,
-          relations: [], // Empty relations array triggers entity-only mode in inference.py
-          threshold: 0.35,
-        };
-
         console.log(
           `[PiiScrubberService] Invoking SageMaker for PII detection: "${endpointName}"...`,
         );
@@ -319,39 +311,8 @@ export class PiiScrubberService {
           const responseText = Buffer.from(response.Body).toString('utf-8');
           const parsedData = JSON.parse(responseText);
 
-          const labelMap: Record<string, PiiDetection['type']> = {
-            'Patient Name': 'NAME',
-            'Doctor Name': 'NAME',
-            'Phone Number': 'PHONE',
-            'Social Security Number': 'SSN',
-            'Date of Birth': 'DATE',
-            'Physical Address': 'EMAIL',
-            'Email Address': 'EMAIL',
-          };
-
           if (parsedData.entities && Array.isArray(parsedData.entities)) {
-            for (const ent of parsedData.entities) {
-              const start = ent.start;
-              const end = ent.end;
-              const type = labelMap[ent.label] || 'NAME';
-
-              // Check if this offset is already covered by our regex scrubber
-              const isOverlap = detections.some(
-                (d) =>
-                  (start >= d.start && start < d.end) ||
-                  (end > d.start && end <= d.end) ||
-                  (d.start >= start && d.start < end),
-              );
-
-              if (!isOverlap) {
-                detections.push({
-                  text: ent.text,
-                  type,
-                  start,
-                  end,
-                });
-              }
-            }
+            this.mergeMlEntities(detections, parsedData.entities);
           }
         }
       } catch (err: any) {
