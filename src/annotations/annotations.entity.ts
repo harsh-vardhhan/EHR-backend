@@ -1,8 +1,5 @@
 import { Entity } from 'electrodb';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-
-const client = new DynamoDBClient({});
-const table = process.env.EHR_TABLE_NAME || 'EhrTable';
+import { client, table } from '../database/client';
 
 export const AnnotationEntity = new Entity(
   {

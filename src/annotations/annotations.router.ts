@@ -3,51 +3,8 @@ import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import { annotationsService } from '../services';
 import { MEDICAL_ENTITIES } from '../constants/labels';
-import type { MiddlewareHandler } from 'hono';
+import { validateParam, validateQuery } from '../middleware/validation';
 export const annotationsApp = new Hono();
-
-// Validation middlewares
-const validateParam = (
-  paramName: string,
-  schema: z.ZodSchema,
-): MiddlewareHandler => {
-  return async (c, next) => {
-    const value = c.req.param(paramName);
-    const result = schema.safeParse(value);
-    if (!result.success) {
-      return c.json(
-        {
-          error: 'Bad Request',
-          message: `Invalid parameter: ${paramName}`,
-          details: result.error.errors.map((err) => err.message),
-        },
-        400,
-      );
-    }
-    await next();
-  };
-};
-
-const validateQuery = (
-  paramName: string,
-  schema: z.ZodSchema,
-): MiddlewareHandler => {
-  return async (c, next) => {
-    const value = c.req.query(paramName);
-    const result = schema.safeParse(value);
-    if (!result.success) {
-      return c.json(
-        {
-          error: 'Bad Request',
-          message: `Invalid query parameter: ${paramName}`,
-          details: result.error.errors.map((err) => err.message),
-        },
-        400,
-      );
-    }
-    await next();
-  };
-};
 
 const documentIdQuerySchema = z
   .string()
