@@ -33,6 +33,16 @@ Parameters:
   SageMakerModelDataUrl:
     Type: String
     Description: S3 URI of the packaged model.tar.gz containing custom inference code
+  DeploySageMaker:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "Whether to deploy the SageMaker endpoint and model resources"
+
+Conditions:
+  ShouldDeploySageMaker: !Equals [ !Ref DeploySageMaker, "true" ]
 
 Resources:
   EhrBackendFunction:
@@ -85,7 +95,7 @@ Resources:
           EHR_TABLE_NAME: !Ref EhrTableName
           DOCUMENTS_BUCKET_NAME: !Ref DocumentsBucketName
           OMOPHUB_API_KEY: !Ref OmopHubApiKey
-          SAGEMAKER_ENDPOINT_NAME: !GetAtt SageMakerEndpoint.EndpointName
+          SAGEMAKER_ENDPOINT_NAME: !If [ ShouldDeploySageMaker, !GetAtt SageMakerEndpoint.EndpointName, "gliner-relex-endpoint" ]
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DocumentsBucketName
@@ -363,6 +373,7 @@ Resources:
 
   SageMakerExecutionRole:
     Type: AWS::IAM::Role
+    Condition: ShouldDeploySageMaker
     Properties:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -377,6 +388,7 @@ Resources:
 
   SageMakerModel:
     Type: AWS::SageMaker::Model
+    Condition: ShouldDeploySageMaker
     Properties:
       ExecutionRoleArn: !GetAtt SageMakerExecutionRole.Arn
       PrimaryContainer:
@@ -391,6 +403,7 @@ Resources:
 
   SageMakerEndpointConfig:
     Type: AWS::SageMaker::EndpointConfig
+    Condition: ShouldDeploySageMaker
     Properties:
       ProductionVariants:
         - VariantName: AllTraffic
@@ -401,6 +414,7 @@ Resources:
 
   SageMakerEndpoint:
     Type: AWS::SageMaker::Endpoint
+    Condition: ShouldDeploySageMaker
     Properties:
       EndpointName: gliner-relex-endpoint
       EndpointConfigName: !GetAtt SageMakerEndpointConfig.EndpointConfigName
