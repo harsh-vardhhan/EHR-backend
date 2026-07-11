@@ -1,12 +1,13 @@
-import sys
 import gc
 import json
 import os
 import resource
+import sys
 
 # Add code directory to path to load inference logic
 sys.path.append(os.path.join(os.path.dirname(__file__), "code"))
 from inference import model_fn, predict_fn
+
 
 def get_memory_usage_mb():
     maxrss_bytes = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss

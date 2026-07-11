@@ -178,7 +178,6 @@ def predict_fn(data, model_dict):
         ent_text = ent["text"]
         ent_label = ent["label"]
         ent_start = ent["start"]
-        ent_end = ent["end"]
         ent_score = ent.get("score", ent.get("confidence", 1.0))
         
         # Check if it's a medication statement with a coordinating conjunction ' and '

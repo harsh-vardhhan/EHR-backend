@@ -1,5 +1,7 @@
 import os
+
 from huggingface_hub import snapshot_download
+
 
 def download():
     print("Downloading knowledgator/gliner-relex-base-v1.0 model weights...")
