@@ -2,8 +2,11 @@ import gc
 import json
 import os
 import resource
+import sys
 
-from gliner import GLiNER
+# Add code directory to path to load inference logic
+sys.path.append(os.path.join(os.path.dirname(__file__), "code"))
+from inference import model_fn, predict_fn
 
 
 def get_memory_usage_mb():
@@ -21,10 +24,11 @@ def test_notes_pytorch():
         notes = json.load(f)
     print(f"Loaded {len(notes)} clinical notes.")
     
-    print("\nLoading local PyTorch model: knowledgator/gliner-relex-base-v1.0...")
-    model = GLiNER.from_pretrained("knowledgator/gliner-relex-base-v1.0")
-    print("Model loaded successfully!")
-    print(f"2. After loading PyTorch model: {get_memory_usage_mb():.2f} MB")
+    model_dir = os.path.dirname(__file__)
+    print("Loading hybrid models from:", model_dir)
+    model_dict = model_fn(model_dir)
+    print("Hybrid ML models loaded successfully!")
+    print(f"2. After loading models: {get_memory_usage_mb():.2f} MB")
     
     labels = [
         "Clinical Condition",
@@ -43,35 +47,18 @@ def test_notes_pytorch():
     # Run on first 2 notes
     for i, note in enumerate(notes[:2]):
         print(f"Extracting Note {i+1}: {note['title']}...")
-        entities, rels = model.predict_relations(
-            note["text"],
-            labels=labels,
-            relations=relations,
-            threshold=0.3,
-            relation_threshold=0.3
-        )
+        result = predict_fn({
+            "text": note["text"],
+            "labels": labels,
+            "relations": relations,
+            "entity_threshold": 0.50,
+            "relation_threshold": 0.35
+        }, model_dict)
         
         note_result = {
             "title": note["title"],
-            "entities": [
-                {
-                    "text": ent["text"],
-                    "label": ent["label"],
-                    "score": round(float(ent["score"]), 3),
-                    "start": ent["start"],
-                    "end": ent["end"]
-                }
-                for ent in entities
-            ],
-            "relations": [
-                {
-                    "source": rel["head"]["text"],
-                    "target": rel["tail"]["text"],
-                    "relation": rel["relation"],
-                    "score": round(float(rel["score"]), 3)
-                }
-                for rel in rels
-            ]
+            "entities": result["entities"],
+            "relations": result["relations"]
         }
         results.append(note_result)
         

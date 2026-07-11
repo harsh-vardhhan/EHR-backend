@@ -3,6 +3,5 @@ node_modules
 dist/
 .aws-sam/
 ml/model/
-ml/download_model.py
 ml/model.tar.gz
 
