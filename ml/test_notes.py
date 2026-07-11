@@ -53,8 +53,8 @@ def test_notes():
             note["text"],
             labels=labels,
             relations=relations,
-            threshold=0.3,
-            relation_threshold=0.3
+            threshold=0.55,
+            relation_threshold=0.55
         )
         
         note_result = {

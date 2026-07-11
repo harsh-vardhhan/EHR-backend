@@ -23,6 +23,15 @@ def model_fn(model_dir, context=None):
     print("Loading GLiNER-ReLex from pretrained model...")
     model = GLiNER.from_pretrained(model_path)
     model.to(torch.bfloat16)
+
+    print("Loading Biomedical GLiNER from pretrained model...")
+    biomed_path = os.path.join(model_dir, "model", "biomed")
+    if os.path.exists(biomed_path) and os.listdir(biomed_path):
+        biomed_model = GLiNER.from_pretrained(biomed_path)
+    else:
+        print("Biomedical model not found locally. Loading from HF hub...")
+        biomed_model = GLiNER.from_pretrained("Ihor/gliner-biomed-base-v1.0")
+    biomed_model.to(torch.bfloat16)
     
     print("Loading ClinicalAssertionBERT...")
     assertion_path = os.path.join(model_dir, "model", "assertion")
@@ -64,13 +73,32 @@ def model_fn(model_dir, context=None):
         
     return {
         "gliner": model,
+        "biomed_gliner": biomed_model,
         "assertion_tokenizer": assertion_tokenizer,
         "assertion_model": assertion_model
     }
 
 
+def find_overlapping_entity(start, end, entities):
+    best_overlap = 0
+    best_ent = None
+    for ent in entities:
+        ent_start = ent["start"]
+        ent_end = ent["end"]
+        # Calculate overlap interval
+        o_start = max(start, ent_start)
+        o_end = min(end, ent_end)
+        if o_start < o_end:
+            overlap_len = o_end - o_start
+            if overlap_len > best_overlap:
+                best_overlap = overlap_len
+                best_ent = ent
+    return best_ent
+
+
 def predict_fn(data, model_dict):
-    model = model_dict["gliner"]
+    model = model_dict["gliner"]  # Generalist relation model
+    biomed_model = model_dict["biomed_gliner"]  # Biomedical model
     assertion_tokenizer = model_dict["assertion_tokenizer"]
     assertion_model = model_dict["assertion_model"]
     
@@ -90,14 +118,14 @@ def predict_fn(data, model_dict):
     # 1. Resolve configuration parameters
     labels = None
     relations = None
-    threshold = 0.3
-    entity_threshold = 0.3
+    entity_threshold = 0.5
+    relation_threshold = 0.35
     
     if isinstance(data, dict):
         labels = data.get("labels")
         relations = data.get("relations")
-        threshold = data.get("threshold", 0.3)
-        entity_threshold = data.get("entity_threshold", 0.3)
+        entity_threshold = data.get("entity_threshold", data.get("threshold", 0.5))
+        relation_threshold = data.get("relation_threshold", 0.35)
         
     if labels is None:
         labels = [
@@ -113,39 +141,38 @@ def predict_fn(data, model_dict):
             "associated_with",
             "relates_to",
         ]
-        
-    is_new_gliner = hasattr(model, "predict_relations")
 
-    # 2. Run GLiNER relation extraction first
-    if not relations:
-        # Entity-only extraction (useful for PII scrubbing)
-        entities_res = model.predict_entities(
-            text,
-            labels=labels,
-            threshold=threshold
-        )
-        relations_res = []
-    else:
+    # 2. Extract clean biomedical entities using biomed_model (NER)
+    entities_res = biomed_model.predict_entities(
+        text,
+        labels=labels,
+        threshold=entity_threshold
+    )
+
+    # 3. Extract raw relations using generalist model (RE)
+    # We use a lower threshold of 0.3 to ensure we don't miss candidate relations
+    raw_relations = []
+    if relations:
+        is_new_gliner = hasattr(model, "predict_relations")
         if is_new_gliner:
-            entities_res, relations_res = model.predict_relations(
+            _, raw_relations = model.predict_relations(
                 text,
                 labels=labels,
                 relations=relations,
-                threshold=threshold,
-                relation_threshold=entity_threshold
+                threshold=0.3,
+                relation_threshold=relation_threshold
             )
         else:
-            entities_res, relations_res = model.extracted_relations(
+            _, raw_relations = model.extracted_relations(
                 text,
                 labels=labels,
                 relations=relations,
-                threshold=threshold,
-                entity_threshold=entity_threshold
+                threshold=0.3,
+                entity_threshold=relation_threshold
             )
 
-    # 3. Split compound Medication Statements containing ' and '
+    # 4. Split compound Medication Statements containing ' and '
     split_entities = []
-    split_map = {} # maps (orig_start, orig_end) -> list of (new_start, new_end)
     
     for ent in entities_res:
         ent_text = ent["text"]
@@ -189,9 +216,6 @@ def predict_fn(data, model_dict):
             
             if sub_ents:
                 split_entities.extend(sub_ents)
-                split_map[(ent_start, ent_end)] = [
-                    (s["start"], s["end"]) for s in sub_ents
-                ]
             else:
                 split_entities.append(ent)
         else:
@@ -199,7 +223,7 @@ def predict_fn(data, model_dict):
             
     entities_res = split_entities
 
-    # 4. Run ClinicalAssertionBERT on each extracted entity
+    # 5. Run ClinicalAssertionBERT on each extracted entity
     negated_spans = set()
     possible_spans = set()
     
@@ -268,10 +292,9 @@ def predict_fn(data, model_dict):
         if "suspicion" in context or "rule out" in context or "suspect" in context:
             possible_spans.add((start, end))
 
-    # 5. Format entities response and post-process negation prefix anomalies
+    # 6. Format entities response and post-process negation prefix anomalies
     formatted_entities = []
     negation_prefixes = ["denies ", "no ", "without ", "negative for ", "ruled out "]
-    strip_map = {} # maps (orig_start, orig_end) -> (final_start, final_end)
     
     for ent in entities_res:
         start = ent["start"]
@@ -279,9 +302,6 @@ def predict_fn(data, model_dict):
         label = ent["label"]
         text_val = ent["text"]
         confidence = float(ent.get("score", ent.get("confidence", 1.0)))
-        
-        orig_start = start
-        orig_end = end
         
         # Determine assertion
         assertion = "positive"
@@ -312,8 +332,6 @@ def predict_fn(data, model_dict):
             if label == "Medication Statement":
                 label = "Clinical Finding"
                 
-        strip_map[(orig_start, orig_end)] = (start, end)
-        
         formatted_entities.append({
             "text": text_val,
             "label": label,
@@ -323,10 +341,10 @@ def predict_fn(data, model_dict):
             "assertion": assertion
         })
 
-    # 6. Format relations response and map relations of split/stripped entities
+    # 7. Align relations to formatted_entities based on overlapping offsets
     formatted_relations = []
     
-    for rel in relations_res:
+    for rel in raw_relations:
         # Resolve head and tail objects based on GLiNER version format
         if isinstance(rel, dict):
             head = rel["head"]
@@ -343,24 +361,24 @@ def predict_fn(data, model_dict):
             h_start, h_end = head[0], head[1]
             t_start, t_end = tail[0], tail[1]
             
-        # Resolve split spans (if any)
-        h_spans = split_map.get((h_start, h_end), [(h_start, h_end)])
-        t_spans = split_map.get((t_start, t_end), [(t_start, t_end)])
+        # Align head and tail to our clean formatted entities
+        aligned_head = find_overlapping_entity(h_start, h_end, formatted_entities)
+        aligned_tail = find_overlapping_entity(t_start, t_end, formatted_entities)
         
-        for h_s, h_e in h_spans:
-            for t_s, t_e in t_spans:
-                # Apply prefix strip offset adjustments
-                h_final_s, h_final_e = strip_map.get((h_s, h_e), (h_s, h_e))
-                t_final_s, t_final_e = strip_map.get((t_s, t_e), (t_s, t_e))
+        if aligned_head and aligned_tail:
+            # Prevent self-relations if offsets aligned to the same entity
+            if (aligned_head["start"] == aligned_tail["start"] and 
+                aligned_head["end"] == aligned_tail["end"]):
+                continue
                 
-                formatted_relations.append({
-                    "source_start": h_final_s,
-                    "source_end": h_final_e,
-                    "target_start": t_final_s,
-                    "target_end": t_final_e,
-                    "relation": rel_type,
-                    "confidence": rel_score
-                })
+            formatted_relations.append({
+                "source_start": aligned_head["start"],
+                "source_end": aligned_head["end"],
+                "target_start": aligned_tail["start"],
+                "target_end": aligned_tail["end"],
+                "relation": rel_type,
+                "confidence": rel_score
+            })
 
     return {
         "entities": formatted_entities,
