@@ -212,6 +212,216 @@ def get_sapbert_embedding(text, model, tokenizer):
     return outputs.last_hidden_state[0, 0, :]
 
 
+def classify_assertion_status(text, entities, assertion_model, assertion_tokenizer):
+    negated_spans = set()
+    possible_spans = set()
+
+    for ent in entities:
+        start = ent["start"]
+        end = ent["end"]
+        ent_text = ent["text"]
+
+        # Extract sentence context
+        sent_start = start
+        while sent_start > 0:
+            char = text[sent_start - 1]
+            is_boundary = char in [".", "!", "?"] and (
+                sent_start == len(text) or text[sent_start].isspace()
+            )
+            if char == "\n" or is_boundary:
+                break
+            sent_start -= 1
+
+        sent_end = end
+        while sent_end < len(text):
+            char = text[sent_end]
+            is_boundary = char in [".", "!", "?"] and (
+                sent_end + 1 == len(text) or text[sent_end + 1].isspace()
+            )
+            if char == "\n" or is_boundary:
+                if char in [".", "!", "?"]:
+                    sent_end += 1
+                break
+            sent_end += 1
+
+        sentence = text[sent_start:sent_end]
+        offset = start - sent_start
+
+        # Construct input with [entity] tags
+        formatted_input = (
+            f"{sentence[:offset]} [entity] {ent_text} "
+            f"[entity] {sentence[offset + len(ent_text) :]}"
+        )
+
+        # Run inference
+        inputs = assertion_tokenizer(formatted_input, return_tensors="pt")
+        with torch.no_grad():
+            outputs = assertion_model(**inputs)
+            logits = outputs.logits
+            predicted_class_id = logits.argmax().item()
+
+        label = ""
+        has_id2label = (
+            hasattr(assertion_model.config, "id2label")
+            and assertion_model.config.id2label
+            and predicted_class_id in assertion_model.config.id2label
+        )
+        if has_id2label:
+            label = str(assertion_model.config.id2label[predicted_class_id]).lower()
+
+        if "absent" in label or predicted_class_id == 1:
+            negated_spans.add((start, end))
+        elif "possible" in label or predicted_class_id == 2:
+            possible_spans.add((start, end))
+
+        # Local suspicion heuristic (without "history of") as a backup
+        context = text[max(0, start - 30) : start].lower()
+        if "suspicion" in context or "rule out" in context or "suspect" in context:
+            possible_spans.add((start, end))
+
+    return negated_spans, possible_spans
+
+
+def resolve_concepts(formatted_entities, sapbert_model, sapbert_tokenizer, api_key):
+    # Initialize concept_code for all entities
+    for ent in formatted_entities:
+        ent["concept_code"] = ""
+
+    if not api_key or not sapbert_model or not sapbert_tokenizer:
+        print(
+            "[inference] Skipped concept resolution (OMOPHUB_API_KEY "
+            "or SapBERT models missing from dictionary)"
+        )
+        return
+
+    searches = []
+    for idx, ent in enumerate(formatted_entities):
+        searches.append(
+            {
+                "search_id": f"s_{idx}",
+                "query": normalize_text(ent["text"], ent["label"]),
+                "vocabulary_ids": get_vocabularies(ent["label"]),
+                "domain_ids": get_domains(ent["label"]),
+                "page_size": 5,
+            }
+        )
+
+    payload = {"defaults": {"standard_concept": "S"}, "searches": searches}
+
+    try:
+        print(
+            f"[inference] Querying OMOPHub API for "
+            f"{len(formatted_entities)} entities..."
+        )
+        response = requests.post(
+            "https://api.omophub.com/v1/search/bulk",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            },
+            json=payload,
+            timeout=5.0,  # Safe timeout
+        )
+        response.raise_for_status()
+        res_data = response.json()
+
+        if res_data.get("success") and isinstance(res_data.get("data"), list):
+            for item in res_data["data"]:
+                search_id = item.get("search_id")
+                if not search_id:
+                    continue
+                idx = int(search_id.split("_")[1])
+
+                candidates = item.get("results", [])
+                if not candidates or idx >= len(formatted_entities):
+                    continue
+
+                # Retrieve query embedding
+                query_text = formatted_entities[idx]["text"]
+                query_emb = get_sapbert_embedding(
+                    query_text, sapbert_model, sapbert_tokenizer
+                )
+
+                best_candidate = None
+                best_score = -1.0
+
+                for cand in candidates:
+                    cand_name = cand.get("concept_name", "")
+                    cand_emb = get_sapbert_embedding(
+                        cand_name, sapbert_model, sapbert_tokenizer
+                    )
+
+                    # Cosine similarity
+                    sim = torch.cosine_similarity(
+                        query_emb.unsqueeze(0), cand_emb.unsqueeze(0)
+                    ).item()
+                    if sim > best_score:
+                        best_score = sim
+                        best_candidate = cand
+
+                if best_candidate:
+                    concept_code = best_candidate.get("concept_code", "")
+                    formatted_entities[idx]["concept_code"] = concept_code
+                    print(
+                        f"[inference] Resolved entity '{query_text}' -> "
+                        f"'{best_candidate.get('concept_name')}' "
+                        f"({concept_code}) with similarity {best_score:.3f}"
+                    )
+
+    except Exception as e:
+        # Graceful degradation on network / DNS / key failures
+        print(
+            f"[inference] OMOPHub bulk query or SapBERT reranking failed "
+            f"(graceful bypass): {e}"
+        )
+
+
+def align_relations(raw_relations, formatted_entities):
+    formatted_relations = []
+
+    for rel in raw_relations:
+        # Resolve head and tail objects based on GLiNER version format
+        if isinstance(rel, dict):
+            head = rel["head"]
+            tail = rel["tail"]
+            rel_type = rel["relation"]
+            rel_score = float(rel.get("score", 1.0))
+            h_start, h_end = head["start"], head["end"]
+            t_start, t_end = tail["start"], tail["end"]
+        else:
+            head = rel[0]  # (start, end, label)
+            tail = rel[1]  # (start, end, label)
+            rel_type = rel[2]
+            rel_score = float(rel[3]) if len(rel) > 3 else 1.0
+            h_start, h_end = head[0], head[1]
+            t_start, t_end = tail[0], tail[1]
+
+        # Align head and tail to our clean formatted entities
+        aligned_head = find_overlapping_entity(h_start, h_end, formatted_entities)
+        aligned_tail = find_overlapping_entity(t_start, t_end, formatted_entities)
+
+        if aligned_head and aligned_tail:
+            # Prevent self-relations if offsets aligned to the same entity
+            if (
+                aligned_head["start"] == aligned_tail["start"]
+                and aligned_head["end"] == aligned_tail["end"]
+            ):
+                continue
+
+            formatted_relations.append(
+                {
+                    "source_start": aligned_head["start"],
+                    "source_end": aligned_head["end"],
+                    "target_start": aligned_tail["start"],
+                    "target_end": aligned_tail["end"],
+                    "relation": rel_type,
+                    "confidence": rel_score,
+                }
+            )
+
+    return formatted_relations
+
+
 def predict_fn(data, model_dict):
     model = model_dict["gliner"]  # Generalist relation model
     biomed_model = model_dict["biomed_gliner"]  # Biomedical model
@@ -337,71 +547,9 @@ def predict_fn(data, model_dict):
     entities_res = split_entities
 
     # 5. Run ClinicalAssertionBERT on each extracted entity
-    negated_spans = set()
-    possible_spans = set()
-
-    for ent in entities_res:
-        start = ent["start"]
-        end = ent["end"]
-        ent_text = ent["text"]
-
-        # Extract sentence context
-        sent_start = start
-        while sent_start > 0:
-            char = text[sent_start - 1]
-            is_boundary = char in [".", "!", "?"] and (
-                sent_start == len(text) or text[sent_start].isspace()
-            )
-            if char == "\n" or is_boundary:
-                break
-            sent_start -= 1
-
-        sent_end = end
-        while sent_end < len(text):
-            char = text[sent_end]
-            is_boundary = char in [".", "!", "?"] and (
-                sent_end + 1 == len(text) or text[sent_end + 1].isspace()
-            )
-            if char == "\n" or is_boundary:
-                if char in [".", "!", "?"]:
-                    sent_end += 1
-                break
-            sent_end += 1
-
-        sentence = text[sent_start:sent_end]
-        offset = start - sent_start
-
-        # Construct input with [entity] tags
-        formatted_input = (
-            f"{sentence[:offset]} [entity] {ent_text} "
-            f"[entity] {sentence[offset + len(ent_text) :]}"
-        )
-
-        # Run inference
-        inputs = assertion_tokenizer(formatted_input, return_tensors="pt")
-        with torch.no_grad():
-            outputs = assertion_model(**inputs)
-            logits = outputs.logits
-            predicted_class_id = logits.argmax().item()
-
-        label = ""
-        has_id2label = (
-            hasattr(assertion_model.config, "id2label")
-            and assertion_model.config.id2label
-            and predicted_class_id in assertion_model.config.id2label
-        )
-        if has_id2label:
-            label = str(assertion_model.config.id2label[predicted_class_id]).lower()
-
-        if "absent" in label or predicted_class_id == 1:
-            negated_spans.add((start, end))
-        elif "possible" in label or predicted_class_id == 2:
-            possible_spans.add((start, end))
-
-        # Local suspicion heuristic (without "history of") as a backup
-        context = text[max(0, start - 30) : start].lower()
-        if "suspicion" in context or "rule out" in context or "suspect" in context:
-            possible_spans.add((start, end))
+    negated_spans, possible_spans = classify_assertion_status(
+        text, entities_res, assertion_model, assertion_tokenizer
+    )
 
     # 6. Format entities response and post-process negation prefix anomalies
     formatted_entities = []
@@ -455,142 +603,12 @@ def predict_fn(data, model_dict):
         )
 
     # 6.5. Bulk Concept Resolution (OMOPHub + SapBERT Reranking)
-    # Initialize concept_code for all entities
-    for ent in formatted_entities:
-        ent["concept_code"] = ""
-
     api_key = os.getenv("OMOPHUB_API_KEY")
     sapbert_model = model_dict.get("sapbert_model")
     sapbert_tokenizer = model_dict.get("sapbert_tokenizer")
-
-    if api_key and sapbert_model and sapbert_tokenizer:
-        searches = []
-        for idx, ent in enumerate(formatted_entities):
-            searches.append(
-                {
-                    "search_id": f"s_{idx}",
-                    "query": normalize_text(ent["text"], ent["label"]),
-                    "vocabulary_ids": get_vocabularies(ent["label"]),
-                    "domain_ids": get_domains(ent["label"]),
-                    "page_size": 5,
-                }
-            )
-
-        payload = {"defaults": {"standard_concept": "S"}, "searches": searches}
-
-        try:
-            print(
-                f"[inference] Querying OMOPHub API for "
-                f"{len(formatted_entities)} entities..."
-            )
-            response = requests.post(
-                "https://api.omophub.com/v1/search/bulk",
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {api_key}",
-                },
-                json=payload,
-                timeout=5.0,  # Safe timeout
-            )
-            response.raise_for_status()
-            res_data = response.json()
-
-            if res_data.get("success") and isinstance(res_data.get("data"), list):
-                for item in res_data["data"]:
-                    search_id = item.get("search_id")
-                    if not search_id:
-                        continue
-                    idx = int(search_id.split("_")[1])
-
-                    candidates = item.get("results", [])
-                    if not candidates or idx >= len(formatted_entities):
-                        continue
-
-                    # Retrieve query embedding
-                    query_text = formatted_entities[idx]["text"]
-                    query_emb = get_sapbert_embedding(
-                        query_text, sapbert_model, sapbert_tokenizer
-                    )
-
-                    best_candidate = None
-                    best_score = -1.0
-
-                    for cand in candidates:
-                        cand_name = cand.get("concept_name", "")
-                        cand_emb = get_sapbert_embedding(
-                            cand_name, sapbert_model, sapbert_tokenizer
-                        )
-
-                        # Cosine similarity
-                        sim = torch.cosine_similarity(
-                            query_emb.unsqueeze(0), cand_emb.unsqueeze(0)
-                        ).item()
-                        if sim > best_score:
-                            best_score = sim
-                            best_candidate = cand
-
-                    if best_candidate:
-                        concept_code = best_candidate.get("concept_code", "")
-                        formatted_entities[idx]["concept_code"] = concept_code
-                        print(
-                            f"[inference] Resolved entity '{query_text}' -> "
-                            f"'{best_candidate.get('concept_name')}' "
-                            f"({concept_code}) with similarity {best_score:.3f}"
-                        )
-
-        except Exception as e:
-            # Graceful degradation on network / DNS / key failures
-            print(
-                f"[inference] OMOPHub bulk query or SapBERT reranking failed "
-                f"(graceful bypass): {e}"
-            )
-    else:
-        print(
-            "[inference] Skipped concept resolution (OMOPHUB_API_KEY "
-            "or SapBERT models missing from dictionary)"
-        )
+    resolve_concepts(formatted_entities, sapbert_model, sapbert_tokenizer, api_key)
 
     # 7. Align relations to formatted_entities based on overlapping offsets
-    formatted_relations = []
-
-    for rel in raw_relations:
-        # Resolve head and tail objects based on GLiNER version format
-        if isinstance(rel, dict):
-            head = rel["head"]
-            tail = rel["tail"]
-            rel_type = rel["relation"]
-            rel_score = float(rel.get("score", 1.0))
-            h_start, h_end = head["start"], head["end"]
-            t_start, t_end = tail["start"], tail["end"]
-        else:
-            head = rel[0]  # (start, end, label)
-            tail = rel[1]  # (start, end, label)
-            rel_type = rel[2]
-            rel_score = float(rel[3]) if len(rel) > 3 else 1.0
-            h_start, h_end = head[0], head[1]
-            t_start, t_end = tail[0], tail[1]
-
-        # Align head and tail to our clean formatted entities
-        aligned_head = find_overlapping_entity(h_start, h_end, formatted_entities)
-        aligned_tail = find_overlapping_entity(t_start, t_end, formatted_entities)
-
-        if aligned_head and aligned_tail:
-            # Prevent self-relations if offsets aligned to the same entity
-            if (
-                aligned_head["start"] == aligned_tail["start"]
-                and aligned_head["end"] == aligned_tail["end"]
-            ):
-                continue
-
-            formatted_relations.append(
-                {
-                    "source_start": aligned_head["start"],
-                    "source_end": aligned_head["end"],
-                    "target_start": aligned_tail["start"],
-                    "target_end": aligned_tail["end"],
-                    "relation": rel_type,
-                    "confidence": rel_score,
-                }
-            )
+    formatted_relations = align_relations(raw_relations, formatted_entities)
 
     return {"entities": formatted_entities, "relations": formatted_relations}
