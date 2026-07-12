@@ -34,10 +34,10 @@ The clinical NLP workflow unifies extraction, assertion, and grounding tasks acr
 
 ```mermaid
 graph TD
-    Raw["Raw Clinical Note"] --> Step1["1. Entity Extraction (NER)<br/>gliner-biomed-base-v1.0"]
-    Step1 --> Step2["2. Relation Extraction (RE)<br/>gliner_medium-v2.1"]
-    Step2 --> Step3["3. Assertion Classification<br/>clinical-assertion-negation-bert"]
-    Step3 --> Step4["4. Concept Resolution (Grounding)<br/>SapBERT"]
+    Raw["Raw Clinical Note"] --> Step1["1. Entity Extraction (NER)"]
+    Step1 --> Step2["2. Relation Extraction (RE)"]
+    Step2 --> Step3["3. Assertion Classification"]
+    Step3 --> Step4["4. Concept Resolution (Grounding)"]
     Step4 --> OMOP["OMOPHub Vocabulary API"]
     OMOP --> Final["Structured EHR Annotations"]
 
@@ -47,19 +47,13 @@ graph TD
     class OMOP ext;
 ```
 
-### 1. Clinical Entity Recognition (NER)
-Raw clinical notes are unstructured. The platform parses these text streams and automatically extracts key clinical concepts, identifying medical entities such as conditions, findings, medications, and procedures.
-
-### 2. Relation Extraction (RE)
-Once clinical entities are identified, the system determines the semantic connections between them (e.g., mapping a clinical condition to its treatment, or associating a clinical finding with an anatomical location). This ensures the clinical context is fully preserved.
-
-### 3. Clinical Assertion Status (Negation & Speculation)
+### Clinical Assertion Status (Negation & Speculation)
 In clinical NLP, identifying a disease term is only half the battle. We must determine its **assertion status** (contextual modifier) to prevent critical medical errors:
 *   **Positive (Active):** Conditions the patient currently has (e.g., *"patient has asthma"*).
 *   **Negated (Ruled Out):** Conditions explicitly denied (e.g., *"denies chest pain"*). Misclassifying a negated symptom as an active condition leads to incorrect diagnoses and billing errors.
 *   **Possible (Hypothetical):** Speculative diagnoses under investigation (e.g., *"suspect bronchitis, rule out pneumonia"*), tracking diagnostic uncertainty.
 
-### 4. Concept Resolution & Taxonomy Mapping
+### Concept Resolution & Taxonomy Mapping
 To eliminate model hallucinations and ensure accurate coding, the extracted terms are resolved in bulk against standard vocabularies using **OMOPHub** (https://omophub.com) by computing semantic token embeddings via SapBERT:
 *   **Clinical Conditions** (e.g., *"Type 2 Diabetes"*): Mapped to **ICD-10-CM** (International Classification of Diseases, 10th Revision, Clinical Modification) codes, the gold standard for clinical classification and diagnostic billing.
 *   **Medication Statements** (e.g., *"Metformin 500mg daily"*): Mapped to **RxNorm** Concept Unique Identifiers (CUIs), ensuring precise drug-name normalization and interaction safety checks.
