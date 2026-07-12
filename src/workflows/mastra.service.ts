@@ -51,7 +51,9 @@ export class MastraService {
       );
 
       if (result.status !== 'success') {
-        throw new Error(`Workflow execution failed with status: ${result.status}`);
+        throw new Error(
+          `Workflow execution failed with status: ${result.status}`,
+        );
       }
 
       const saveResult = result.steps['resolve-and-save'];
