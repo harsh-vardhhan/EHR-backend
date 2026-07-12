@@ -27,10 +27,10 @@ The clinical NLP workflow unifies extraction, assertion, and grounding tasks acr
 
 | Clinical NLP Task | Machine Learning Model | Key Responsibility | Execution Layer |
 | :--- | :--- | :--- | :--- |
-| **Entity Extraction (NER)** | `Ihor/gliner-biomed-base-v1.0` | Extracts clinical entities (Conditions, Findings, Medications, Procedures) from raw notes. | SageMaker (PyTorch) |
-| **Relation Extraction (RE)** | `gliner-relation` (Generalist GLiNER) | Predicts relationships between extracted entities (e.g. `treatment_for`, `associated_with`). | SageMaker (PyTorch) |
-| **Assertion Classification** | `bvanaken/clinical-assertion-negation-bert` | Classifies entities contextually as *Positive*, *Negated* (ruled-out), or *Possible* (speculative). | SageMaker (PyTorch) |
-| **Concept Resolution** | `cambridgeltl/SapBERT-from-PubMedBERT-fulltext` | Computes semantic token embeddings to rerank candidate lookups and map them to SNOMED/RxNorm codes. | SageMaker (PyTorch) |
+| **Entity Extraction (NER)** | [`Ihor/gliner-biomed-base-v1.0`](https://huggingface.co/Ihor/gliner-biomed-base-v1.0) | Extracts clinical entities (Conditions, Findings, Medications, Procedures) from raw notes. | SageMaker (PyTorch) |
+| **Relation Extraction (RE)** | [`urchade/gliner_medium-v2.1`](https://huggingface.co/urchade/gliner_medium-v2.1) | Predicts relationships between extracted entities (e.g. `treatment_for`, `associated_with`). | SageMaker (PyTorch) |
+| **Assertion Classification** | [`bvanaken/clinical-assertion-negation-bert`](https://huggingface.co/bvanaken/clinical-assertion-negation-bert) | Classifies entities contextually as *Positive*, *Negated* (ruled-out), or *Possible* (speculative). | SageMaker (PyTorch) |
+| **Concept Resolution** | [`cambridgeltl/SapBERT-from-PubMedBERT-fulltext`](https://huggingface.co/cambridgeltl/SapBERT-from-PubMedBERT-fulltext) | Computes semantic token embeddings to rerank candidate lookups and map them to SNOMED/RxNorm codes. | SageMaker (PyTorch) |
 
 ### 1. Clinical Entity Recognition (NER) & Taxonomy Mapping
 Raw medical notes are unstructured. The platform parses these text streams and automatically extracts clinical concepts, mapping them to standard health-tech ontologies. To eliminate model hallucinations and ensure accurate coding, the extracted terms are resolved in bulk against standard vocabularies using **OMOPHub** (https://omophub.com):
