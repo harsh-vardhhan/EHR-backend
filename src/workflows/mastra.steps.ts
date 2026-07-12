@@ -4,7 +4,6 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { AnnotationsService } from '../annotations/annotations.service';
 import { PiiScrubberService } from '../annotations/pii-scrubber.service';
 import { extractClinicalEntities } from '../clients/extractor.client';
-import { OmopHubClient } from '../clients/omophub.client';
 import { Annotation } from '../annotations/annotations.service';
 import { Relationship } from '../annotations/annotations.service';
 
@@ -139,7 +138,6 @@ export function createExtractionStep() {
 
 export function createResolveAndSaveStep(
   annotationsService: AnnotationsService,
-  omophubClient: OmopHubClient,
 ) {
   return createStep({
     id: 'resolve-and-save',
@@ -180,33 +178,13 @@ export function createResolveAndSaveStep(
       const entities = extractResult.entities;
       const relations = extractResult.relations || [];
 
-      // Identify entities that need lookup (i.e. missing a pre-resolved concept code from Python)
-      const entitiesNeedLookup = entities.filter((entity) => !entity.conceptCode);
-
-      let resolvedMap = new Map<string, any>();
-      if (entitiesNeedLookup.length > 0) {
-        const queries = entitiesNeedLookup.map((entity) => ({
-          text: entity.text,
-          label: entity.label,
-        }));
-        console.log(
-          `[MastraService] Resolving ${queries.length} remaining concept codes in TypeScript...`,
-        );
-        resolvedMap = await omophubClient.resolveBulkConcepts(queries);
-      } else {
-        console.log(
-          `[MastraService] All ${entities.length} entities were pre-resolved in the ML pipeline. Skipping TypeScript lookup.`,
-        );
-      }
-
       const annotationsToCreate: Omit<
         Annotation,
         'annotationId' | 'createdAt' | 'documentId'
       >[] = [];
 
       for (const entity of entities) {
-        const resolved = resolvedMap.get(entity.text.toLowerCase());
-        const conceptCode = resolved?.conceptCode || entity.conceptCode || '';
+        const conceptCode = entity.conceptCode || '';
 
         annotationsToCreate.push({
           text: entity.text,
@@ -220,6 +198,7 @@ export function createResolveAndSaveStep(
           conceptCode,
         });
       }
+
 
       let savedAnnotations: Annotation[] = [];
       if (annotationsToCreate.length > 0) {

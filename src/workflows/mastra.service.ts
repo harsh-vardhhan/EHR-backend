@@ -2,7 +2,6 @@ import { createWorkflow } from '@mastra/core/workflows';
 import { Mastra } from '@mastra/core';
 import { z } from 'zod';
 import { AnnotationsService } from '../annotations/annotations.service';
-import { OmopHubClient } from '../clients/omophub.client';
 import { PiiScrubberService } from '../annotations/pii-scrubber.service';
 import { S3Client } from '@aws-sdk/client-s3';
 import {
@@ -19,7 +18,6 @@ export class MastraService {
   constructor(
     private annotationsService: AnnotationsService,
     private s3Client = new S3Client({}),
-    private omophubClient = new OmopHubClient(),
     private piiScrubber = new PiiScrubberService(),
   ) {
     const workflow = this.initWorkflow();
@@ -81,7 +79,6 @@ export class MastraService {
     const extractionStep = createExtractionStep();
     const resolveAndSaveStep = createResolveAndSaveStep(
       this.annotationsService,
-      this.omophubClient,
     );
 
     return createWorkflow({
