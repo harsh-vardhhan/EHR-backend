@@ -3,9 +3,15 @@ import os
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+from dotenv import load_dotenv
+
+# Load environmental variables
+env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
+load_dotenv(dotenv_path=env_path)
+
 # Add code directory to path to load inference logic
 sys.path.append(os.path.join(os.path.dirname(__file__), "code"))
-from inference import model_fn, predict_fn
+from inference import model_fn, predict_fn  # noqa: E402
 
 # Set model directory
 MODEL_DIR = os.path.dirname(__file__)
