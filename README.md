@@ -72,7 +72,7 @@ graph TD
         Scrubber -.->|ML PII Detection| SageMaker
         LambdaWorker -->|2. Save Scrubbed Text| S3
         LambdaWorker -->|"3. Clinical Inference (Scrubbed)"| SageMaker["Amazon SageMaker - Serverless (PyTorch)"]
-        LambdaWorker -->|4. Concept Grounding| OMOPHub{{OMOPHub - Vocabulary API}}
+        SageMaker -->|4. Concept Grounding| OMOPHub{{OMOPHub - Vocabulary API}}
         LambdaWorker -->|5. Save Annotations| DynamoDB
     end
 
