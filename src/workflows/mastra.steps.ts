@@ -180,12 +180,24 @@ export function createResolveAndSaveStep(
       const entities = extractResult.entities;
       const relations = extractResult.relations || [];
 
-      // Map resolved concept codes in bulk from OMOPHub
-      const queries = entities.map((entity) => ({
-        text: entity.text,
-        label: entity.label,
-      }));
-      const resolvedMap = await omophubClient.resolveBulkConcepts(queries);
+      // Identify entities that need lookup (i.e. missing a pre-resolved concept code from Python)
+      const entitiesNeedLookup = entities.filter((entity) => !entity.conceptCode);
+
+      let resolvedMap = new Map<string, any>();
+      if (entitiesNeedLookup.length > 0) {
+        const queries = entitiesNeedLookup.map((entity) => ({
+          text: entity.text,
+          label: entity.label,
+        }));
+        console.log(
+          `[MastraService] Resolving ${queries.length} remaining concept codes in TypeScript...`,
+        );
+        resolvedMap = await omophubClient.resolveBulkConcepts(queries);
+      } else {
+        console.log(
+          `[MastraService] All ${entities.length} entities were pre-resolved in the ML pipeline. Skipping TypeScript lookup.`,
+        );
+      }
 
       const annotationsToCreate: Omit<
         Annotation,

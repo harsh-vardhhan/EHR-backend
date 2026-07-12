@@ -38,6 +38,7 @@ const sagemakerResponseSchema = z.object({
       end: z.number(),
       confidence: z.number(),
       assertion: z.enum(['positive', 'negated', 'possible']),
+      concept_code: z.string().optional(),
     }),
   ),
   relations: z.array(
@@ -64,7 +65,7 @@ function mapMlResponse(parsedData: unknown): ExtractionResult {
     label: ent.label as MedicalEntityLabel,
     confidence: ent.confidence,
     assertion: ent.assertion,
-    conceptCode: '',
+    conceptCode: ent.concept_code || '',
     startOffset: ent.start,
     endOffset: ent.end,
   }));

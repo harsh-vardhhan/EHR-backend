@@ -65,18 +65,18 @@ except iam.exceptions.NoSuchEntityException:
             {
                 "Effect": "Allow",
                 "Principal": {"Service": "sagemaker.amazonaws.com"},
-                "Action": "sts:AssumeRole"
+                "Action": "sts:AssumeRole",
             }
-        ]
+        ],
     }
-    
+
     create_res = iam.create_role(
         RoleName=role_name,
         AssumeRolePolicyDocument=json.dumps(assume_role_policy),
-        Description="Execution role for EHR SageMaker Serverless Inference"
+        Description="Execution role for EHR SageMaker Serverless Inference",
     )
     role_arn = create_res["Role"]["Arn"]
-    
+
     iam.attach_role_policy(
         RoleName=role_name,
         PolicyArn="arn:aws:iam::aws:policy/AmazonSageMakerFullAccess",
@@ -107,10 +107,10 @@ sagemaker.create_model(
             "SAGEMAKER_CONTAINER_LOG_LEVEL": "20",
             "SAGEMAKER_PROGRAM": "inference.py",
             "SAGEMAKER_SUBMIT_DIRECTORY": model_data_url,
-            "SAGEMAKER_MODEL_SERVER_WORKERS": "1"
-        }
+            "SAGEMAKER_MODEL_SERVER_WORKERS": "1",
+        },
     },
-    ExecutionRoleArn=role_arn
+    ExecutionRoleArn=role_arn,
 )
 print(f"✅ Created SageMaker Model: {MODEL_NAME}")
 
@@ -128,12 +128,9 @@ sagemaker.create_endpoint_config(
         {
             "VariantName": "AllTraffic",
             "ModelName": MODEL_NAME,
-            "ServerlessConfig": {
-                "MemorySizeInMB": 3072,
-                "MaxConcurrency": 5
-            }
+            "ServerlessConfig": {"MemorySizeInMB": 3072, "MaxConcurrency": 5},
         }
-    ]
+    ],
 )
 print(f"✅ Created Endpoint Config: {CONFIG_NAME}")
 
@@ -145,22 +142,18 @@ try:
 except Exception:
     pass
 
-sagemaker.create_endpoint(
-    EndpointName=ENDPOINT_NAME,
-    EndpointConfigName=CONFIG_NAME
-)
+sagemaker.create_endpoint(EndpointName=ENDPOINT_NAME, EndpointConfigName=CONFIG_NAME)
 print(f"✅ Requested SageMaker Endpoint creation: {ENDPOINT_NAME}")
 
 # 7. Wait for deployment completion
 print(
-    "\n⏳ Step 7: Waiting for endpoint to deploy "
-    "(this can take up to 2-3 minutes)..."
+    "\n⏳ Step 7: Waiting for endpoint to deploy (this can take up to 2-3 minutes)..."
 )
 while True:
     status_res = sagemaker.describe_endpoint(EndpointName=ENDPOINT_NAME)
     status = status_res["EndpointStatus"]
     print(f"Current Endpoint Status: {status}...")
-    
+
     if status == "InService":
         print(
             "\n🎉 SUCCESS! SageMaker Serverless Endpoint is now "
@@ -169,8 +162,7 @@ while True:
         break
     elif status in ["Failed", "OutOfService"]:
         raise Exception(
-            f"Endpoint creation failed with status: {status}. "
-            "Check CloudWatch Logs."
+            f"Endpoint creation failed with status: {status}. Check CloudWatch Logs."
         )
-    
+
     time.sleep(15)
