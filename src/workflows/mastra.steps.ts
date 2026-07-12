@@ -199,7 +199,6 @@ export function createResolveAndSaveStep(
         });
       }
 
-
       let savedAnnotations: Annotation[] = [];
       if (annotationsToCreate.length > 0) {
         savedAnnotations = await annotationsService.createAnnotations(
