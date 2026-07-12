@@ -4,4 +4,6 @@ dist/
 .aws-sam/
 ml/model/
 ml/model.tar.gz
-
+__pycache__/
+*.pyc
+uv.lock
