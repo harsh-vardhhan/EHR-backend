@@ -236,16 +236,6 @@ To maximize performance, cut database costs, and eliminate cross-table JOIN late
 3. **Clinical Cohort Search Index (`GSI1Index`):**
    To query patient annotations by medical category, assertion status, and standard ICD-10/RxNorm concept codes without performing expensive table scans, the search API targets `GSI1Index` (`GSI1PK = HASH`, `GSI1SK = RANGE`). If a filter query omits the assertion status, the service executes parallelized index queries across all three assertion states in parallel using `Promise.all` and flattens the result, ensuring consistent sub-second search speeds.
 
-## 🚀 CI/CD Pipeline
-
-The project uses GitHub Actions for an automated, zero-downtime deployment workflow.
-
-| Pipeline Stage | Processes | Actions & Best Practices | Trigger Event |
-| :--- | :--- | :--- | :--- |
-| **Continuous Integration (CI)** | • Linting<br>• Type Checking | Runs automated TypeScript linting and strict compilation checks. | All Pull Requests targeting `main` |
-| **Continuous Deployment (CD)** | • Build & Bundle<br>• AWS SAM Deploy<br>• OIDC Authentication<br>• Env Variable Sync | Bundles files using `esbuild`, provisions CloudFormation stacks, signs in passwordlessly using OpenID Connect (OIDC), and syncs secrets. | Every commit/merge push to `main` |
-
-
 ## 🛡️ Denial of Wallet (DoW) & DDoS Protection
 
 This backend incorporates a robust, multi-layered security architecture designed to prevent volumetric DDoS abuse and cloud-native **Denial of Wallet (DoW)** attacks, guaranteeing predictable operational billing.
