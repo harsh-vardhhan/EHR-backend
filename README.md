@@ -35,18 +35,11 @@ The clinical NLP workflow unifies extraction, assertion, and grounding tasks acr
 ```mermaid
 graph TD
     Raw["Raw Clinical Note"] --> Step1["1. Entity Extraction (NER)<br/>gliner-biomed-base-v1.0"]
-    
-    Step1 -->|Extracted Entities| Step2["2. Relation Extraction (RE)<br/>gliner_medium-v2.1"]
-    Step1 -->|Extracted Entities| Step3["3. Assertion Classification<br/>clinical-assertion-negation-bert"]
-    Step1 -->|Extracted Entities| Step4["4. Concept Resolution<br/>SapBERT"]
-    
-    Step4 -->|Semantic Embeddings| OMOP["OMOPHub Vocabulary API"]
-    
-    Step2 -->|Relationships| Consolidate["Annotation JSON Structurer"]
-    Step3 -->|Assertion Statuses| Consolidate
-    OMOP -->|Ontology Codes: ICD-10/RxNorm/SNOMED| Consolidate
-    
-    Consolidate --> Final["Structured EHR Annotations"]
+    Step1 --> Step2["2. Relation Extraction (RE)<br/>gliner_medium-v2.1"]
+    Step2 --> Step3["3. Assertion Classification<br/>clinical-assertion-negation-bert"]
+    Step3 --> Step4["4. Concept Resolution (Grounding)<br/>SapBERT"]
+    Step4 --> OMOP["OMOPHub Vocabulary API"]
+    OMOP --> Final["Structured EHR Annotations"]
 
     classDef step fill:#ff9900,fill-opacity:0.1,stroke:#ff9900,stroke-width:2px;
     classDef ext fill:#6b7280,fill-opacity:0.1,stroke:#6b7280,stroke-width:2px;
