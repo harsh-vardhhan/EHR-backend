@@ -9,7 +9,7 @@ def download():
     snapshot_download(
         repo_id="knowledgator/gliner-relex-base-v1.0",
         local_dir=local_dir,
-        ignore_patterns=["*.msgpack", "*.h5", "*.ot"]
+        ignore_patterns=["*.msgpack", "*.h5", "*.ot"],
     )
     print(f"Model weights downloaded successfully to {local_dir}")
 
@@ -18,17 +18,26 @@ def download():
     snapshot_download(
         repo_id="Ihor/gliner-biomed-base-v1.0",
         local_dir=biomed_dir,
-        ignore_patterns=["*.msgpack", "*.h5", "*.ot"]
+        ignore_patterns=["*.msgpack", "*.h5", "*.ot"],
     )
     print(f"Biomedical model weights downloaded successfully to {biomed_dir}")
 
     print("Downloading bvanaken/clinical-assertion-negation-bert model weights...")
     assertion_dir = os.path.join(os.path.dirname(__file__), "model", "assertion")
     snapshot_download(
-        repo_id="bvanaken/clinical-assertion-negation-bert",
-        local_dir=assertion_dir
+        repo_id="bvanaken/clinical-assertion-negation-bert", local_dir=assertion_dir
     )
     print(f"Assertion model weights downloaded successfully to {assertion_dir}")
+
+    print("Downloading cambridgeltl/SapBERT-from-PubMedBERT-fulltext model weights...")
+    sapbert_dir = os.path.join(os.path.dirname(__file__), "model", "sapbert")
+    snapshot_download(
+        repo_id="cambridgeltl/SapBERT-from-PubMedBERT-fulltext",
+        local_dir=sapbert_dir,
+        ignore_patterns=["*.msgpack", "*.h5", "*.ot", "*.safetensors"],
+    )
+    print(f"SapBERT model weights downloaded successfully to {sapbert_dir}")
+
 
 if __name__ == "__main__":
     download()

@@ -2,8 +2,11 @@ import os
 import re
 
 import torch
+from assertion import classify_assertion_status
 from gliner import GLiNER
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from relations import align_relations
+from reranker import resolve_concepts
+from transformers import AutoModel, AutoModelForSequenceClassification, AutoTokenizer
 
 
 def model_fn(model_dir, context=None):
@@ -12,7 +15,7 @@ def model_fn(model_dir, context=None):
         print("Contents of model_dir:", os.listdir(model_dir))
     except Exception as e:
         print(f"Failed to list model_dir: {e}")
-        
+
     model_path = os.path.join(model_dir, "model")
     print(f"model_path path: {model_path}")
     try:
@@ -32,17 +35,17 @@ def model_fn(model_dir, context=None):
         print("Biomedical model not found locally. Loading from HF hub...")
         biomed_model = GLiNER.from_pretrained("Ihor/gliner-biomed-base-v1.0")
     biomed_model.to(torch.bfloat16)
-    
+
     print("Loading ClinicalAssertionBERT...")
     assertion_path = os.path.join(model_dir, "model", "assertion")
     assertion_tokenizer = AutoTokenizer.from_pretrained(assertion_path)
-    
+
     # Configure quantization engine backend dynamically based on CPU architecture
-    if 'fbgemm' in torch.backends.quantized.supported_engines:
-        torch.backends.quantized.engine = 'fbgemm'
+    if "fbgemm" in torch.backends.quantized.supported_engines:
+        torch.backends.quantized.engine = "fbgemm"
         print("Using fbgemm engine for PyTorch dynamic quantization")
-    elif 'qnnpack' in torch.backends.quantized.supported_engines:
-        torch.backends.quantized.engine = 'qnnpack'
+    elif "qnnpack" in torch.backends.quantized.supported_engines:
+        torch.backends.quantized.engine = "qnnpack"
         print("Using qnnpack engine for PyTorch dynamic quantization")
 
     quantized_model_path = os.path.join(assertion_path, "quantized_assertion_model.pt")
@@ -55,10 +58,8 @@ def model_fn(model_dir, context=None):
             "Loading standard model and quantizing on-the-fly..."
         )
         if os.path.exists(assertion_path) and os.listdir(assertion_path):
-            standard_model = (
-                AutoModelForSequenceClassification.from_pretrained(
-                    assertion_path
-                )
+            standard_model = AutoModelForSequenceClassification.from_pretrained(
+                assertion_path
             )
         else:
             standard_model = AutoModelForSequenceClassification.from_pretrained(
@@ -69,31 +70,23 @@ def model_fn(model_dir, context=None):
         )
         del standard_model
         import gc
+
         gc.collect()
-        
+
+    print("Loading SapBERT from pretrained model...")
+    sapbert_path = os.path.join(model_dir, "model", "sapbert")
+    sapbert_tokenizer = AutoTokenizer.from_pretrained(sapbert_path)
+    sapbert_model = AutoModel.from_pretrained(sapbert_path)
+    sapbert_model.eval()
+
     return {
         "gliner": model,
         "biomed_gliner": biomed_model,
         "assertion_tokenizer": assertion_tokenizer,
-        "assertion_model": assertion_model
+        "assertion_model": assertion_model,
+        "sapbert_tokenizer": sapbert_tokenizer,
+        "sapbert_model": sapbert_model,
     }
-
-
-def find_overlapping_entity(start, end, entities):
-    best_overlap = 0
-    best_ent = None
-    for ent in entities:
-        ent_start = ent["start"]
-        ent_end = ent["end"]
-        # Calculate overlap interval
-        o_start = max(start, ent_start)
-        o_end = min(end, ent_end)
-        if o_start < o_end:
-            overlap_len = o_end - o_start
-            if overlap_len > best_overlap:
-                best_overlap = overlap_len
-                best_ent = ent
-    return best_ent
 
 
 def predict_fn(data, model_dict):
@@ -101,7 +94,7 @@ def predict_fn(data, model_dict):
     biomed_model = model_dict["biomed_gliner"]  # Biomedical model
     assertion_tokenizer = model_dict["assertion_tokenizer"]
     assertion_model = model_dict["assertion_model"]
-    
+
     # Check input data format
     if isinstance(data, dict) and "inputs" in data:
         text = data["inputs"]
@@ -120,13 +113,13 @@ def predict_fn(data, model_dict):
     relations = None
     entity_threshold = 0.5
     relation_threshold = 0.35
-    
+
     if isinstance(data, dict):
         labels = data.get("labels")
         relations = data.get("relations")
         entity_threshold = data.get("entity_threshold", data.get("threshold", 0.5))
         relation_threshold = data.get("relation_threshold", 0.35)
-        
+
     if labels is None:
         labels = [
             "Clinical Condition",
@@ -144,9 +137,7 @@ def predict_fn(data, model_dict):
 
     # 2. Extract clean biomedical entities using biomed_model (NER)
     entities_res = biomed_model.predict_entities(
-        text,
-        labels=labels,
-        threshold=entity_threshold
+        text, labels=labels, threshold=entity_threshold
     )
 
     # 3. Extract raw relations using generalist model (RE)
@@ -160,7 +151,7 @@ def predict_fn(data, model_dict):
                 labels=labels,
                 relations=relations,
                 threshold=0.3,
-                relation_threshold=relation_threshold
+                relation_threshold=relation_threshold,
             )
         else:
             _, raw_relations = model.extracted_relations(
@@ -168,22 +159,22 @@ def predict_fn(data, model_dict):
                 labels=labels,
                 relations=relations,
                 threshold=0.3,
-                entity_threshold=relation_threshold
+                entity_threshold=relation_threshold,
             )
 
     # 4. Split compound Medication Statements containing ' and '
     split_entities = []
-    
+
     for ent in entities_res:
         ent_text = ent["text"]
         ent_label = ent["label"]
         ent_start = ent["start"]
         ent_score = ent.get("score", ent.get("confidence", 1.0))
-        
+
         # Check if it's a medication statement with a coordinating conjunction ' and '
         if ent_label == "Medication Statement" and " and " in ent_text.lower():
-            parts = re.split(r'\s+and\s+', ent_text, flags=re.IGNORECASE)
-            
+            parts = re.split(r"\s+and\s+", ent_text, flags=re.IGNORECASE)
+
             sub_ents = []
             current_offset = 0
             for part in parts:
@@ -198,117 +189,53 @@ def predict_fn(data, model_dict):
                 )
                 if not match:
                     continue
-                
+
                 part_start_in_ent = current_offset + match.start()
                 part_start = ent_start + part_start_in_ent
                 part_end = part_start + len(part_stripped)
-                
+
                 sub_ent = {
                     "text": part_stripped,
                     "label": "Medication Statement",
                     "start": part_start,
                     "end": part_end,
-                    "score": ent_score
+                    "score": ent_score,
                 }
                 sub_ents.append(sub_ent)
                 current_offset = part_start_in_ent + len(part_stripped)
-            
+
             if sub_ents:
                 split_entities.extend(sub_ents)
             else:
                 split_entities.append(ent)
         else:
             split_entities.append(ent)
-            
+
     entities_res = split_entities
 
     # 5. Run ClinicalAssertionBERT on each extracted entity
-    negated_spans = set()
-    possible_spans = set()
-    
-    for ent in entities_res:
-        start = ent["start"]
-        end = ent["end"]
-        ent_text = ent["text"]
-        
-        # Extract sentence context
-        sent_start = start
-        while sent_start > 0:
-            char = text[sent_start - 1]
-            is_boundary = char in [".", "!", "?"] and (
-                sent_start == len(text) or text[sent_start].isspace()
-            )
-            if char == "\n" or is_boundary:
-                break
-            sent_start -= 1
-            
-        sent_end = end
-        while sent_end < len(text):
-            char = text[sent_end]
-            is_boundary = char in [".", "!", "?"] and (
-                sent_end + 1 == len(text) or text[sent_end + 1].isspace()
-            )
-            if char == "\n" or is_boundary:
-                if char in [".", "!", "?"]:
-                    sent_end += 1
-                break
-            sent_end += 1
-            
-        sentence = text[sent_start:sent_end]
-        offset = start - sent_start
-        
-        # Construct input with [entity] tags
-        formatted_input = (
-            f"{sentence[:offset]} [entity] {ent_text} "
-            f"[entity] {sentence[offset + len(ent_text):]}"
-        )
-        
-        # Run inference
-        inputs = assertion_tokenizer(formatted_input, return_tensors="pt")
-        with torch.no_grad():
-            outputs = assertion_model(**inputs)
-            logits = outputs.logits
-            predicted_class_id = logits.argmax().item()
-            
-        label = ""
-        has_id2label = (
-            hasattr(assertion_model.config, "id2label")
-            and assertion_model.config.id2label
-            and predicted_class_id in assertion_model.config.id2label
-        )
-        if has_id2label:
-            label = str(
-                assertion_model.config.id2label[predicted_class_id]
-            ).lower()
-            
-        if "absent" in label or predicted_class_id == 1:
-            negated_spans.add((start, end))
-        elif "possible" in label or predicted_class_id == 2:
-            possible_spans.add((start, end))
-            
-        # Local suspicion heuristic (without "history of") as a backup
-        context = text[max(0, start - 30):start].lower()
-        if "suspicion" in context or "rule out" in context or "suspect" in context:
-            possible_spans.add((start, end))
+    negated_spans, possible_spans = classify_assertion_status(
+        text, entities_res, assertion_model, assertion_tokenizer
+    )
 
     # 6. Format entities response and post-process negation prefix anomalies
     formatted_entities = []
     negation_prefixes = ["denies ", "no ", "without ", "negative for ", "ruled out "]
-    
+
     for ent in entities_res:
         start = ent["start"]
         end = ent["end"]
         label = ent["label"]
         text_val = ent["text"]
         confidence = float(ent.get("score", ent.get("confidence", 1.0)))
-        
+
         # Determine assertion
         assertion = "positive"
         if (start, end) in negated_spans:
             assertion = "negated"
         elif (start, end) in possible_spans:
             assertion = "possible"
-            
+
         # Post-process entity text if it includes the negation prefix
         text_lower = text_val.lower()
         matched_prefix = None
@@ -316,70 +243,39 @@ def predict_fn(data, model_dict):
             if text_lower.startswith(prefix):
                 matched_prefix = prefix
                 break
-                
+
         if matched_prefix:
             prefix_len = len(matched_prefix)
             new_text = text_val[prefix_len:].strip()
             actual_prefix_len = len(text_val) - len(new_text)
-            
+
             text_val = new_text
             start = start + actual_prefix_len
             assertion = "negated"
-            
+
             # Auto-correct clinical findings/conditions misclassified as
             # medications due to prefix
             if label == "Medication Statement":
                 label = "Clinical Finding"
-                
-        formatted_entities.append({
-            "text": text_val,
-            "label": label,
-            "start": start,
-            "end": end,
-            "confidence": confidence,
-            "assertion": assertion
-        })
+
+        formatted_entities.append(
+            {
+                "text": text_val,
+                "label": label,
+                "start": start,
+                "end": end,
+                "confidence": confidence,
+                "assertion": assertion,
+            }
+        )
+
+    # 6.5. Bulk Concept Resolution (OMOPHub + SapBERT Reranking)
+    api_key = os.getenv("OMOPHUB_API_KEY")
+    sapbert_model = model_dict.get("sapbert_model")
+    sapbert_tokenizer = model_dict.get("sapbert_tokenizer")
+    resolve_concepts(formatted_entities, sapbert_model, sapbert_tokenizer, api_key)
 
     # 7. Align relations to formatted_entities based on overlapping offsets
-    formatted_relations = []
-    
-    for rel in raw_relations:
-        # Resolve head and tail objects based on GLiNER version format
-        if isinstance(rel, dict):
-            head = rel["head"]
-            tail = rel["tail"]
-            rel_type = rel["relation"]
-            rel_score = float(rel.get("score", 1.0))
-            h_start, h_end = head["start"], head["end"]
-            t_start, t_end = tail["start"], tail["end"]
-        else:
-            head = rel[0]  # (start, end, label)
-            tail = rel[1]  # (start, end, label)
-            rel_type = rel[2]
-            rel_score = float(rel[3]) if len(rel) > 3 else 1.0
-            h_start, h_end = head[0], head[1]
-            t_start, t_end = tail[0], tail[1]
-            
-        # Align head and tail to our clean formatted entities
-        aligned_head = find_overlapping_entity(h_start, h_end, formatted_entities)
-        aligned_tail = find_overlapping_entity(t_start, t_end, formatted_entities)
-        
-        if aligned_head and aligned_tail:
-            # Prevent self-relations if offsets aligned to the same entity
-            if (aligned_head["start"] == aligned_tail["start"] and 
-                aligned_head["end"] == aligned_tail["end"]):
-                continue
-                
-            formatted_relations.append({
-                "source_start": aligned_head["start"],
-                "source_end": aligned_head["end"],
-                "target_start": aligned_tail["start"],
-                "target_end": aligned_tail["end"],
-                "relation": rel_type,
-                "confidence": rel_score
-            })
+    formatted_relations = align_relations(raw_relations, formatted_entities)
 
-    return {
-        "entities": formatted_entities,
-        "relations": formatted_relations
-    }
+    return {"entities": formatted_entities, "relations": formatted_relations}
