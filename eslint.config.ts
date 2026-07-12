@@ -3,6 +3,8 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+declare const __dirname: string;
+
 export default tseslint.config(
   {
     ignores: ['eslint.config.ts'],
