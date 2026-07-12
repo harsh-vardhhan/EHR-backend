@@ -32,22 +32,37 @@ The clinical NLP workflow unifies extraction, assertion, and grounding tasks acr
 | **Assertion Classification** | [`bvanaken/clinical-assertion-negation-bert`](https://huggingface.co/bvanaken/clinical-assertion-negation-bert) | Classifies entities contextually as *Positive*, *Negated* (ruled-out), or *Possible* (speculative). | SageMaker (PyTorch) |
 | **Concept Resolution** | [`cambridgeltl/SapBERT-from-PubMedBERT-fulltext`](https://huggingface.co/cambridgeltl/SapBERT-from-PubMedBERT-fulltext) | Computes semantic token embeddings to rerank candidate lookups and map them to SNOMED/RxNorm codes. | SageMaker (PyTorch) |
 
-### 1. Clinical Entity Recognition (NER) & Taxonomy Mapping
-Raw medical notes are unstructured. The platform parses these text streams and automatically extracts clinical concepts, mapping them to standard health-tech ontologies. To eliminate model hallucinations and ensure accurate coding, the extracted terms are resolved in bulk against standard vocabularies using **OMOPHub** (https://omophub.com):
-*   **Clinical Conditions** (e.g., *"Type 2 Diabetes"*): Mapped to **ICD-10-CM** (International Classification of Diseases, 10th Revision, Clinical Modification) codes, the gold standard for clinical classification and diagnostic billing.
-*   **Medication Statements** (e.g., *"Metformin 500mg daily"*): Mapped to **RxNorm** Concept Unique Identifiers (CUIs), ensuring precise drug-name normalization and interaction safety checks.
-*   **Clinical Findings & Symptoms** (e.g., *"Chest tightness"*): Mapped to **SNOMED-CT** (Systematized Nomenclature of Medicine—Clinical Terms) codes to ensure vocabulary consistency across clinical records.
-*   **Medical Procedures** (e.g., *"Chest X-Ray"*): Mapped to **CPT** (Current Procedural Terminology) or **SNOMED-CT** codes for tracking operations and clinical interventions.
+```mermaid
+graph TD
+    Raw["Raw Clinical Note"] --> Step1["1. Entity Extraction (NER)"]
+    Step1 --> Step2["2. Relation Extraction (RE)"]
+    Step2 --> Step3["3. Assertion Classification"]
+    Step3 --> Step4["4. Concept Resolution (Grounding)"]
+    Step4 --> OMOP["OMOPHub Vocabulary API"]
+    OMOP --> Final["Structured EHR Annotations"]
 
-### 2. Clinical Assertion Status (Negation & Speculation)
+    classDef step fill:#ff9900,fill-opacity:0.1,stroke:#ff9900,stroke-width:2px;
+    classDef ext fill:#6b7280,fill-opacity:0.1,stroke:#6b7280,stroke-width:2px;
+    class Step1,Step2,Step3,Step4 step;
+    class OMOP ext;
+```
+
+### Clinical Assertion Status (Negation & Speculation)
 In clinical NLP, identifying a disease term is only half the battle. We must determine its **assertion status** (contextual modifier) to prevent critical medical errors:
 *   **Positive (Active):** Conditions the patient currently has (e.g., *"patient has asthma"*).
 *   **Negated (Ruled Out):** Conditions explicitly denied (e.g., *"denies chest pain"*). Misclassifying a negated symptom as an active condition leads to incorrect diagnoses and billing errors.
 *   **Possible (Hypothetical):** Speculative diagnoses under investigation (e.g., *"suspect bronchitis, rule out pneumonia"*), tracking diagnostic uncertainty.
 
-### 3. HIPAA & Data Privacy Architecture
+### Concept Resolution & Taxonomy Mapping
+To eliminate model hallucinations and ensure accurate coding, the extracted terms are resolved in bulk against standard vocabularies using **OMOPHub** (https://omophub.com) by computing semantic token embeddings via SapBERT:
+*   **Clinical Conditions** (e.g., *"Type 2 Diabetes"*): Mapped to **ICD-10-CM** (International Classification of Diseases, 10th Revision, Clinical Modification) codes, the gold standard for clinical classification and diagnostic billing.
+*   **Medication Statements** (e.g., *"Metformin 500mg daily"*): Mapped to **RxNorm** Concept Unique Identifiers (CUIs), ensuring precise drug-name normalization and interaction safety checks.
+*   **Clinical Findings & Symptoms** (e.g., *"Chest tightness"*): Mapped to **SNOMED-CT** (Systematized Nomenclature of Medicine—Clinical Terms) codes to ensure vocabulary consistency across clinical records.
+*   **Medical Procedures** (e.g., *"Chest X-Ray"*): Mapped to **CPT** (Current Procedural Terminology) or **SNOMED-CT** codes for tracking operations and clinical interventions.
+
+### HIPAA & Data Privacy Architecture
 *   **Data Residency:** All clinical notes are isolated in an encrypted Amazon S3 bucket using KMS Customer Managed Keys (CMKs). DynamoDB stores strictly structured, de-identified annotation offsets and concept mappings.
-*   **Stateless Inferences:** The public sandbox pipeline runs completely stateless with input character caps, ensuring no patient-identifiable data is cached or written to persistent storage.
+*   **Stateless Inferences:** The public sandbox pipeline runs completely stateless, ensuring no patient-identifiable data is cached or written to persistent storage.
 
 ## 🏗 AWS Architecture
 
@@ -189,18 +204,7 @@ sequenceDiagram
 | **Amazon S3 (Audit WORM Bucket)** | Secure compliance bucket protected by S3 Object Lock (Compliance Mode) storing immutable audit logs. |
 | **Lambda Function URL** | Public HTTPS endpoint routing requests directly to the Hono backend. |
 | **CloudWatch Alarm & SNS** | Monitors total request volume (Invocations + Throttles) in real-time, acting as the circuit breaker sensor. |
-| **SageMaker Serverless (PyTorch)** | High-performance machine learning inference endpoint running our custom GLiNER-ReLex clinical relation extraction model. |
-
-## 🚨 Financial Warning: The Cost of Infinite Scaling
-
-Unlike traditional servers (EC2, Render, Railway, etc.) that cap their financial damage by crashing under high load, AWS serverless applications scale **infinitely**.
-
-Under high virality or a **DDoS attack**, an unprotected serverless stack will spin up thousands of concurrent containers instantly. This can lead to **runaway AWS bills of hundreds of thousands of dollars overnight**.
-
-To mitigate this, this repository implements a custom **DDoS/DoW Circuit Breaker**:
-1. **Zero-Base-Cost Function URLs** bypass API Gateway completely, eliminating gateway request charges ($3.50/M) for blocked requests.
-2. **CloudWatch Alarm Metric Math** monitors total Lambda traffic (`Invocations + Throttles`) in a 1-minute window.
-3. **Lambda Concurrency Kill Switch** automatically triggers during an anomaly, programmatically throttling the API's reserved concurrency to `0` to drop subsequent request costs to exactly **$0.00**.
+| **SageMaker Serverless (PyTorch)** | High-performance machine learning inference endpoint hosting the specialized clinical NLP deep learning models for extraction, relation prediction, assertion classification, and concept grounding. |
 
 ## 🗄️ DynamoDB Single-Table Design for Clinical Records
 
@@ -225,16 +229,6 @@ To maximize performance, cut database costs, and eliminate cross-table JOIN late
    To update or delete an annotation by its `annotationId` alone (without knowing the parent `documentId`), we query the Global Secondary Index (GSI) `SKIndex` (where `HashKey = SK` and `RangeKey = PK`) mapped in ElectroDB. This resolves the parent `PK` in milliseconds, allowing targeted, isolated edits on specific rows.
 3. **Clinical Cohort Search Index (`GSI1Index`):**
    To query patient annotations by medical category, assertion status, and standard ICD-10/RxNorm concept codes without performing expensive table scans, the search API targets `GSI1Index` (`GSI1PK = HASH`, `GSI1SK = RANGE`). If a filter query omits the assertion status, the service executes parallelized index queries across all three assertion states in parallel using `Promise.all` and flattens the result, ensuring consistent sub-second search speeds.
-
-## 🚀 CI/CD Pipeline
-
-The project uses GitHub Actions for an automated, zero-downtime deployment workflow.
-
-| Pipeline Stage | Processes | Actions & Best Practices | Trigger Event |
-| :--- | :--- | :--- | :--- |
-| **Continuous Integration (CI)** | • Linting<br>• Type Checking | Runs automated TypeScript linting and strict compilation checks. | All Pull Requests targeting `main` |
-| **Continuous Deployment (CD)** | • Build & Bundle<br>• AWS SAM Deploy<br>• OIDC Authentication<br>• Env Variable Sync | Bundles files using `esbuild`, provisions CloudFormation stacks, signs in passwordlessly using OpenID Connect (OIDC), and syncs secrets. | Every commit/merge push to `main` |
-
 
 ## 🛡️ Denial of Wallet (DoW) & DDoS Protection
 
