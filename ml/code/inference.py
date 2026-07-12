@@ -466,20 +466,17 @@ def predict_fn(data, model_dict):
     if api_key and sapbert_model and sapbert_tokenizer:
         searches = []
         for idx, ent in enumerate(formatted_entities):
-            searches.append({
-                "search_id": f"s_{idx}",
-                "query": normalize_text(ent["text"], ent["label"]),
-                "vocabulary_ids": get_vocabularies(ent["label"]),
-                "domain_ids": get_domains(ent["label"]),
-                "page_size": 5
-            })
+            searches.append(
+                {
+                    "search_id": f"s_{idx}",
+                    "query": normalize_text(ent["text"], ent["label"]),
+                    "vocabulary_ids": get_vocabularies(ent["label"]),
+                    "domain_ids": get_domains(ent["label"]),
+                    "page_size": 5,
+                }
+            )
 
-        payload = {
-            "defaults": {
-                "standard_concept": "S"
-            },
-            "searches": searches
-        }
+        payload = {"defaults": {"standard_concept": "S"}, "searches": searches}
 
         try:
             print(
@@ -487,13 +484,13 @@ def predict_fn(data, model_dict):
                 f"{len(formatted_entities)} entities..."
             )
             response = requests.post(
-                "https://api.omophub.org/search/bulk",
+                "https://api.omophub.com/v1/search/bulk",
                 headers={
                     "Content-Type": "application/json",
-                    "Authorization": f"Bearer {api_key}"
+                    "Authorization": f"Bearer {api_key}",
                 },
                 json=payload,
-                timeout=5.0  # Safe timeout
+                timeout=5.0,  # Safe timeout
             )
             response.raise_for_status()
             res_data = response.json()
@@ -504,7 +501,7 @@ def predict_fn(data, model_dict):
                     if not search_id:
                         continue
                     idx = int(search_id.split("_")[1])
-                    
+
                     candidates = item.get("results", [])
                     if not candidates or idx >= len(formatted_entities):
                         continue
@@ -514,16 +511,16 @@ def predict_fn(data, model_dict):
                     query_emb = get_sapbert_embedding(
                         query_text, sapbert_model, sapbert_tokenizer
                     )
-                    
+
                     best_candidate = None
                     best_score = -1.0
-                    
+
                     for cand in candidates:
                         cand_name = cand.get("concept_name", "")
                         cand_emb = get_sapbert_embedding(
                             cand_name, sapbert_model, sapbert_tokenizer
                         )
-                        
+
                         # Cosine similarity
                         sim = torch.cosine_similarity(
                             query_emb.unsqueeze(0), cand_emb.unsqueeze(0)
