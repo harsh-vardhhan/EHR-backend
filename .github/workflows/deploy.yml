@@ -30,7 +30,6 @@ jobs:
       - name: Build application
         run: |
           npm run build
-          npm run bundle
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
