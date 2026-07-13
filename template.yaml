@@ -48,8 +48,8 @@ Resources:
   EhrBackendFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: dist/
-      Handler: serverless-bundle.handler
+      CodeUri: .
+      Handler: src/serverless.handler
       Timeout: 5
       ReservedConcurrentExecutions: 2 # Prevent run-away compute costs
       FunctionUrlConfig:
@@ -74,12 +74,22 @@ Resources:
               Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${EhrTableName}/index/*"
         - SQSSendMessagePolicy:
             QueueName: !GetAtt EhrAnnotationQueue.QueueName
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node20"
+        Sourcemap: true
+        EntryPoints:
+          - src/serverless.ts
+        External:
+          - "@aws-sdk/*"
 
   EhrAnnotationWorkerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: dist/
-      Handler: worker-bundle.handler
+      CodeUri: .
+      Handler: src/worker.handler
       Timeout: 120
       ReservedConcurrentExecutions: 2 # Hard cap on LLM parallel processing
       Events:
@@ -111,6 +121,16 @@ Resources:
               Action:
                 - sagemaker:InvokeEndpoint
               Resource: "*"
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node20"
+        Sourcemap: true
+        EntryPoints:
+          - src/worker.ts
+        External:
+          - "@aws-sdk/*"
 
   EhrAnnotationQueue:
     Type: AWS::SQS::Queue
@@ -265,8 +285,8 @@ Resources:
   EhrLambdaKillSwitchFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: dist/
-      Handler: kill-switch-bundle.handler
+      CodeUri: .
+      Handler: src/kill-switch.handler
       Runtime: nodejs20.x
       Timeout: 30
       MemorySize: 128
@@ -286,6 +306,16 @@ Resources:
           Type: SNS
           Properties:
             Topic: !Ref EhrKillSwitchTopic
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node20"
+        Sourcemap: true
+        EntryPoints:
+          - src/kill-switch.ts
+        External:
+          - "@aws-sdk/*"
 
   EhrAuditLogsBucket:
     Type: AWS::S3::Bucket
@@ -348,8 +378,8 @@ Resources:
   EhrAuditStreamFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: dist/
-      Handler: audit-consumer-bundle.handler
+      CodeUri: .
+      Handler: src/audit-consumer.handler
       Timeout: 30
       MemorySize: 128
       Events:
@@ -370,6 +400,16 @@ Resources:
                 - firehose:PutRecord
                 - firehose:PutRecordBatch
               Resource: !GetAtt EhrAuditDeliveryStream.Arn
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node20"
+        Sourcemap: true
+        EntryPoints:
+          - src/audit-consumer.ts
+        External:
+          - "@aws-sdk/*"
 
   SageMakerExecutionRole:
     Type: AWS::IAM::Role

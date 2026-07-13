@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
-import { documentsService, annotationsService } from '../services';
+import { documentsService } from './documents.service';
+import { annotationsService } from '../annotations/annotations.service';
 import { z } from 'zod';
 import { validateParam } from '../middleware/validation';
 

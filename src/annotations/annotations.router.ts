@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
-import { annotationsService } from '../services';
+import { annotationsService } from './annotations.service';
 import { MEDICAL_ENTITIES } from '../constants/labels';
 import { validateParam, validateQuery } from '../middleware/validation';
 export const annotationsApp = new Hono();

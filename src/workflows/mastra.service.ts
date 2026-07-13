@@ -1,7 +1,7 @@
 import { createWorkflow } from '@mastra/core/workflows';
 import { Mastra } from '@mastra/core';
 import { z } from 'zod';
-import { AnnotationsService } from '../annotations/annotations.service';
+import { AnnotationsService, annotationsService } from '../annotations/annotations.service';
 import { PiiScrubberService } from '../annotations/pii-scrubber.service';
 import { S3Client } from '@aws-sdk/client-s3';
 import {
@@ -101,3 +101,5 @@ export class MastraService {
       .commit();
   }
 }
+
+export const mastraService = new MastraService(annotationsService);

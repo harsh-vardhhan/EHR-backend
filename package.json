@@ -22,8 +22,7 @@
     "test:kill-switch": "ts-node src/scripts/test-kill-switch.ts",
     "test:local-worker": "ts-node src/scripts/test-local-worker.ts",
     "verify:cloud": "ts-node src/scripts/verify-cloud-processing.ts",
-    "verify:sagemaker": "ts-node src/scripts/verify-sagemaker.ts",
-    "bundle": "esbuild dist/serverless.js --bundle --platform=node --target=node20 --outfile=dist/serverless-bundle.js --external:\"@aws-sdk/*\" --external:\"aws-sdk\" && esbuild dist/worker.js --bundle --platform=node --target=node20 --outfile=dist/worker-bundle.js --external:\"@aws-sdk/*\" --external:\"aws-sdk\" && esbuild dist/kill-switch.js --bundle --platform=node --target=node20 --outfile=dist/kill-switch-bundle.js --external:\"@aws-sdk/*\" --external:\"aws-sdk\" && esbuild dist/audit-consumer.js --bundle --platform=node --target=node20 --outfile=dist/audit-consumer-bundle.js --external:\"@aws-sdk/*\" --external:\"aws-sdk\""
+    "verify:sagemaker": "ts-node src/scripts/verify-sagemaker.ts"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1045.0",
@@ -39,13 +38,13 @@
     "dotenv": "^17.4.2",
     "electrodb": "^3.9.1",
     "hono": "^4.6.12",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "esbuild": "^0.28.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
     "@types/aws-lambda": "^8.10.161",
     "@types/node": "^24.0.0",
-    "esbuild": "^0.28.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
