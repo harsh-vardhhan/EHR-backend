@@ -442,3 +442,5 @@ export class AnnotationsService {
     }
   }
 }
+
+export const annotationsService = new AnnotationsService();

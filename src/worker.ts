@@ -1,5 +1,6 @@
 import { SQSEvent, SQSBatchResponse } from 'aws-lambda';
-import { documentsService, mastraService } from './services';
+import { documentsService } from './documents/documents.service';
+import { mastraService } from './workflows/mastra.service';
 
 /**
  * Enterprise Worker Handler for Clinical Data Extraction.
