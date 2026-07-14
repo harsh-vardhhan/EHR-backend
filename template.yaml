@@ -458,6 +458,92 @@ Resources:
     Properties:
       EndpointName: gliner-relex-endpoint
       EndpointConfigName: !GetAtt SageMakerEndpointConfig.EndpointConfigName
+  EhrOmopDataLakeBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-omop-data-lake-${AWS::AccountId}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  EhrOmopFirehoseRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "ehr-annotation-backend-omop-firehose-${AWS::Region}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: firehose.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: FirehoseWriteOmopS3
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:AbortMultipartUpload
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:ListBucketMultipartUploads
+                  - s3:PutObject
+                Resource:
+                  - !GetAtt EhrOmopDataLakeBucket.Arn
+                  - !Sub "${EhrOmopDataLakeBucket.Arn}/*"
+
+  EhrOmopDeliveryStream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamName: !Sub "${AWS::StackName}-OmopDeliveryStream"
+      DeliveryStreamType: DirectPut
+      ExtendedS3DestinationConfiguration:
+        BucketARN: !GetAtt EhrOmopDataLakeBucket.Arn
+        BufferingHints:
+          IntervalInSeconds: 60
+          SizeInMBs: 1
+        CompressionFormat: GZIP
+        RoleARN: !GetAtt EhrOmopFirehoseRole.Arn
+
+  EhrOmopPipelineFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/omop-pipeline.handler
+      Timeout: 30
+      MemorySize: 128
+      Events:
+        DynamoDBStream:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt EhrTable.StreamArn
+            StartingPosition: LATEST
+            BatchSize: 100
+      Environment:
+        Variables:
+          OMOP_DELIVERY_STREAM_NAME: !Ref EhrOmopDeliveryStream
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - firehose:PutRecord
+                - firehose:PutRecordBatch
+              Resource: !GetAtt EhrOmopDeliveryStream.Arn
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node20"
+        Sourcemap: true
+        EntryPoints:
+          - src/omop-pipeline.ts
+        External:
+          - "@aws-sdk/*"
 
 Outputs:
   ApiEndpoint:
@@ -471,3 +557,12 @@ Outputs:
   EhrAnnotationDLQUrl:
     Description: "URL of the Dead Letter Queue"
     Value: !Ref EhrAnnotationDLQ
+
+  EhrOmopDataLakeBucketName:
+    Description: "Name of the OMOP Data Lake S3 Bucket"
+    Value: !Ref EhrOmopDataLakeBucket
+
+  EhrOmopDeliveryStreamName:
+    Description: "Name of the OMOP Kinesis Firehose Delivery Stream"
+    Value: !Ref EhrOmopDeliveryStream
+
