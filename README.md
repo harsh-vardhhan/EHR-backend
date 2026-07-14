@@ -91,17 +91,29 @@ graph TD
         LambdaWorker -->|5. Save Annotations| DynamoDB
     end
 
-    %% Auditing Pipeline Subgraph (Middle)
-    subgraph Auditing ["Compliance & Audit Trail (WORM)"]
+    %% Compliance & Data Streams Subgraph (Middle)
+    subgraph Streams ["Compliance & OMOP Streaming Pipelines"]
         DynamoDBStream[DynamoDB Stream]
-        LambdaConsumer[AWS Lambda - Stream Consumer]
-        Firehose[Kinesis Data Firehose]
-        S3Audit[(Amazon S3 - Audit WORM Bucket)]
+        
+        %% Audit WORM Trail
+        LambdaAudit[AWS Lambda - Audit Stream]
+        FirehoseAudit[Kinesis Data Firehose - Audit]
+        S3Audit[(Amazon S3 - Audit WORM)]
+        
+        %% OMOP CDM Data Lake
+        LambdaOmop[AWS Lambda - OMOP Pipeline]
+        FirehoseOmop[Kinesis Data Firehose - OMOP]
+        S3Omop[(Amazon S3 - OMOP Data Lake)]
         
         DynamoDB -->|Detect Writes| DynamoDBStream
-        DynamoDBStream -->|Trigger| LambdaConsumer
-        LambdaConsumer -->|Stream Log Event| Firehose
-        Firehose -->|Compressed NDJSON Batch| S3Audit
+        
+        DynamoDBStream -->|Trigger| LambdaAudit
+        LambdaAudit -->|Stream Log Event| FirehoseAudit
+        FirehoseAudit -->|Compressed NDJSON Batch| S3Audit
+        
+        DynamoDBStream -->|Trigger| LambdaOmop
+        LambdaOmop -->|Stream OMOP CDM Record| FirehoseOmop
+        FirehoseOmop -->|Compressed NDJSON Batch| S3Omop
     end
 
     %% DDoS/DoW Circuit Breaker Subgraph (Right Side)
@@ -130,7 +142,7 @@ graph TD
 
     %% Subgraph Styling
     style Core fill:#888888,fill-opacity:0.05,stroke:#D1D5DB,stroke-width:2px,stroke-dasharray: 5 5;
-    style Auditing fill:#1D8102,fill-opacity:0.05,stroke:#D1D5DB,stroke-width:2px,stroke-dasharray: 5 5;
+    style Streams fill:#1D8102,fill-opacity:0.05,stroke:#D1D5DB,stroke-width:2px,stroke-dasharray: 5 5;
     style DDoS fill:#FF3333,fill-opacity:0.05,stroke:#FECACA,stroke-width:2px,stroke-dasharray: 5 5;
 
     %% AWS Styling Classes
@@ -143,10 +155,10 @@ graph TD
     classDef external fill:#6B7280,fill-opacity:0.15,stroke:#6B7280,stroke-width:2px;
 
     %% Apply Classes
-    class LambdaURL,LambdaAPI,LambdaWorker,LambdaKillSwitch,LambdaConsumer,SageMaker compute;
+    class LambdaURL,LambdaAPI,LambdaWorker,LambdaKillSwitch,LambdaAudit,LambdaOmop,SageMaker compute;
     class DynamoDB,DynamoDBStream database;
-    class S3,S3Audit storage;
-    class SQS,DLQ,EB,SNS,Firehose integration;
+    class S3,S3Audit,S3Omop storage;
+    class SQS,DLQ,EB,SNS,FirehoseAudit,FirehoseOmop integration;
     class CWAlarm monitor;
     class User userNode;
     class OMOPHub external;
@@ -196,12 +208,15 @@ sequenceDiagram
 | **AWS Lambda (API)** | Executes the Hono application, handling UI interactions and document metadata orchestration. |
 | **AWS Lambda (NLP Worker)** | Dedicated asynchronous worker triggered by SQS to perform LLM clinical entity extraction. |
 | **AWS Lambda (Kill Switch)** | Administrative helper triggered by SNS to throttle the API Lambda reserved concurrency to 0. |
-| **AWS Lambda (Stream Consumer)** | Asynchronous event consumer triggered by DynamoDB Streams to filter and forward audit logs to Firehose. |
-| **Amazon Kinesis Data Firehose** | Delivery stream buffering and compressing NDJSON audit events, writing them in GZIP format to S3. |
+| **AWS Lambda (Audit Stream Consumer)** | Asynchronous event consumer triggered by DynamoDB Streams to filter and forward audit logs to Firehose. |
+| **AWS Lambda (OMOP Pipeline)** | Asynchronous event consumer triggered by DynamoDB Streams to map clinical annotations to standard OMOP format and forward them to Firehose. |
+| **Amazon Kinesis Data Firehose (Audit)** | Delivery stream buffering and compressing NDJSON audit events, writing them in GZIP format to the Audit WORM bucket. |
+| **Amazon Kinesis Data Firehose (OMOP)** | Delivery stream buffering and compressing NDJSON OMOP records, writing them in GZIP format to S3. |
 | **Amazon SQS & DLQ** | Decouples document ingestion from analysis, buffers surges, and quarantines failed tasks in a Dead Letter Queue. |
 | **Amazon DynamoDB** | Managed NoSQL storage for ultra-low latency storage of clinical annotation metadata and document status. |
 | **Amazon S3 (Medical Notes)** | Encrypted object storage for raw clinical document text, acting as the event source for the ingestion pipeline. |
 | **Amazon S3 (Audit WORM Bucket)** | Secure compliance bucket protected by S3 Object Lock (Compliance Mode) storing immutable audit logs. |
+| **Amazon S3 (OMOP Data Lake)** | Shared object storage hosting the structured, search-ready clinical data files under the `omop/` folder prefix. |
 | **Lambda Function URL** | Public HTTPS endpoint routing requests directly to the Hono backend. |
 | **CloudWatch Alarm & SNS** | Monitors total request volume (Invocations + Throttles) in real-time, acting as the circuit breaker sensor. |
 | **SageMaker Serverless (PyTorch)** | High-performance machine learning inference endpoint hosting the specialized clinical NLP deep learning models for extraction, relation prediction, assertion classification, and concept grounding. |
