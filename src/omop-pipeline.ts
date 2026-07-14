@@ -60,7 +60,7 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
       const baseDate = getLocalDateString(createdAt);
 
       // Map to standard OMOP CDM schemas based on the entity type label
-      if (label === 'Condition' || label === 'Finding' || label === 'Clinical Condition' || label === 'Clinical Finding') {
+      if (label === 'Clinical Condition' || label === 'Clinical Finding') {
         targetTable = 'condition_occurrence';
         mappedRecord = {
           condition_occurrence_id: annotationId,
@@ -71,7 +71,7 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
           condition_source_value: text,
           assertion_status: assertion, // Contextual status (positive, negated, possible)
         };
-      } else if (label === 'Medication' || label === 'Medication Statement') {
+      } else if (label === 'Medication Statement') {
         targetTable = 'drug_exposure';
         mappedRecord = {
           drug_exposure_id: annotationId,
@@ -81,7 +81,7 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
           drug_type_concept_id: 32817,
           drug_source_value: text,
         };
-      } else if (label === 'Procedure' || label === 'Medical Procedure') {
+      } else if (label === 'Medical Procedure') {
         targetTable = 'procedure_occurrence';
         mappedRecord = {
           procedure_occurrence_id: annotationId,
