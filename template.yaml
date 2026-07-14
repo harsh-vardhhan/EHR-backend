@@ -486,10 +486,10 @@ Resources:
                   - !Sub "arn:aws:s3:::${DocumentsBucketName}"
                   - !Sub "arn:aws:s3:::${DocumentsBucketName}/*"
 
-  EhrOmopDeliveryStream:
+  EhrOmopDeliveryStreamV2:
     Type: AWS::KinesisFirehose::DeliveryStream
     Properties:
-      DeliveryStreamName: !Sub "${AWS::StackName}-OmopDeliveryStream"
+      DeliveryStreamName: !Sub "${AWS::StackName}-OmopStream"
       DeliveryStreamType: DirectPut
       ExtendedS3DestinationConfiguration:
         BucketARN: !Sub "arn:aws:s3:::${DocumentsBucketName}"
@@ -517,7 +517,7 @@ Resources:
             BatchSize: 100
       Environment:
         Variables:
-          OMOP_DELIVERY_STREAM_NAME: !Ref EhrOmopDeliveryStream
+          OMOP_DELIVERY_STREAM_NAME: !Ref EhrOmopDeliveryStreamV2
       Policies:
         - Version: '2012-10-17'
           Statement:
@@ -525,7 +525,7 @@ Resources:
               Action:
                 - firehose:PutRecord
                 - firehose:PutRecordBatch
-              Resource: !GetAtt EhrOmopDeliveryStream.Arn
+              Resource: !GetAtt EhrOmopDeliveryStreamV2.Arn
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -556,5 +556,5 @@ Outputs:
 
   EhrOmopDeliveryStreamName:
     Description: "Name of the OMOP Kinesis Firehose Delivery Stream"
-    Value: !Ref EhrOmopDeliveryStream
+    Value: !Ref EhrOmopDeliveryStreamV2
 
