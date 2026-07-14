@@ -458,16 +458,6 @@ Resources:
     Properties:
       EndpointName: gliner-relex-endpoint
       EndpointConfigName: !GetAtt SageMakerEndpointConfig.EndpointConfigName
-  EhrOmopDataLakeBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub "${AWS::StackName}-omop-data-lake-${AWS::AccountId}"
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-
   EhrOmopFirehoseRole:
     Type: AWS::IAM::Role
     Properties:
@@ -493,8 +483,8 @@ Resources:
                   - s3:ListBucketMultipartUploads
                   - s3:PutObject
                 Resource:
-                  - !GetAtt EhrOmopDataLakeBucket.Arn
-                  - !Sub "${EhrOmopDataLakeBucket.Arn}/*"
+                  - !Sub "arn:aws:s3:::${DocumentsBucketName}"
+                  - !Sub "arn:aws:s3:::${DocumentsBucketName}/*"
 
   EhrOmopDeliveryStream:
     Type: AWS::KinesisFirehose::DeliveryStream
@@ -502,7 +492,9 @@ Resources:
       DeliveryStreamName: !Sub "${AWS::StackName}-OmopDeliveryStream"
       DeliveryStreamType: DirectPut
       ExtendedS3DestinationConfiguration:
-        BucketARN: !GetAtt EhrOmopDataLakeBucket.Arn
+        BucketARN: !Sub "arn:aws:s3:::${DocumentsBucketName}"
+        Prefix: omop/
+        ErrorOutputPrefix: omop-failures/
         BufferingHints:
           IntervalInSeconds: 60
           SizeInMBs: 1
@@ -560,7 +552,7 @@ Outputs:
 
   EhrOmopDataLakeBucketName:
     Description: "Name of the OMOP Data Lake S3 Bucket"
-    Value: !Ref EhrOmopDataLakeBucket
+    Value: !Ref DocumentsBucketName
 
   EhrOmopDeliveryStreamName:
     Description: "Name of the OMOP Kinesis Firehose Delivery Stream"
