@@ -145,6 +145,7 @@ Resources:
                   - firehose:DeleteDeliveryStream
                   - firehose:DescribeDeliveryStream
                   - firehose:UpdateDeliveryStream
+                  - firehose:UpdateDestination
                   - firehose:TagDeliveryStream
                   - firehose:UntagDeliveryStream
                 Resource:
