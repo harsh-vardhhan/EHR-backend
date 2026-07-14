@@ -2,7 +2,7 @@ import { DynamoDBStreamEvent } from 'aws-lambda';
 import { FirehoseClient, PutRecordCommand } from '@aws-sdk/client-firehose';
 
 const firehoseClient = new FirehoseClient({});
-const DELIVERY_STREAM_NAME = process.env.OMOP_DELIVERY_STREAM_NAME;
+
 
 // Helper to clean dates to standard YYYY-MM-DD
 function getLocalDateString(isoString?: string): string {
@@ -17,7 +17,8 @@ function getLocalDateString(isoString?: string): string {
 export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
   console.log('OMOP Pipeline consumer received event:', JSON.stringify(event, null, 2));
 
-  if (!DELIVERY_STREAM_NAME) {
+  const deliveryStreamName = process.env.OMOP_DELIVERY_STREAM_NAME;
+  if (!deliveryStreamName) {
     console.error('OMOP_DELIVERY_STREAM_NAME environment variable is not configured.');
     return;
   }
@@ -108,7 +109,7 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
       const recordData = JSON.stringify(payload) + '\n';
 
       const command = new PutRecordCommand({
-        DeliveryStreamName: DELIVERY_STREAM_NAME,
+        DeliveryStreamName: deliveryStreamName,
         Record: {
           Data: new TextEncoder().encode(recordData),
         },
