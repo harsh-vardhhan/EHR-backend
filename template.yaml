@@ -496,8 +496,8 @@ Resources:
         Prefix: omop/
         ErrorOutputPrefix: omop-failures/
         BufferingHints:
-          IntervalInSeconds: 60
-          SizeInMBs: 1
+          IntervalInSeconds: 900
+          SizeInMBs: 5
         CompressionFormat: GZIP
         RoleARN: !GetAtt EhrOmopFirehoseRole.Arn
 
