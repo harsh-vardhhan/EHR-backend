@@ -6,7 +6,6 @@ Globals:
   Function:
     Timeout: 30
     MemorySize: 256
-    Runtime: nodejs20.x
     Architectures:
       - x86_64
 
@@ -48,9 +47,8 @@ Resources:
   EhrBackendFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: .
-      Handler: src/serverless.handler
-      Timeout: 5
+      PackageType: Image
+      Timeout: 30
       ReservedConcurrentExecutions: 2 # Prevent run-away compute costs
       FunctionUrlConfig:
         AuthType: NONE
@@ -75,21 +73,16 @@ Resources:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt EhrAnnotationQueue.QueueName
     Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: "node20"
-        Sourcemap: true
-        EntryPoints:
-          - src/serverless.ts
-        External:
-          - "@aws-sdk/*"
+      DockerTag: latest
+      DockerContext: .
+      Dockerfile: Dockerfile
 
   EhrAnnotationWorkerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: .
+      CodeUri: ./packages/backend
       Handler: src/worker.handler
+      Runtime: nodejs20.x
       Timeout: 120
       ReservedConcurrentExecutions: 2 # Hard cap on LLM parallel processing
       Events:
@@ -285,7 +278,7 @@ Resources:
   EhrLambdaKillSwitchFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: .
+      CodeUri: ./packages/backend
       Handler: src/kill-switch.handler
       Runtime: nodejs20.x
       Timeout: 30
@@ -378,8 +371,9 @@ Resources:
   EhrAuditStreamFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: .
+      CodeUri: ./packages/backend
       Handler: src/audit-consumer.handler
+      Runtime: nodejs20.x
       Timeout: 30
       MemorySize: 128
       Events:
@@ -504,8 +498,9 @@ Resources:
   EhrOmopPipelineFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: .
+      CodeUri: ./packages/backend
       Handler: src/omop-pipeline.handler
+      Runtime: nodejs20.x
       Timeout: 30
       MemorySize: 128
       Events:

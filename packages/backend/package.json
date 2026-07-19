@@ -1,0 +1,53 @@
+{
+  "name": "backend",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "tsc",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "start": "bun run src/main.ts",
+    "dev": "bun run --hot src/main.ts",
+    "lint": "eslint \"{src,test}/**/*.ts\" --fix",
+    "test": "bun test",
+    "cleanup": "bun run src/scripts/cleanup.ts",
+    "seed": "bun run src/scripts/seed.ts",
+    "test:dlq": "bun run src/scripts/test-dlq.ts",
+    "test:kill-switch": "bun run src/scripts/test-kill-switch.ts",
+    "test:local-worker": "bun run src/scripts/test-local-worker.ts",
+    "verify:cloud": "bun run src/scripts/verify-cloud-processing.ts",
+    "verify:sagemaker": "bun run src/scripts/verify-sagemaker.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1045.0",
+    "@aws-sdk/client-firehose": "^3.1045.0",
+    "@aws-sdk/client-lambda": "^3.1063.0",
+    "@aws-sdk/client-s3": "^3.1045.0",
+    "@aws-sdk/client-sagemaker-runtime": "^3.1063.0",
+    "@aws-sdk/client-sqs": "^3.1052.0",
+    "@aws-sdk/lib-dynamodb": "^3.1045.0",
+    "@elysiajs/cors": "^1.1.1",
+    "@mastra/core": "^1.32.1",
+    "aws-lambda": "^1.0.7",
+    "dotenv": "^17.4.2",
+    "electrodb": "^3.9.1",
+    "elysia": "^1.1.20",
+    "zod": "^3.25.76",
+    "esbuild": "^0.28.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "@types/aws-lambda": "^8.10.161",
+    "@types/bun": "^1.1.14",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.2",
+    "globals": "^17.0.0",
+    "jiti": "^2.7.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0"
+  }
+}

@@ -1,9 +1,31 @@
-node_modules
-.env
-dist/
-.aws-sam/
-ml/model/
-ml/model.tar.gz
+# Dependencies
+node_modules/
+.venv/
 __pycache__/
 *.pyc
-uv.lock
+.ruff_cache/
+
+# Environments
+.env
+.env.*
+!.env.example
+
+# Builds
+dist/
+.aws-sam/
+packages/backend/dist/
+packages/frontend/dist/
+
+# ML specific files
+ml/model/
+ml/model.tar.gz
+
+# Local/IDE configs
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.agents/

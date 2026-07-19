@@ -1,4 +1,4 @@
-name: Backend CI
+name: Monorepo CI
 
 on:
   push:
@@ -8,30 +8,36 @@ on:
 
 jobs:
   build-and-test:
-    name: Build and Lint
+    name: Build and Lint (${{ matrix.node-version }})
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [20.x, 22.x]
 
     steps:
     - uses: actions/checkout@v4
-    
-    - name: Use Node.js ${{ matrix.node-version }}
+
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+    
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
         
     - name: Install dependencies
-      run: npm ci
+      run: bun install
       
     - name: Run linter
-      run: npm run lint
+      run: bun run lint
       
-    - name: Build application
-      run: npm run build
+    - name: Run tests
+      run: bun run test
+      
+    - name: Build packages
+      run: bun run build
 
   lint-python:
     name: Lint Python (Ruff)
