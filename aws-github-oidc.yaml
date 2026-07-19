@@ -264,6 +264,7 @@ Resources:
                   - ecr:UploadLayerPart
                   - ecr:CompleteLayerUpload
                   - ecr:PutImage
+                  - ecr:TagResource
                 Resource: "*"
 
 Outputs:
