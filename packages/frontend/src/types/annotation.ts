@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { MEDICAL_ENTITIES, type LabelId } from '../constants/labels';
-import {
-    ANNOTATION_STATUS,
-    ANNOTATION_SOURCE
-} from '../constants/status';
 
-export const LabelSchema = z.enum(Object.values(MEDICAL_ENTITIES) as [LabelId, ...LabelId[]]);
+export const LabelSchema = z.enum([
+  'Clinical Condition',
+  'Medication Statement',
+  'Clinical Finding',
+  'Medical Procedure'
+]);
 
 export const AnnotationSchema = z.object({
     id: z.string(),
@@ -14,12 +14,12 @@ export const AnnotationSchema = z.object({
     label: LabelSchema,
     startOffset: z.number(),
     endOffset: z.number(),
-    source: z.enum(Object.values(ANNOTATION_SOURCE) as [string, ...string[]]),
-    status: z.enum(Object.values(ANNOTATION_STATUS) as [string, ...string[]]).optional(),
+    source: z.enum(['human', 'llm']),
+    status: z.enum(['suggested', 'accepted', 'rejected', 'corrected']).optional(),
     confidence: z.number().optional(),
     assertion: z.enum(['positive', 'negated', 'possible']).optional(),
     conceptCode: z.string().optional(),
-    createdAt: z.string().optional(),
+    createdAt: z.union([z.string(), z.date()]).transform((val) => val instanceof Date ? val.toISOString() : val).optional(),
 });
 
 export const AnnotationArraySchema = z.array(AnnotationSchema);

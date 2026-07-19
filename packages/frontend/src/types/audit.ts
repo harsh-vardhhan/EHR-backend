@@ -5,7 +5,7 @@ export const AuditLogSchema = z.object({
     documentId: z.string(),
     actionType: z.string(),
     description: z.string(),
-    createdAt: z.string(),
+    createdAt: z.union([z.string(), z.date()]).transform((val) => val instanceof Date ? val.toISOString() : val),
 });
 
 export const AuditLogArraySchema = z.array(AuditLogSchema);
