@@ -1,4 +1,4 @@
-import type { Annotation } from '../types/annotation';
+import type { Annotation } from '../types';
 
 export interface TextSegment {
   type: 'text' | 'annotation';

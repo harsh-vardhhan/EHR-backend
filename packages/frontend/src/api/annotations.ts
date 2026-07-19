@@ -1,22 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { treaty } from '@elysiajs/eden';
 import type { App } from '../../../backend/src/app';
-import type { Annotation } from '../types/annotation';
-import type { Document } from '../types/document';
-import type { AuditLog } from '../types/audit';
-import { 
-  AnnotationSchema, 
-  AnnotationArraySchema, 
-} from '../types/annotation';
-import type { Relationship } from '../types/relationship';
-import {
-  RelationshipSchema,
-  RelationshipArraySchema,
-} from '../types/relationship';
-import {
-  DocumentSchema,
-  DocumentArraySchema
-} from '../types/document';
-import { AuditLogArraySchema } from '../types/audit';
+import type { Document, Annotation, Relationship, AuditLog } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const API_KEY = import.meta.env.VITE_API_KEY || '';
@@ -25,32 +10,13 @@ const client = treaty<App>(API_URL, {
   headers: API_KEY ? { 'x-api-key': API_KEY } : {},
 });
 
-// Helper to safely parse JSON response data even if returned as a string wrapper
-function safeJsonParse<T>(data: unknown): T {
-  if (typeof data === 'string') {
-    try {
-      return JSON.parse(data) as T;
-    } catch {
-      return data as T;
-    }
-  }
-  return data as T;
-}
-
 export const api = {
   getDocuments: async (): Promise<Document[]> => {
     const { data, error } = await client.documents.get();
     if (error) {
       throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to fetch documents');
     }
-    
-    const parsedData = safeJsonParse<unknown>(data);
-    const result = DocumentArraySchema.safeParse(parsedData);
-    if (!result.success) {
-      console.error('getDocuments Zod validation failed:', result.error.format());
-      throw new Error(`Documents parse failed: ${result.error.message}`);
-    }
-    return result.data;
+    return data as unknown as Document[];
   },
 
   getDocument: async (id: string): Promise<Document> => {
@@ -59,27 +25,22 @@ export const api = {
       throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to fetch document');
     }
     
-    const parsedData = safeJsonParse<Record<string, unknown>>(data);
+    const rawData = data as any;
     // Normalize embedded annotations and relationships to align database keys with schemas
     const mapped = {
-      ...parsedData,
-      annotations: ((parsedData.annotations as Array<{ id?: string; annotationId?: string; [key: string]: unknown }>) || []).map((a) => ({
+      ...rawData,
+      annotations: ((rawData.annotations as Array<{ id?: string; annotationId?: string; [key: string]: any }>) || []).map((a) => ({
         ...a,
         id: a.annotationId || a.id,
       })),
-      relationships: ((parsedData.relationships as Array<{ id?: string; relationshipId?: string; [key: string]: unknown }>) || []).map((r) => ({
+      relationships: ((rawData.relationships as Array<{ id?: string; relationshipId?: string; [key: string]: any }>) || []).map((r) => ({
         ...r,
         relationshipId: r.relationshipId || r.id,
         id: r.id || r.relationshipId,
       })),
     };
     
-    const result = DocumentSchema.safeParse(mapped);
-    if (!result.success) {
-      console.error('getDocument Zod validation failed:', result.error.format());
-      throw new Error(`Document parse failed: ${result.error.message}`);
-    }
-    return result.data;
+    return mapped as unknown as Document;
   },
 
   triggerAnalysis: async (documentId: string): Promise<void> => {
@@ -97,15 +58,10 @@ export const api = {
       throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to fetch annotations');
     }
     
-    const parsedData = safeJsonParse<Array<Record<string, unknown>>>(data);
-    // Handle the mapping of annotationId to id if necessary, then parse
-    const mappedData = parsedData.map(d => ({ ...d, id: d.annotationId || d.id }));
-    const result = AnnotationArraySchema.safeParse(mappedData);
-    if (!result.success) {
-      console.error('getAnnotations Zod validation failed:', result.error.format());
-      throw new Error(`Annotations parse failed: ${result.error.message}`);
-    }
-    return result.data;
+    const rawList = data as any[];
+    // Map annotationId to id for frontend parity
+    const mappedData = rawList.map(d => ({ ...d, id: d.annotationId || d.id }));
+    return mappedData as unknown as Annotation[];
   },
 
   createAnnotation: async (
@@ -116,19 +72,14 @@ export const api = {
       confidence: payload.confidence ?? undefined,
       assertion: payload.assertion ?? undefined,
       conceptCode: payload.conceptCode ?? undefined,
-    } as unknown as Parameters<typeof client.annotations.post>[0]);
+    } as any);
     if (error) {
       throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to create annotation');
     }
     
-    const parsedData = safeJsonParse<Record<string, unknown>>(data);
-    const mapped = { ...parsedData, id: parsedData.annotationId || parsedData.id };
-    const result = AnnotationSchema.safeParse(mapped);
-    if (!result.success) {
-      console.error('createAnnotation Zod validation failed:', result.error.format());
-      throw new Error(`Create annotation parse failed: ${result.error.message}`);
-    }
-    return result.data;
+    const raw = data as any;
+    const mapped = { ...raw, id: raw.annotationId || raw.id };
+    return mapped as unknown as Annotation;
   },
 
   updateAnnotation: async (
@@ -140,19 +91,14 @@ export const api = {
       confidence: updates.confidence ?? undefined,
       assertion: updates.assertion ?? undefined,
       conceptCode: updates.conceptCode ?? undefined,
-    } as unknown as Parameters<ReturnType<typeof client.annotations>['patch']>[0]);
+    } as any);
     if (error) {
       throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to update annotation');
     }
     
-    const parsedData = safeJsonParse<Record<string, unknown>>(data);
-    const mapped = { ...parsedData, id: parsedData.annotationId || parsedData.id };
-    const result = AnnotationSchema.safeParse(mapped);
-    if (!result.success) {
-      console.error('updateAnnotation Zod validation failed:', result.error.format());
-      throw new Error(`Update annotation parse failed: ${result.error.message}`);
-    }
-    return result.data;
+    const raw = data as any;
+    const mapped = { ...raw, id: raw.annotationId || raw.id };
+    return mapped as unknown as Annotation;
   },
 
   deleteAnnotation: async (id: string): Promise<void> => {
@@ -170,18 +116,13 @@ export const api = {
       throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to fetch relationships');
     }
     
-    const parsedData = safeJsonParse<Array<Record<string, unknown>>>(data);
-    const mappedData = parsedData.map(d => ({
+    const rawList = data as any[];
+    const mappedData = rawList.map(d => ({
       ...d,
       relationshipId: d.relationshipId || d.id,
       id: d.id || d.relationshipId,
     }));
-    const result = RelationshipArraySchema.safeParse(mappedData);
-    if (!result.success) {
-      console.error('getRelationships Zod validation failed:', result.error.format());
-      throw new Error(`Relationships parse failed: ${result.error.message}`);
-    }
-    return result.data;
+    return mappedData as unknown as Relationship[];
   },
 
   createRelationship: async (
@@ -190,23 +131,18 @@ export const api = {
     const { data, error } = await client.annotations.relationships.post({
       ...payload,
       confidence: payload.confidence ?? undefined,
-    } as unknown as Parameters<typeof client.annotations.relationships.post>[0]);
+    } as any);
     if (error) {
       throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to create relationship');
     }
     
-    const parsedData = safeJsonParse<Record<string, unknown>>(data);
+    const raw = data as any;
     const mapped = {
-      ...parsedData,
-      relationshipId: parsedData.relationshipId || parsedData.id,
-      id: parsedData.id || parsedData.relationshipId,
+      ...raw,
+      relationshipId: raw.relationshipId || raw.id,
+      id: raw.id || raw.relationshipId,
     };
-    const result = RelationshipSchema.safeParse(mapped);
-    if (!result.success) {
-      console.error('createRelationship Zod validation failed:', result.error.format());
-      throw new Error(`Create relationship parse failed: ${result.error.message}`);
-    }
-    return result.data;
+    return mapped as unknown as Relationship;
   },
 
   deleteRelationship: async (id: string, documentId: string): Promise<void> => {
@@ -229,20 +165,15 @@ export const api = {
     if (filters.conceptCode && filters.conceptCode.trim() !== '') params.conceptCode = filters.conceptCode;
 
     const { data, error } = await client.annotations.search.get({
-      query: params as unknown as NonNullable<Parameters<typeof client.annotations.search.get>[0]>['query'],
+      query: params as any,
     });
     if (error) {
       throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to search annotations');
     }
     
-    const parsedData = safeJsonParse<Array<Record<string, unknown>>>(data);
-    const mappedData = parsedData.map(d => ({ ...d, id: d.annotationId || d.id }));
-    const result = AnnotationArraySchema.safeParse(mappedData);
-    if (!result.success) {
-      console.error('searchAnnotations Zod validation failed:', result.error.format());
-      throw new Error(`Search annotations parse failed: ${result.error.message}`);
-    }
-    return result.data;
+    const rawList = data as any[];
+    const mappedData = rawList.map(d => ({ ...d, id: d.annotationId || d.id }));
+    return mappedData as unknown as Annotation[];
   },
 
   getAuditLogs: async (documentId: string): Promise<AuditLog[]> => {
@@ -250,13 +181,6 @@ export const api = {
     if (error) {
       throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to fetch audit logs');
     }
-    
-    const parsedData = safeJsonParse<unknown>(data);
-    const result = AuditLogArraySchema.safeParse(parsedData);
-    if (!result.success) {
-      console.error('getAuditLogs Zod validation failed:', result.error.format());
-      throw new Error(`Audit logs parse failed: ${result.error.message}`);
-    }
-    return result.data;
+    return data as unknown as AuditLog[];
   },
 };

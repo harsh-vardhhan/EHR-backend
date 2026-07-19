@@ -1,5 +1,4 @@
-import type { Annotation } from '../types/annotation';
-import type { Document } from '../types/document';
+import type { Annotation, Document } from '../types';
 
 export function generateFhirResource(
   doc: Document | { id: string; title?: string; category?: string },

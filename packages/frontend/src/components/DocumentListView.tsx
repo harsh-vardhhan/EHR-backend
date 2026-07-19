@@ -8,8 +8,7 @@ import { FileText, Sparkles } from 'lucide-react';
 import { generateFhirResource } from '../lib/fhir';
 import { DocumentBrowseTab } from './DocumentBrowseTab';
 import { CohortQueryTab } from './CohortQueryTab';
-import type { Annotation } from '../types/annotation';
-import type { Document } from '../types/document';
+import type { Annotation, Document } from '../types';
 import {
   LoadingContainer,
   StyledLayout,

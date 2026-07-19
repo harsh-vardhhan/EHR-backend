@@ -1,4 +1,4 @@
-import type { Document } from '../types/document';
+import type { Document } from '../types';
 import { Button } from './ui/button';
 import {
   TableContainer,

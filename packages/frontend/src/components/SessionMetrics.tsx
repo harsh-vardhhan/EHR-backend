@@ -1,4 +1,4 @@
-import type { Annotation } from '../types/annotation';
+import type { Annotation } from '../types';
 import { BarChart3, Target } from 'lucide-react';
 import styled, { useTheme } from 'styled-components';
 import { MEDICAL_LABELS } from '../constants/labels';

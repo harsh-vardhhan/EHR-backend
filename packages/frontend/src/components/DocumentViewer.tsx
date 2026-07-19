@@ -1,7 +1,6 @@
 import { memo, useState } from 'react';
 import type { RefObject } from 'react';
-import type { Annotation } from '../types/annotation';
-import type { Relationship } from '../types/relationship';
+import type { Annotation, Relationship } from '../types';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';

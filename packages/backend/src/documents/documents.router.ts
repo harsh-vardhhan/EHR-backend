@@ -2,6 +2,8 @@ import { Elysia, t } from 'elysia';
 import { documentsService } from './documents.service';
 import { annotationsService } from '../annotations/annotations.service';
 
+import { DocumentSchema, AuditLogSchema } from '../database/schemas';
+
 const idPattern = /^[a-zA-Z0-9_-]+$/;
 
 // Native TypeBox id validation schema
@@ -26,28 +28,36 @@ export const documentsApp = new Elysia({ prefix: '/documents' })
       message: (error as any).message,
     };
   })
-  .get('/', async () => {
-    const docs = await documentsService.getDocuments();
-    return docs;
-  })
+  .get(
+    '/',
+    async () => {
+      const docs = await documentsService.getDocuments();
+      return docs as any;
+    },
+    {
+      response: t.Array(DocumentSchema),
+    },
+  )
   .get(
     '/:id',
     async ({ params: { id } }) => {
       const doc = await documentsService.getDocument(id);
-      return doc;
+      return doc as any;
     },
     {
       params: idParamSchema,
+      response: DocumentSchema,
     },
   )
   .get(
     '/:id/audit',
     async ({ params: { id } }) => {
       const auditLogs = await annotationsService.getAuditLogs(id);
-      return auditLogs;
+      return auditLogs as any;
     },
     {
       params: idParamSchema,
+      response: t.Array(AuditLogSchema),
     },
   )
   .post(
@@ -55,9 +65,13 @@ export const documentsApp = new Elysia({ prefix: '/documents' })
     async ({ params: { id } }) => {
       const doc = (await documentsService.getDocument(id)) as any;
       await documentsService.triggerAnalysis(doc.id, doc.s3Key);
-      return { success: true, message: 'Analysis queued successfully' };
+      return { success: true, message: 'Analysis queued successfully' } as any;
     },
     {
       params: idParamSchema,
+      response: t.Object({
+        success: t.Boolean(),
+        message: t.String(),
+      }),
     },
   );

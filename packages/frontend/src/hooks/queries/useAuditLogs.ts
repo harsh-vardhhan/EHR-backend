@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/annotations';
-import type { AuditLog } from '../../types/audit';
+import type { AuditLog } from '../../types';
 
 export function useAuditLogs(documentId: string | undefined) {
   return useQuery<AuditLog[], Error>({

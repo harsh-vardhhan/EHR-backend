@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/annotations';
-import type { Document } from '../../types/document';
+import type { Document } from '../../types';
 
 export function useDocuments() {
   return useQuery<Document[], Error>({
