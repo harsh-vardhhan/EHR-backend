@@ -53,7 +53,7 @@ export const api = {
     
     const result = DocumentArraySchema.safeParse(parsedData);
     if (!result.success) {
-      console.error('getDocuments Zod validation failed details:', result.error.issues);
+      console.error('getDocuments Zod validation failed details JSON:', JSON.stringify(result.error.issues, null, 2));
       throw new Error(`Documents parse failed: ${result.error.message}`);
     }
     return result.data;
@@ -82,7 +82,7 @@ export const api = {
     
     const result = DocumentSchema.safeParse(mapped);
     if (!result.success) {
-      console.error('getDocument Zod validation failed details:', result.error.issues);
+      console.error('getDocument Zod validation failed details JSON:', JSON.stringify(result.error.issues, null, 2));
       throw new Error(`Document parse failed: ${result.error.message}`);
     }
     return result.data;
@@ -108,7 +108,7 @@ export const api = {
     const mappedData = parsedData.map(d => ({ ...d, id: d.annotationId || d.id }));
     const result = AnnotationArraySchema.safeParse(mappedData);
     if (!result.success) {
-      console.error('getAnnotations Zod validation failed details:', result.error.issues);
+      console.error('getAnnotations Zod validation failed details JSON:', JSON.stringify(result.error.issues, null, 2));
       throw new Error(`Annotations parse failed: ${result.error.message}`);
     }
     return result.data;
@@ -131,7 +131,7 @@ export const api = {
     const mapped = { ...parsedData, id: parsedData.annotationId || parsedData.id };
     const result = AnnotationSchema.safeParse(mapped);
     if (!result.success) {
-      console.error('createAnnotation Zod validation failed details:', result.error.issues);
+      console.error('createAnnotation Zod validation failed details JSON:', JSON.stringify(result.error.issues, null, 2));
       throw new Error(`Create annotation parse failed: ${result.error.message}`);
     }
     return result.data;
@@ -155,7 +155,7 @@ export const api = {
     const mapped = { ...parsedData, id: parsedData.annotationId || parsedData.id };
     const result = AnnotationSchema.safeParse(mapped);
     if (!result.success) {
-      console.error('updateAnnotation Zod validation failed details:', result.error.issues);
+      console.error('updateAnnotation Zod validation failed details JSON:', JSON.stringify(result.error.issues, null, 2));
       throw new Error(`Update annotation parse failed: ${result.error.message}`);
     }
     return result.data;
@@ -184,7 +184,7 @@ export const api = {
     }));
     const result = RelationshipArraySchema.safeParse(mappedData);
     if (!result.success) {
-      console.error('getRelationships Zod validation failed details:', result.error.issues);
+      console.error('getRelationships Zod validation failed details JSON:', JSON.stringify(result.error.issues, null, 2));
       throw new Error(`Relationships parse failed: ${result.error.message}`);
     }
     return result.data;
@@ -209,7 +209,7 @@ export const api = {
     };
     const result = RelationshipSchema.safeParse(mapped);
     if (!result.success) {
-      console.error('createRelationship Zod validation failed details:', result.error.issues);
+      console.error('createRelationship Zod validation failed details JSON:', JSON.stringify(result.error.issues, null, 2));
       throw new Error(`Create relationship parse failed: ${result.error.message}`);
     }
     return result.data;
@@ -245,7 +245,7 @@ export const api = {
     const mappedData = parsedData.map(d => ({ ...d, id: d.annotationId || d.id }));
     const result = AnnotationArraySchema.safeParse(mappedData);
     if (!result.success) {
-      console.error('searchAnnotations Zod validation failed details:', result.error.issues);
+      console.error('searchAnnotations Zod validation failed details JSON:', JSON.stringify(result.error.issues, null, 2));
       throw new Error(`Search annotations parse failed: ${result.error.message}`);
     }
     return result.data;
@@ -260,7 +260,7 @@ export const api = {
     const parsedData = safeJsonParse<unknown>(data);
     const result = AuditLogArraySchema.safeParse(parsedData);
     if (!result.success) {
-      console.error('getAuditLogs Zod validation failed details:', result.error.issues);
+      console.error('getAuditLogs Zod validation failed details JSON:', JSON.stringify(result.error.issues, null, 2));
       throw new Error(`Audit logs parse failed: ${result.error.message}`);
     }
     return result.data;
