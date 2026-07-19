@@ -5,17 +5,19 @@ import { annotationsApp } from './annotations/annotations.router';
 
 export const app = new Elysia()
   .use(
-    cors({
-      origin: process.env.FRONTEND_URL || '*',
-      allowedHeaders: [
-        'Content-Type',
-        'Authorization',
-        'X-Amz-Date',
-        'X-Api-Key',
-        'X-Amz-Security-Token',
-      ],
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    }),
+    !process.env.AWS_LAMBDA_FUNCTION_NAME
+      ? cors({
+          origin: process.env.FRONTEND_URL || '*',
+          allowedHeaders: [
+            'Content-Type',
+            'Authorization',
+            'X-Amz-Date',
+            'X-Api-Key',
+            'X-Amz-Security-Token',
+          ],
+          methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        })
+      : (x) => x,
   )
   .onRequest(({ request }) => {
     if (process.env.NODE_ENV !== 'production') {
