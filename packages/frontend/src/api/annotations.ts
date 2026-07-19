@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { treaty } from '@elysiajs/eden';
 import type { App } from '../../../backend/src/app';
 import type { Document, Annotation, Relationship, AuditLog } from '../types';
