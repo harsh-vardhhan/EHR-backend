@@ -15,9 +15,22 @@ export const AnnotationSchema = t.Object({
   startOffset: t.Numeric(),
   endOffset: t.Numeric(),
   source: t.Union([t.Literal('human'), t.Literal('llm')]),
-  status: t.Optional(t.Union([t.Literal('suggested'), t.Literal('accepted'), t.Literal('rejected'), t.Literal('corrected')])),
+  status: t.Optional(
+    t.Union([
+      t.Literal('suggested'),
+      t.Literal('accepted'),
+      t.Literal('rejected'),
+      t.Literal('corrected'),
+    ]),
+  ),
   confidence: t.Optional(t.Numeric()),
-  assertion: t.Optional(t.Union([t.Literal('positive'), t.Literal('negated'), t.Literal('possible')])),
+  assertion: t.Optional(
+    t.Union([
+      t.Literal('positive'),
+      t.Literal('negated'),
+      t.Literal('possible'),
+    ]),
+  ),
   conceptCode: t.Optional(t.String()),
   createdAt: t.Optional(t.String()),
 });
@@ -37,7 +50,13 @@ export const DocumentSchema = t.Object({
   id: t.String(),
   text: t.Optional(t.String()),
   title: t.Optional(t.String()),
-  status: t.Optional(t.Union([t.Literal('ready_for_review'), t.Literal('in_progress'), t.Literal('reviewed')])),
+  status: t.Optional(
+    t.Union([
+      t.Literal('ready_for_review'),
+      t.Literal('in_progress'),
+      t.Literal('reviewed'),
+    ]),
+  ),
   category: t.Optional(t.String()),
   createdAt: t.Optional(t.String()),
   annotations: t.Optional(t.Array(AnnotationSchema)),

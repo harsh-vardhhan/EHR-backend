@@ -36,7 +36,7 @@ export const documentsApp = new Elysia({ prefix: '/documents' })
     },
     {
       response: t.Array(DocumentSchema),
-    }
+    },
   )
   .get(
     '/:id',
@@ -75,4 +75,3 @@ export const documentsApp = new Elysia({ prefix: '/documents' })
       }),
     },
   );
-

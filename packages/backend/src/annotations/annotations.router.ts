@@ -247,4 +247,3 @@ export const annotationsApp = new Elysia({ prefix: '/annotations' })
       },
     },
   );
-
