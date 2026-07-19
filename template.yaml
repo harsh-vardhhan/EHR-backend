@@ -6,7 +6,6 @@ Globals:
   Function:
     Timeout: 30
     MemorySize: 256
-    Runtime: nodejs20.x
     Architectures:
       - x86_64
 
@@ -83,6 +82,7 @@ Resources:
     Properties:
       CodeUri: ./packages/backend
       Handler: src/worker.handler
+      Runtime: nodejs20.x
       Timeout: 120
       ReservedConcurrentExecutions: 2 # Hard cap on LLM parallel processing
       Events:
@@ -373,6 +373,7 @@ Resources:
     Properties:
       CodeUri: ./packages/backend
       Handler: src/audit-consumer.handler
+      Runtime: nodejs20.x
       Timeout: 30
       MemorySize: 128
       Events:
@@ -499,6 +500,7 @@ Resources:
     Properties:
       CodeUri: ./packages/backend
       Handler: src/omop-pipeline.handler
+      Runtime: nodejs20.x
       Timeout: 30
       MemorySize: 128
       Events:
