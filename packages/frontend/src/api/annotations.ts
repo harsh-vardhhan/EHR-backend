@@ -29,7 +29,7 @@ export const api = {
   getDocuments: async (): Promise<Document[]> => {
     const { data, error } = await client.documents.get();
     if (error) {
-      throw new Error((error.value as any)?.message || 'Failed to fetch documents');
+      throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to fetch documents');
     }
     return DocumentArraySchema.parse(data);
   },
@@ -37,10 +37,10 @@ export const api = {
   getDocument: async (id: string): Promise<Document> => {
     const { data, error } = await client.documents({ id }).get();
     if (error) {
-      throw new Error((error.value as any)?.message || 'Failed to fetch document');
+      throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to fetch document');
     }
     
-    const rawData = data as any;
+    const rawData = data as unknown as Record<string, unknown>;
     // Normalize embedded annotations and relationships to align database keys with schemas
     const mapped = {
       ...rawData,
@@ -61,7 +61,7 @@ export const api = {
   triggerAnalysis: async (documentId: string): Promise<void> => {
     const { error } = await client.documents({ id: documentId }).analyze.post();
     if (error) {
-      throw new Error((error.value as any)?.message || 'Failed to trigger analysis');
+      throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to trigger analysis');
     }
   },
 
@@ -70,11 +70,11 @@ export const api = {
       query: { documentId },
     });
     if (error) {
-      throw new Error((error.value as any)?.message || 'Failed to fetch annotations');
+      throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to fetch annotations');
     }
     
     // Handle the mapping of annotationId to id if necessary, then parse
-    const mappedData = (data as any as Array<Record<string, unknown>>).map(d => ({ ...d, id: d.annotationId || d.id }));
+    const mappedData = (data as unknown as Array<Record<string, unknown>>).map(d => ({ ...d, id: d.annotationId || d.id }));
     return AnnotationArraySchema.parse(mappedData);
   },
 
@@ -86,9 +86,9 @@ export const api = {
       confidence: payload.confidence ?? undefined,
       assertion: payload.assertion ?? undefined,
       conceptCode: payload.conceptCode ?? undefined,
-    } as any);
+    } as unknown as Record<string, unknown>);
     if (error) {
-      throw new Error((error.value as any)?.message || 'Failed to create annotation');
+      throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to create annotation');
     }
     
     const raw = data as Record<string, unknown>;
@@ -105,9 +105,9 @@ export const api = {
       confidence: updates.confidence ?? undefined,
       assertion: updates.assertion ?? undefined,
       conceptCode: updates.conceptCode ?? undefined,
-    } as any);
+    } as unknown as Record<string, unknown>);
     if (error) {
-      throw new Error((error.value as any)?.message || 'Failed to update annotation');
+      throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to update annotation');
     }
     
     const raw = data as Record<string, unknown>;
@@ -118,7 +118,7 @@ export const api = {
   deleteAnnotation: async (id: string): Promise<void> => {
     const { error } = await client.annotations({ id }).delete();
     if (error) {
-      throw new Error((error.value as any)?.message || 'Failed to delete annotation');
+      throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to delete annotation');
     }
   },
 
@@ -127,10 +127,10 @@ export const api = {
       query: { documentId },
     });
     if (error) {
-      throw new Error((error.value as any)?.message || 'Failed to fetch relationships');
+      throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to fetch relationships');
     }
     
-    const mappedData = (data as any as Array<Record<string, unknown>>).map(d => ({
+    const mappedData = (data as unknown as Array<Record<string, unknown>>).map(d => ({
       ...d,
       relationshipId: d.relationshipId || d.id,
       id: d.id || d.relationshipId,
@@ -144,9 +144,9 @@ export const api = {
     const { data, error } = await client.annotations.relationships.post({
       ...payload,
       confidence: payload.confidence ?? undefined,
-    } as any);
+    } as unknown as Record<string, unknown>);
     if (error) {
-      throw new Error((error.value as any)?.message || 'Failed to create relationship');
+      throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to create relationship');
     }
     
     const raw = data as Record<string, unknown>;
@@ -161,9 +161,9 @@ export const api = {
   deleteRelationship: async (id: string, documentId: string): Promise<void> => {
     const { error } = await client.annotations.relationships({ relationshipId: id }).delete(undefined, {
       query: { documentId },
-    } as any);
+    } as unknown as Record<string, unknown>);
     if (error) {
-      throw new Error((error.value as any)?.message || 'Failed to delete relationship');
+      throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to delete relationship');
     }
   },
 
@@ -179,19 +179,19 @@ export const api = {
 
     const { data, error } = await client.annotations.search.get({
       query: params,
-    } as any);
+    } as unknown as Record<string, unknown>);
     if (error) {
-      throw new Error((error.value as any)?.message || 'Failed to search annotations');
+      throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to search annotations');
     }
     
-    const mappedData = (data as any as Array<Record<string, unknown>>).map(d => ({ ...d, id: d.annotationId || d.id }));
+    const mappedData = (data as unknown as Array<Record<string, unknown>>).map(d => ({ ...d, id: d.annotationId || d.id }));
     return AnnotationArraySchema.parse(mappedData);
   },
 
   getAuditLogs: async (documentId: string): Promise<AuditLog[]> => {
     const { data, error } = await client.documents({ id: documentId }).audit.get();
     if (error) {
-      throw new Error((error.value as any)?.message || 'Failed to fetch audit logs');
+      throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to fetch audit logs');
     }
     return AuditLogArraySchema.parse(data);
   },

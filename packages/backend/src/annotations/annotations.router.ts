@@ -7,7 +7,8 @@ const documentIdQuerySchema = t.Object({
     minLength: 1,
     maxLength: 100,
     pattern: '^[a-zA-Z0-9_-]+$',
-    error: 'documentId must only contain alphanumeric characters, dashes, or underscores',
+    error:
+      'documentId must only contain alphanumeric characters, dashes, or underscores',
   }),
 });
 
@@ -18,14 +19,17 @@ const uuidParamSchema = t.Object({
   }),
 });
 
-const labelSchema = t.Union([
-  t.Literal(MEDICAL_ENTITIES.CONDITION),
-  t.Literal(MEDICAL_ENTITIES.MEDICATION),
-  t.Literal(MEDICAL_ENTITIES.FINDING),
-  t.Literal(MEDICAL_ENTITIES.PROCEDURE),
-], {
-  error: 'Invalid label type',
-});
+const labelSchema = t.Union(
+  [
+    t.Literal(MEDICAL_ENTITIES.CONDITION),
+    t.Literal(MEDICAL_ENTITIES.MEDICATION),
+    t.Literal(MEDICAL_ENTITIES.FINDING),
+    t.Literal(MEDICAL_ENTITIES.PROCEDURE),
+  ],
+  {
+    error: 'Invalid label type',
+  },
+);
 
 const createAnnotationSchema = t.Object({
   documentId: t.String({ minLength: 1, error: 'documentId is required' }),
@@ -56,7 +60,11 @@ const createAnnotationSchema = t.Object({
   ),
   confidence: t.Optional(t.Numeric({ minimum: 0, maximum: 1 })),
   assertion: t.Optional(
-    t.Union([t.Literal('positive'), t.Literal('negated'), t.Literal('possible')]),
+    t.Union([
+      t.Literal('positive'),
+      t.Literal('negated'),
+      t.Literal('possible'),
+    ]),
   ),
   conceptCode: t.Optional(t.String()),
 });
@@ -65,7 +73,11 @@ const updateAnnotationSchema = t.Partial(createAnnotationSchema);
 
 const searchQuerySchema = t.Object({
   assertion: t.Optional(
-    t.Union([t.Literal('positive'), t.Literal('negated'), t.Literal('possible')]),
+    t.Union([
+      t.Literal('positive'),
+      t.Literal('negated'),
+      t.Literal('possible'),
+    ]),
   ),
   label: t.Optional(labelSchema),
   conceptCode: t.Optional(t.String()),
@@ -87,80 +99,132 @@ const createRelationshipSchema = t.Object({
 
 export const annotationsApp = new Elysia({ prefix: '/annotations' })
   .onError(({ error, set }) => {
-    const isNotFound = (error as any).message?.toLowerCase().includes('not found');
+    const isNotFound = (error as any).message
+      ?.toLowerCase()
+      .includes('not found');
     set.status = isNotFound ? 404 : 400;
     return {
       error: isNotFound ? 'Not Found' : 'Bad Request',
       message: (error as any).message,
     };
   })
-  .get('/search', async ({ query }) => {
-    const annotations = await annotationsService.searchAnnotations(query);
-    return annotations;
-  }, {
-    query: searchQuerySchema,
-  })
-  .get('/', async ({ query: { documentId } }) => {
-    const annotations = await annotationsService.getAnnotationsByDocument(documentId);
-    return annotations;
-  }, {
-    query: documentIdQuerySchema,
-  })
-  .post('/', async ({ body, set }) => {
-    if (body.startOffset > body.endOffset) {
-      set.status = 400;
-      return { error: 'Validation failed', message: 'startOffset must be less than or equal to endOffset' };
-    }
-    const newAnnotation = await annotationsService.createAnnotation(body);
-    set.status = 201;
-    return newAnnotation;
-  }, {
-    body: createAnnotationSchema,
-  })
-  .patch('/:id', async ({ params: { id }, body, set }) => {
-    if (body.startOffset !== undefined && body.endOffset !== undefined && body.startOffset > body.endOffset) {
-      set.status = 400;
-      return { error: 'Validation failed', message: 'startOffset must be less than or equal to endOffset' };
-    }
-    const updatedAnnotation = await annotationsService.updateAnnotation(id, body);
-    return updatedAnnotation;
-  }, {
-    params: uuidParamSchema,
-    body: updateAnnotationSchema,
-  })
-  .delete('/:id', async ({ params: { id } }) => {
-    await annotationsService.deleteAnnotation(id);
-    return { success: true };
-  }, {
-    params: uuidParamSchema,
-  })
-  .get('/relationships', async ({ query: { documentId } }) => {
-    const relationships = await annotationsService.getRelationshipsByDocument(documentId);
-    return relationships;
-  }, {
-    query: documentIdQuerySchema,
-  })
-  .post('/relationships', async ({ body }) => {
-    const newRel = await annotationsService.createRelationship(body);
-    return newRel;
-  }, {
-    body: createRelationshipSchema,
-  })
-  .delete('/relationships/:relationshipId', async ({ params: { relationshipId }, query: { documentId }, set }) => {
-    if (!documentId) {
-      set.status = 400;
-      return {
-        error: 'Bad Request',
-        message: 'documentId query parameter is required',
-      };
-    }
-    await annotationsService.deleteRelationship(documentId, relationshipId);
-    return { success: true };
-  }, {
-    params: t.Object({
-      relationshipId: t.String({ format: 'uuid', error: 'relationshipId must be a valid UUID' }),
-    }),
-    query: t.Object({
-      documentId: t.String({ minLength: 1 }),
-    }),
-  });
+  .get(
+    '/search',
+    async ({ query }) => {
+      const annotations = await annotationsService.searchAnnotations(query);
+      return annotations;
+    },
+    {
+      query: searchQuerySchema,
+    },
+  )
+  .get(
+    '/',
+    async ({ query: { documentId } }) => {
+      const annotations =
+        await annotationsService.getAnnotationsByDocument(documentId);
+      return annotations;
+    },
+    {
+      query: documentIdQuerySchema,
+    },
+  )
+  .post(
+    '/',
+    async ({ body, set }) => {
+      if (body.startOffset > body.endOffset) {
+        set.status = 400;
+        return {
+          error: 'Validation failed',
+          message: 'startOffset must be less than or equal to endOffset',
+        };
+      }
+      const newAnnotation = await annotationsService.createAnnotation(body);
+      set.status = 201;
+      return newAnnotation;
+    },
+    {
+      body: createAnnotationSchema,
+    },
+  )
+  .patch(
+    '/:id',
+    async ({ params: { id }, body, set }) => {
+      if (
+        body.startOffset !== undefined &&
+        body.endOffset !== undefined &&
+        body.startOffset > body.endOffset
+      ) {
+        set.status = 400;
+        return {
+          error: 'Validation failed',
+          message: 'startOffset must be less than or equal to endOffset',
+        };
+      }
+      const updatedAnnotation = await annotationsService.updateAnnotation(
+        id,
+        body,
+      );
+      return updatedAnnotation;
+    },
+    {
+      params: uuidParamSchema,
+      body: updateAnnotationSchema,
+    },
+  )
+  .delete(
+    '/:id',
+    async ({ params: { id } }) => {
+      await annotationsService.deleteAnnotation(id);
+      return { success: true };
+    },
+    {
+      params: uuidParamSchema,
+    },
+  )
+  .get(
+    '/relationships',
+    async ({ query: { documentId } }) => {
+      const relationships =
+        await annotationsService.getRelationshipsByDocument(documentId);
+      return relationships;
+    },
+    {
+      query: documentIdQuerySchema,
+    },
+  )
+  .post(
+    '/relationships',
+    async ({ body }) => {
+      const newRel = await annotationsService.createRelationship(body);
+      return newRel;
+    },
+    {
+      body: createRelationshipSchema,
+    },
+  )
+  .delete(
+    '/relationships/:relationshipId',
+    async ({ params: { relationshipId }, query: { documentId }, set }) => {
+      if (!documentId) {
+        set.status = 400;
+        return {
+          error: 'Bad Request',
+          message: 'documentId query parameter is required',
+        };
+      }
+      await annotationsService.deleteRelationship(documentId, relationshipId);
+      return { success: true };
+    },
+    {
+      params: t.Object({
+        relationshipId: t.String({
+          format: 'uuid',
+          error: 'relationshipId must be a valid UUID',
+        }),
+      }),
+      query: t.Object({
+        documentId: t.String({ minLength: 1 }),
+      }),
+    },
+  );

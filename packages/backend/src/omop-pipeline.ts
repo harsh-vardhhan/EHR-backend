@@ -3,7 +3,6 @@ import { FirehoseClient, PutRecordCommand } from '@aws-sdk/client-firehose';
 
 const firehoseClient = new FirehoseClient({});
 
-
 // Helper to clean dates to standard YYYY-MM-DD
 function getLocalDateString(isoString?: string): string {
   if (!isoString) return new Date().toISOString().split('T')[0];
@@ -15,11 +14,16 @@ function getLocalDateString(isoString?: string): string {
 }
 
 export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
-  console.log('OMOP Pipeline consumer received event:', JSON.stringify(event, null, 2));
+  console.log(
+    'OMOP Pipeline consumer received event:',
+    JSON.stringify(event, null, 2),
+  );
 
   const deliveryStreamName = process.env.OMOP_DELIVERY_STREAM_NAME;
   if (!deliveryStreamName) {
-    console.error('OMOP_DELIVERY_STREAM_NAME environment variable is not configured.');
+    console.error(
+      'OMOP_DELIVERY_STREAM_NAME environment variable is not configured.',
+    );
     return;
   }
 
@@ -49,7 +53,9 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
     const createdAt = newImage.createdAt?.S;
 
     if (!annotationId || !documentId) {
-      console.warn('Skipping annotation record due to missing annotationId or documentId');
+      console.warn(
+        'Skipping annotation record due to missing annotationId or documentId',
+      );
       continue;
     }
 
@@ -94,7 +100,9 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
       }
 
       if (!mappedRecord) {
-        console.log(`Annotation ${annotationId} has unsupported label "${label}". Skipping OMOP mapping.`);
+        console.log(
+          `Annotation ${annotationId} has unsupported label "${label}". Skipping OMOP mapping.`,
+        );
         continue;
       }
 
@@ -105,7 +113,10 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
         timestamp: new Date().toISOString(),
       };
 
-      console.log(`Streaming mapped ${targetTable} record to Firehose:`, JSON.stringify(payload));
+      console.log(
+        `Streaming mapped ${targetTable} record to Firehose:`,
+        JSON.stringify(payload),
+      );
       const recordData = JSON.stringify(payload) + '\n';
 
       const command = new PutRecordCommand({
@@ -116,9 +127,15 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
       });
 
       await firehoseClient.send(command);
-      console.log(`Successfully streamed ${annotationId} record to Kinesis Firehose.`);
+      console.log(
+        `Successfully streamed ${annotationId} record to Kinesis Firehose.`,
+      );
     } catch (error) {
-      console.error(`Failed to process DynamoDB Stream record to OMOP format:`, error, JSON.stringify(record));
+      console.error(
+        `Failed to process DynamoDB Stream record to OMOP format:`,
+        error,
+        JSON.stringify(record),
+      );
     }
   }
 };
