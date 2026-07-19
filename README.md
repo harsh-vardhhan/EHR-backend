@@ -1,21 +1,17 @@
 # EHR Annotation Platform - Cloud-Native Clinical NLP Backend
 
-Enterprise-grade serverless backend for clinical document annotation, built with Hono and deployed on AWS.
+Enterprise-grade serverless backend for clinical document annotation, built with Elysia and deployed on AWS.
 
 [![Backend CI](https://github.com/harsh-vardhhan/EHR-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/harsh-vardhhan/EHR-backend/actions/workflows/ci.yml)
-[![Deploy Backend](https://github.com/harsh-vardhhan/EHR-backend/actions/workflows/deploy.yml/badge.svg)](https://github.com/harsh-vardhhan/EHR-backend/actions/workflows/deploy.yml)
+[![Deploy Backend](https://github.com/harsh-vardhhan/EHR-backend/actions/workflows/deploy-backend.yml/badge.svg)](https://github.com/harsh-vardhhan/EHR-backend/actions/workflows/deploy-backend.yml)
 
-**🚀 Live Demo:** [https://ehr-frontend-hazel.vercel.app/](https://ehr-frontend-hazel.vercel.app/)
+**🚀 Live Demo:** [https://ehr-backend-frontend.vercel.app/](https://ehr-backend-frontend.vercel.app/)
 
 ### Key Capabilities
 *   **Clinical Named Entity Recognition (NER):** Parse raw EHR notes to identify critical health variables.
 *   **Medical Ontology Tagging:** Automated ICD-10, RxNorm, and SNOMED-CT dictionary code lookups.
 *   **Clinical Assertion Parsing:** Distinguish positive, negated (ruled-out), and speculated medical claims.
 *   **Stateless De-identification Sandbox:** HIPAA-aligned safe-harbor clinical preview engine.
-
-## 🔗 Repository Links
-*   🖥️ **Frontend React UI:** [EHR Annotation Client Dashboard Repository](https://github.com/harsh-vardhhan/EHR-frontend)
-*   ⚙️ **Backend API Service:** [AWS Serverless Clinical NLP Backend Repository](https://github.com/harsh-vardhhan/EHR-backend)
 
 ## 🏥 Clinical NLP & Health-Tech Domain Design
 
@@ -73,7 +69,7 @@ graph TD
     %% Core Application Subgraph (Left Side)
     subgraph Core ["Clinical Ingestion & NLP Inferences"]
         User((Clinician)) -->|API Request with API Key| LambdaURL(AWS Lambda Function URL)
-        LambdaURL -->|Hono Router & Auth Middleware| LambdaAPI[AWS Lambda - API]
+        LambdaURL -->|Elysia Router & Auth Middleware| LambdaAPI[AWS Lambda - API]
         LambdaAPI -->|Read/Write| DynamoDB[(Amazon DynamoDB)]
         LambdaAPI -->|Read Scrubbed Notes| S3[(Amazon S3 - Medical Notes)]
         LambdaAPI -->|Manual Trigger| SQS([AWS SQS - Annotation Queue])
@@ -205,7 +201,7 @@ sequenceDiagram
 
 | Component | Role in Architecture |
 | :--- | :--- |
-| **AWS Lambda (API)** | Executes the Hono application, handling UI interactions and document metadata orchestration. |
+| **AWS Lambda (API)** | Executes the Elysia application, handling UI interactions and document metadata orchestration. |
 | **AWS Lambda (NLP Worker)** | Dedicated asynchronous worker triggered by SQS to perform LLM clinical entity extraction. |
 | **AWS Lambda (Kill Switch)** | Administrative helper triggered by SNS to throttle the API Lambda reserved concurrency to 0. |
 | **AWS Lambda (Audit Stream Consumer)** | Asynchronous event consumer triggered by DynamoDB Streams to filter and forward audit logs to Firehose. |
@@ -217,7 +213,7 @@ sequenceDiagram
 | **Amazon S3 (Medical Notes)** | Encrypted object storage for raw clinical document text, acting as the event source for the ingestion pipeline. |
 | **Amazon S3 (Audit WORM Bucket)** | Secure compliance bucket protected by S3 Object Lock (Compliance Mode) storing immutable audit logs. |
 | **Amazon S3 (OMOP Data Lake)** | Shared object storage hosting the structured, search-ready clinical data files under the `omop/` folder prefix. |
-| **Lambda Function URL** | Public HTTPS endpoint routing requests directly to the Hono backend. |
+| **Lambda Function URL** | Public HTTPS endpoint routing requests directly to the Elysia backend. |
 | **CloudWatch Alarm & SNS** | Monitors total request volume (Invocations + Throttles) in real-time, acting as the circuit breaker sensor. |
 | **SageMaker Serverless (PyTorch)** | High-performance machine learning inference endpoint hosting the specialized clinical NLP deep learning models for extraction, relation prediction, assertion classification, and concept grounding. |
 
@@ -251,8 +247,8 @@ This backend incorporates a robust, multi-layered security architecture designed
 
 | Defense Vector | Implementation & Controls | Purpose & Billing Safety Impact |
 | :--- | :--- | :--- |
-| **Auth Gatekeeper** | Valid `x-api-key` header verified in Hono middleware. | Rejects unauthenticated requests in ~2ms before executing database operations. |
-| **Stateless Sandbox Guard** | Unauthenticated `POST /annotations/preview` endpoint with Zod validation. | Allows public portfolio sandbox testing. Capped to **3,000 characters** input limit and **8 seconds execution timeout** to protect LLM token budget. |
+| **Auth Gatekeeper** | Valid `x-api-key` header verified in Elysia middleware. | Rejects unauthenticated requests in ~2ms before executing database operations. |
+| **Stateless Sandbox Guard** | Unauthenticated `POST /annotations/preview` endpoint with TypeBox validation. | Allows public portfolio sandbox testing. Capped to **3,000 characters** input limit and **8 seconds execution timeout** to protect LLM token budget. |
 | **Zero-Routing Cost Gateway** | Direct Lambda Function URL (no API Gateway request fees). | Eliminates API Gateway per-request charges ($3.50/million), ensuring throttled requests cost exactly $0.00. |
 | **Automated Circuit Breaker** | CloudWatch Alarm (>2000 req/1m) $\rightarrow$ SNS $\rightarrow$ Kill-Switch Lambda. | Automatically updates backend Lambda reserved concurrency to `0` on breach, dropping resource billing to absolute zero. |
 | **Compute Scaling Caps** | `ReservedConcurrentExecutions` limits (**2** for API Lambda, **2** for SQS NLP Worker). | Caps the maximum number of concurrent running containers AWS can spin up under a flood. |
@@ -272,17 +268,17 @@ This backend incorporates a robust, multi-layered security architecture designed
 ## 🛠 Local Development
 
 ### Prerequisites
-- Node.js 20+
+- Bun (v1.1+ recommended)
 - AWS CLI (configured via AWS IAM Identity Center/SSO profile e.g., `ehr-dev`)
 - SAM CLI (optional, for local Lambda emulation)
 
 ### Setup
-1. Clone the repository and install dependencies:
+1. Clone the repository and install dependencies at the monorepo root:
 ```bash
-$ npm install
+$ bun install
 ```
 
-2. Create a `.env` file in the root of the `backend` directory containing your API keys and configuration parameters:
+2. Create a `.env` file in the root of the `packages/backend` directory containing your API keys and configuration parameters:
 ```env
 EHR_TABLE_NAME=ehr-table
 DOCUMENTS_BUCKET_NAME=your_s3_bucket_name
@@ -291,18 +287,18 @@ OMOPHUB_API_KEY=your_omophub_api_key
 ```
 
 ### Running Locally
+Run the monorepo workspaces concurrently:
 ```bash
-# development
-$ npm run start:dev
+$ bun run dev
 ```
 
 ## 📜 Key Scripts
-- `npm run build`: Compiles the application.
-- `npm run bundle`: Creates a production-ready esbuild bundle for AWS Lambda.
-- `npm run lint`: Runs the linter.
-- `npm run test`: Executes unit tests.
-- `npm run cleanup`: Wipes all DynamoDB table items and S3 objects to reset the environment.
-- `npm run seed`: Seeds the S3 bucket with sample document notes.
+Run these scripts from the monorepo root:
+- `bun run build`: Compiles all workspace packages.
+- `bun run lint`: Lints the monorepo.
+- `bun run test`: Executes the test suites.
+- `bun --filter backend run cleanup`: Wipes all DynamoDB table items and S3 objects to reset the database.
+- `bun --filter backend run seed`: Seeds the S3 bucket with sample document notes.
 
 ---
 *Built for the Modern Clinical Workflow.*
