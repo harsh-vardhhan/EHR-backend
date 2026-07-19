@@ -1,4 +1,4 @@
-FROM oven/bun:1.4-alpine AS base
+FROM oven/bun:alpine AS base
 WORKDIR /usr/src/app
 
 # Copy the Lambda Web Adapter binary from the official ECR image
