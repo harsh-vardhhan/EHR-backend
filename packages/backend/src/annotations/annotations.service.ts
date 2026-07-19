@@ -9,6 +9,7 @@ import {
 } from '../database/entities';
 
 export interface Annotation {
+  id?: string;
   annotationId: string;
   documentId: string;
   text: string;
@@ -39,7 +40,12 @@ export class AnnotationsService {
       const response = await AnnotationEntity.query
         .primary({ documentId })
         .go();
-      return (response.data as Annotation[]) || [];
+      return (
+        ((response.data || []) as any[]).map((item) => ({
+          ...item,
+          id: item.annotationId,
+        })) || []
+      );
     } catch (error) {
       console.error('Error fetching annotations', error);
       return [];
@@ -56,19 +62,22 @@ export class AnnotationsService {
     }
 
     const annotationId = randomUUID();
-    const newAnnotation: Annotation = {
+    const newAnnotation = {
       ...data,
       annotationId,
       createdAt: new Date().toISOString(),
     };
 
-    await AnnotationEntity.create(newAnnotation).go();
+    await AnnotationEntity.create(newAnnotation as any).go();
     await this.createAuditLog(
       data.documentId,
       'ANNOTATION_CREATED',
       `Clinician manually created ${data.label} annotation: "${data.text}"`,
     );
-    return newAnnotation;
+    return {
+      ...newAnnotation,
+      id: annotationId,
+    };
   }
 
   async createAnnotations(
@@ -86,20 +95,23 @@ export class AnnotationsService {
     }
 
     const timestamp = new Date().toISOString();
-    const newAnnotations: Annotation[] = annotationsData.map((data) => ({
+    const newAnnotations = annotationsData.map((data) => ({
       ...data,
       documentId,
       annotationId: randomUUID(),
       createdAt: timestamp,
     }));
 
-    await AnnotationEntity.put(newAnnotations).go();
+    await AnnotationEntity.put(newAnnotations as any).go();
     await this.createAuditLog(
       documentId,
       'LLM_EXTRACTION_SUCCESS',
       `AI pipeline successfully completed clinical NER and extracted ${newAnnotations.length} concepts.`,
     );
-    return newAnnotations;
+    return newAnnotations.map((item) => ({
+      ...item,
+      id: item.annotationId,
+    }));
   }
 
   async updateAnnotation(
@@ -130,7 +142,10 @@ export class AnnotationsService {
     }
 
     if (Object.keys(cleanedUpdates).length === 0) {
-      return item as Annotation;
+      return {
+        ...item,
+        id: item.annotationId,
+      } as unknown as Annotation;
     }
 
     try {
@@ -161,7 +176,10 @@ export class AnnotationsService {
 
       await this.createAuditLog(documentId, actionType, desc);
 
-      return response.data as Annotation;
+      return {
+        ...response.data,
+        id: response.data.annotationId,
+      } as unknown as Annotation;
     } catch (error) {
       console.error('Error updating annotation', error);
       throw new Error(`Annotation with id ${annotationId} not found`);
@@ -173,6 +191,12 @@ export class AnnotationsService {
     label?: MedicalEntityLabel;
     conceptCode?: string;
   }): Promise<Annotation[]> {
+    const mapItems = (items: any[]) =>
+      items.map((item) => ({
+        ...item,
+        id: item.annotationId,
+      })) as unknown as Annotation[];
+
     try {
       if (filters.assertion && filters.label) {
         const query = AnnotationEntity.query.byAssertionLabel({
@@ -185,7 +209,7 @@ export class AnnotationsService {
           );
         }
         const res = await query.go();
-        return (res.data as Annotation[]) || [];
+        return mapItems(res.data || []);
       }
 
       // If only assertion is provided, query across all labels in parallel
@@ -203,10 +227,10 @@ export class AnnotationsService {
               );
             }
             const res = await q.go();
-            return (res.data as Annotation[]) || [];
+            return res.data || [];
           }),
         );
-        return results.flat();
+        return mapItems(results.flat());
       }
 
       // If assertion is not provided but label is, query across all assertion partitions in parallel
@@ -231,7 +255,7 @@ export class AnnotationsService {
             return res.data || [];
           }),
         );
-        return results.flat() as Annotation[];
+        return mapItems(results.flat());
       }
 
       // If only conceptCode is provided, query across all assertion partitions in parallel
@@ -251,7 +275,7 @@ export class AnnotationsService {
             return res.data || [];
           }),
         );
-        return results.flat() as Annotation[];
+        return mapItems(results.flat());
       }
 
       return [];
