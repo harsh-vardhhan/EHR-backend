@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import type { Annotation } from '../types/annotation';
-import type { Relationship } from '../types/relationship';
+import type { Annotation, Relationship } from '../types';
 import { AnnotationChip } from './AnnotationChip';
 import { Button } from './ui/button';
 import { ArrowLeft, Tags, Inbox, Link2, Trash2, PlusCircle } from 'lucide-react';

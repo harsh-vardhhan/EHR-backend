@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Annotation } from '../types/annotation';
-import type { Document } from '../types/document';
+import type { Annotation, Document } from '../types';
 import { api } from '../api/annotations';
 import { Button } from './ui/button';
 import { toast } from './ui/toast';

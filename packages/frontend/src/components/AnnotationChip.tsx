@@ -1,4 +1,4 @@
-import type { Annotation } from '../types/annotation';
+import type { Annotation } from '../types';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Segmented } from './ui/segmented';

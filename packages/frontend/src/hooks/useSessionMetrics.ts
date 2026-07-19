@@ -1,4 +1,4 @@
-import type { Annotation } from '../types/annotation';
+import type { Annotation } from '../types';
 import { ANNOTATION_STATUS, ANNOTATION_SOURCE } from '../constants/status';
 
 export function useSessionMetrics(annotations: Annotation[]) {

@@ -1,4 +1,4 @@
-import type { Label } from '../types/annotation';
+import type { Label } from '../types';
 import { Plus } from 'lucide-react';
 import styled, { keyframes } from 'styled-components';
 import { MEDICAL_LABELS, LABEL_IDS } from '../constants/labels';

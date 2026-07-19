@@ -97,6 +97,8 @@ const createRelationshipSchema = t.Object({
   confidence: t.Optional(t.Numeric({ minimum: 0, maximum: 1 })),
 });
 
+import { AnnotationSchema, RelationshipSchema } from '../database/schemas';
+
 export const annotationsApp = new Elysia({ prefix: '/annotations' })
   .onError(({ error, set }) => {
     const isNotFound = (error as any).message
@@ -112,10 +114,11 @@ export const annotationsApp = new Elysia({ prefix: '/annotations' })
     '/search',
     async ({ query }) => {
       const annotations = await annotationsService.searchAnnotations(query);
-      return annotations;
+      return annotations as any;
     },
     {
       query: searchQuerySchema,
+      response: t.Array(AnnotationSchema),
     },
   )
   .get(
@@ -123,10 +126,11 @@ export const annotationsApp = new Elysia({ prefix: '/annotations' })
     async ({ query: { documentId } }) => {
       const annotations =
         await annotationsService.getAnnotationsByDocument(documentId);
-      return annotations;
+      return annotations as any;
     },
     {
       query: documentIdQuerySchema,
+      response: t.Array(AnnotationSchema),
     },
   )
   .post(
@@ -137,14 +141,18 @@ export const annotationsApp = new Elysia({ prefix: '/annotations' })
         return {
           error: 'Validation failed',
           message: 'startOffset must be less than or equal to endOffset',
-        };
+        } as any;
       }
       const newAnnotation = await annotationsService.createAnnotation(body);
       set.status = 201;
-      return newAnnotation;
+      return newAnnotation as any;
     },
     {
       body: createAnnotationSchema,
+      response: {
+        201: AnnotationSchema,
+        400: t.Object({ error: t.String(), message: t.String() }),
+      },
     },
   )
   .patch(
@@ -159,27 +167,32 @@ export const annotationsApp = new Elysia({ prefix: '/annotations' })
         return {
           error: 'Validation failed',
           message: 'startOffset must be less than or equal to endOffset',
-        };
+        } as any;
       }
       const updatedAnnotation = await annotationsService.updateAnnotation(
         id,
         body,
       );
-      return updatedAnnotation;
+      return updatedAnnotation as any;
     },
     {
       params: uuidParamSchema,
       body: updateAnnotationSchema,
+      response: {
+        200: AnnotationSchema,
+        400: t.Object({ error: t.String(), message: t.String() }),
+      },
     },
   )
   .delete(
     '/:id',
     async ({ params: { id } }) => {
       await annotationsService.deleteAnnotation(id);
-      return { success: true };
+      return { success: true } as any;
     },
     {
       params: uuidParamSchema,
+      response: t.Object({ success: t.Boolean() }),
     },
   )
   .get(
@@ -187,20 +200,22 @@ export const annotationsApp = new Elysia({ prefix: '/annotations' })
     async ({ query: { documentId } }) => {
       const relationships =
         await annotationsService.getRelationshipsByDocument(documentId);
-      return relationships;
+      return relationships as any;
     },
     {
       query: documentIdQuerySchema,
+      response: t.Array(RelationshipSchema),
     },
   )
   .post(
     '/relationships',
     async ({ body }) => {
       const newRel = await annotationsService.createRelationship(body);
-      return newRel;
+      return newRel as any;
     },
     {
       body: createRelationshipSchema,
+      response: RelationshipSchema,
     },
   )
   .delete(
@@ -211,10 +226,10 @@ export const annotationsApp = new Elysia({ prefix: '/annotations' })
         return {
           error: 'Bad Request',
           message: 'documentId query parameter is required',
-        };
+        } as any;
       }
       await annotationsService.deleteRelationship(documentId, relationshipId);
-      return { success: true };
+      return { success: true } as any;
     },
     {
       params: t.Object({
@@ -226,5 +241,10 @@ export const annotationsApp = new Elysia({ prefix: '/annotations' })
       query: t.Object({
         documentId: t.String({ minLength: 1 }),
       }),
+      response: {
+        200: t.Object({ success: t.Boolean() }),
+        400: t.Object({ error: t.String(), message: t.String() }),
+      },
     },
   );
+

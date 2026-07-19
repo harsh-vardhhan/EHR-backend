@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/annotations';
-import type { Annotation } from '../../types/annotation';
+import type { Annotation } from '../../types';
 
 export function useAnnotations(documentId: string | undefined) {
   const queryClient = useQueryClient();

@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
-import type { Annotation, Label } from '../types/annotation';
-import type { Relationship } from '../types/relationship';
+import type { Annotation, Label, Relationship } from '../types';
 import { useDocument } from '../hooks/queries/useDocuments';
 import { useAnnotations } from '../hooks/queries/useAnnotations';
 import { useRelationships } from '../hooks/queries/useRelationships';
