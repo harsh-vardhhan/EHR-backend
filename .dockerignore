@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.aws-sam/
+
+# Version control
+.git/
+
+# Environment files
+.env
+.env.*
+
+# IDE / OS
+.idea/
+.vscode/
+*.sw?
+
+# Python / ML artifacts
+.venv/
+__pycache__/
+*.pyc
+ml/model/
+ml/model.tar.gz
+
+# Frontend source (package.json still needed for workspace resolution)
+packages/frontend/src/
+packages/frontend/dist/
+packages/frontend/node_modules/
+packages/frontend/public/
+
+# Misc
+.agents/
+.ruff_cache/
