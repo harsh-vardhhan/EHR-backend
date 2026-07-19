@@ -12,8 +12,8 @@ export const AnnotationSchema = t.Object({
   documentId: t.String(),
   text: t.String(),
   label: LabelSchema,
-  startOffset: t.Numeric(),
-  endOffset: t.Numeric(),
+  startOffset: t.Number(),
+  endOffset: t.Number(),
   source: t.Union([t.Literal('human'), t.Literal('llm')]),
   status: t.Optional(
     t.Union([
@@ -23,7 +23,7 @@ export const AnnotationSchema = t.Object({
       t.Literal('corrected'),
     ]),
   ),
-  confidence: t.Optional(t.Numeric()),
+  confidence: t.Optional(t.Number()),
   assertion: t.Optional(
     t.Union([
       t.Literal('positive'),
@@ -42,7 +42,7 @@ export const RelationshipSchema = t.Object({
   sourceAnnotationId: t.String(),
   targetAnnotationId: t.String(),
   relationType: t.String(),
-  confidence: t.Optional(t.Numeric()),
+  confidence: t.Optional(t.Number()),
   createdAt: t.Optional(t.String()),
 });
 
