@@ -86,7 +86,7 @@ export const api = {
       confidence: payload.confidence ?? undefined,
       assertion: payload.assertion ?? undefined,
       conceptCode: payload.conceptCode ?? undefined,
-    } as unknown as Record<string, unknown>);
+    } as unknown as Parameters<typeof client.annotations.post>[0]);
     if (error) {
       throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to create annotation');
     }
@@ -105,7 +105,7 @@ export const api = {
       confidence: updates.confidence ?? undefined,
       assertion: updates.assertion ?? undefined,
       conceptCode: updates.conceptCode ?? undefined,
-    } as unknown as Record<string, unknown>);
+    } as unknown as Parameters<ReturnType<typeof client.annotations>['patch']>[0]);
     if (error) {
       throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to update annotation');
     }
@@ -144,7 +144,7 @@ export const api = {
     const { data, error } = await client.annotations.relationships.post({
       ...payload,
       confidence: payload.confidence ?? undefined,
-    } as unknown as Record<string, unknown>);
+    } as unknown as Parameters<typeof client.annotations.relationships.post>[0]);
     if (error) {
       throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to create relationship');
     }
@@ -161,7 +161,7 @@ export const api = {
   deleteRelationship: async (id: string, documentId: string): Promise<void> => {
     const { error } = await client.annotations.relationships({ relationshipId: id }).delete(undefined, {
       query: { documentId },
-    } as unknown as Record<string, unknown>);
+    });
     if (error) {
       throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to delete relationship');
     }
@@ -178,8 +178,8 @@ export const api = {
     if (filters.conceptCode && filters.conceptCode.trim() !== '') params.conceptCode = filters.conceptCode;
 
     const { data, error } = await client.annotations.search.get({
-      query: params,
-    } as unknown as Record<string, unknown>);
+      query: params as unknown as NonNullable<Parameters<typeof client.annotations.search.get>[0]>['query'],
+    });
     if (error) {
       throw new Error((error.value as unknown as { message?: string })?.message || 'Failed to search annotations');
     }
