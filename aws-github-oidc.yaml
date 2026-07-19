@@ -60,9 +60,9 @@ Resources:
                 Action:
                   - cloudformation:*
                 Resource:
-                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/ehr-annotation-backend/*"
-                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/ehr-annotation-frontend/*"
-                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/aws-sam-cli-managed-default/*"
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/ehr-annotation-backend*"
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/ehr-annotation-frontend*"
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/aws-sam-cli-managed-default*"
                   - !Sub "arn:aws:cloudformation:*:aws:transform/*"
               - Sid: S3BucketInfrastructureManagement
                 Effect: Allow
