@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 240 5% 98%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --primary: 243.4 75.4% 58.6%; /* #6366f1 */
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 243.4 75.4% 58.6%;
+
+    --radius: 0.75rem;
+
+    --font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 243.4 75.4% 58.6%; /* #6366f1 */
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 243.4 75.4% 58.6%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-family);
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Backwards compatibility for light-mode / dark-mode classes */
+.light-mode {
+  --bg-color: #f5f5f5;
+  --text-main: #262626;
+}
+
+.dark-mode {
+  @apply dark;
+  --bg-color: #000000;
+  --text-main: #ffffff;
+}
+
+.dark-mode body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* Medical Highlight Styles */
+mark.highlight {
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: 0 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+}
+
+/* Light Mode Highlights - Soft but clinical */
+.light-mode mark.highlight-condition { background-color: #ffe4e6; border-bottom-color: #fb7185; color: #9f1239; }
+.light-mode mark.highlight-medication { background-color: #dbeafe; border-bottom-color: #60a5fa; color: #1e40af; }
+.light-mode mark.highlight-symptom { background-color: #fef3c7; border-bottom-color: #fbbf24; color: #92400e; }
+.light-mode mark.highlight-procedure { background-color: #f3e8ff; border-bottom-color: #a855f7; color: #6b21a8; }
+
+/* Dark Mode Highlights - Vibrant and High Contrast */
+.dark-mode mark.highlight-condition { background-color: rgba(225, 29, 72, 0.3); border-bottom-color: #fb7185; color: #fff1f2; }
+.dark-mode mark.highlight-medication { background-color: rgba(37, 99, 235, 0.3); border-bottom-color: #60a5fa; color: #eff6ff; }
+.dark-mode mark.highlight-symptom { background-color: rgba(217, 119, 6, 0.3); border-bottom-color: #fbbf24; color: #fffbeb; }
+.dark-mode mark.highlight-procedure { background-color: rgba(147, 51, 234, 0.3); border-bottom-color: #c084fc; color: #faf5ff; }
+
+mark.pulse {
+  animation: pulseHighlight 2s ease-out;
+}
+
+@keyframes pulseHighlight {
+  0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+}
+
+.document-content {
+  max-width: 800px;
+  margin: 0 auto;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 19px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  color: var(--text-main);
+  user-select: text;
+}

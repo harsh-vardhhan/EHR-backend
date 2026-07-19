@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>frontend</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet" />
+    <script>
+      // Automatically reload the page if a static asset script/style fails to load (e.g., due to a redeployment).
+      window.addEventListener('error', function(e) {
+        if (e.target && (e.target.src || e.target.href)) {
+          var url = e.target.src || e.target.href;
+          // Only target chunk asset load failures
+          if (url.indexOf('/assets/') !== -1) {
+            var lastReload = sessionStorage.getItem('assets-reload-timestamp');
+            var now = Date.now();
+            // Prevent infinite reload loops by rate-limiting (reload at most once every 15 seconds)
+            if (!lastReload || now - parseInt(lastReload, 10) > 15000) {
+              sessionStorage.setItem('assets-reload-timestamp', now.toString());
+              window.location.reload();
+            }
+          }
+        }
+      }, true); // Use capture phase since resource load errors don't bubble
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
