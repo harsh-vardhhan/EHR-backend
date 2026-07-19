@@ -52,6 +52,13 @@ Resources:
       ReservedConcurrentExecutions: 2 # Prevent run-away compute costs
       FunctionUrlConfig:
         AuthType: NONE
+        Cors:
+          AllowOrigins:
+            - '*'
+          AllowHeaders:
+            - '*'
+          AllowMethods:
+            - '*'
       Environment:
         Variables:
           EHR_TABLE_NAME: !Ref EhrTableName
