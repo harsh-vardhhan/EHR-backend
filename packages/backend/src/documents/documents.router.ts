@@ -19,20 +19,24 @@ const idParamSchema = t.Object({
 
 export const documentsApp = new Elysia({ prefix: '/documents' })
   .onError(({ error, set }) => {
-    const isNotFound = (error as any).message
-      ?.toLowerCase()
-      .includes('not found');
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'object' && error !== null && 'message' in error
+          ? String((error as { message: unknown }).message)
+          : 'An unexpected error occurred';
+    const isNotFound = message.toLowerCase().includes('not found');
     set.status = isNotFound ? 404 : 500;
     return {
       error: isNotFound ? 'Not Found' : 'Internal Server Error',
-      message: (error as any).message,
+      message,
     };
   })
   .get(
     '/',
     async () => {
       const docs = await documentsService.getDocuments();
-      return docs as any;
+      return docs;
     },
     {
       response: t.Array(DocumentSchema),
@@ -42,7 +46,7 @@ export const documentsApp = new Elysia({ prefix: '/documents' })
     '/:id',
     async ({ params: { id } }) => {
       const doc = await documentsService.getDocument(id);
-      return doc as any;
+      return doc;
     },
     {
       params: idParamSchema,
@@ -53,7 +57,7 @@ export const documentsApp = new Elysia({ prefix: '/documents' })
     '/:id/audit',
     async ({ params: { id } }) => {
       const auditLogs = await annotationsService.getAuditLogs(id);
-      return auditLogs as any;
+      return auditLogs;
     },
     {
       params: idParamSchema,
@@ -63,9 +67,9 @@ export const documentsApp = new Elysia({ prefix: '/documents' })
   .post(
     '/:id/analyze',
     async ({ params: { id } }) => {
-      const doc = (await documentsService.getDocument(id)) as any;
-      await documentsService.triggerAnalysis(doc.id, doc.s3Key);
-      return { success: true, message: 'Analysis queued successfully' } as any;
+      const doc = await documentsService.getDocument(id);
+      await documentsService.triggerAnalysis(doc.id, doc.s3Key || '');
+      return { success: true, message: 'Analysis queued successfully' };
     },
     {
       params: idParamSchema,

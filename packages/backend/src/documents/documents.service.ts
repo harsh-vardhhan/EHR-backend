@@ -8,6 +8,10 @@ import {
   RelationshipEntity,
 } from '../database/entities';
 
+import type { Document } from '../database/schemas';
+import type { MedicalEntityLabel } from '../constants/labels';
+import type { Annotation } from '../annotations/annotations.service';
+
 export class DocumentsService {
   private s3Client: S3Client;
   private sqsClient: SQSClient;
@@ -17,17 +21,20 @@ export class DocumentsService {
     this.sqsClient = new SQSClient({});
   }
 
-  async getDocuments() {
+  async getDocuments(): Promise<Document[]> {
     try {
       const response = await DocumentEntity.query.bySk({}).go();
-      return response.data || [];
+      return (response.data || []).map((doc) => ({
+        ...doc,
+        status: doc.status as Document['status'],
+      }));
     } catch (error) {
       console.error('Error fetching documents from DDB', error);
       return [];
     }
   }
 
-  async getDocument(id: string) {
+  async getDocument(id: string): Promise<Document> {
     const bucketName = process.env.DOCUMENTS_BUCKET_NAME;
 
     if (!bucketName) {
@@ -50,7 +57,11 @@ export class DocumentsService {
 
     const annotations = (annotationsRes.data || []).map((item) => ({
       ...item,
-      id: item.annotationId || item.annotationId, // Map database key to frontend key 'id'
+      source: item.source as Annotation['source'],
+      status: item.status as Annotation['status'],
+      label: item.label as MedicalEntityLabel,
+      assertion: item.assertion as Annotation['assertion'],
+      id: item.annotationId,
     }));
 
     const relationships = (relationshipsRes.data || []).map((item) => ({
@@ -69,6 +80,7 @@ export class DocumentsService {
 
       return {
         ...metadata,
+        status: metadata.status as Document['status'],
         text,
         annotations,
         relationships,

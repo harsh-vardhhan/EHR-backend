@@ -110,9 +110,10 @@ export async function extractClinicalEntities(
         `[extractClinicalEntities] Successfully extracted ${result.entities.length} entities and ${result.relations.length} relations from local Python ML server.`,
       );
       return result;
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
       console.error(
-        `[extractClinicalEntities] Local ML server query failed: ${err.message || err}`,
+        `[extractClinicalEntities] Local ML server query failed: ${msg}`,
       );
       throw err;
     }
@@ -144,9 +145,10 @@ export async function extractClinicalEntities(
     const parsedData = JSON.parse(responseText);
 
     return mapMlResponse(parsedData);
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
     console.error(
-      `[extractClinicalEntities] SageMaker extraction failed: ${err.message || err}`,
+      `[extractClinicalEntities] SageMaker extraction failed: ${msg}`,
     );
     throw err;
   }

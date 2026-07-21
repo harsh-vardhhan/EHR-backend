@@ -59,6 +59,7 @@ export const DocumentSchema = t.Object({
     ]),
   ),
   category: t.Optional(t.String()),
+  s3Key: t.Optional(t.String()),
   createdAt: t.Optional(t.String()),
   annotations: t.Optional(t.Array(AnnotationSchema)),
   relationships: t.Optional(t.Array(RelationshipSchema)),

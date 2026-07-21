@@ -101,20 +101,24 @@ import { AnnotationSchema, RelationshipSchema } from '../database/schemas';
 
 export const annotationsApp = new Elysia({ prefix: '/annotations' })
   .onError(({ error, set }) => {
-    const isNotFound = (error as any).message
-      ?.toLowerCase()
-      .includes('not found');
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'object' && error !== null && 'message' in error
+          ? String((error as { message: unknown }).message)
+          : 'An unexpected error occurred';
+    const isNotFound = message.toLowerCase().includes('not found');
     set.status = isNotFound ? 404 : 400;
     return {
       error: isNotFound ? 'Not Found' : 'Bad Request',
-      message: (error as any).message,
+      message,
     };
   })
   .get(
     '/search',
     async ({ query }) => {
       const annotations = await annotationsService.searchAnnotations(query);
-      return annotations as any;
+      return annotations;
     },
     {
       query: searchQuerySchema,
@@ -126,7 +130,7 @@ export const annotationsApp = new Elysia({ prefix: '/annotations' })
     async ({ query: { documentId } }) => {
       const annotations =
         await annotationsService.getAnnotationsByDocument(documentId);
-      return annotations as any;
+      return annotations;
     },
     {
       query: documentIdQuerySchema,
@@ -137,58 +141,44 @@ export const annotationsApp = new Elysia({ prefix: '/annotations' })
     '/',
     async ({ body, set }) => {
       if (body.startOffset > body.endOffset) {
-        set.status = 400;
-        return {
-          error: 'Validation failed',
-          message: 'startOffset must be less than or equal to endOffset',
-        } as any;
+        throw new Error('startOffset must be less than or equal to endOffset');
       }
       const newAnnotation = await annotationsService.createAnnotation(body);
       set.status = 201;
-      return newAnnotation as any;
+      return newAnnotation;
     },
     {
       body: createAnnotationSchema,
-      response: {
-        201: AnnotationSchema,
-        400: t.Object({ error: t.String(), message: t.String() }),
-      },
+      response: AnnotationSchema,
     },
   )
   .patch(
     '/:id',
-    async ({ params: { id }, body, set }) => {
+    async ({ params: { id }, body }) => {
       if (
         body.startOffset !== undefined &&
         body.endOffset !== undefined &&
         body.startOffset > body.endOffset
       ) {
-        set.status = 400;
-        return {
-          error: 'Validation failed',
-          message: 'startOffset must be less than or equal to endOffset',
-        } as any;
+        throw new Error('startOffset must be less than or equal to endOffset');
       }
       const updatedAnnotation = await annotationsService.updateAnnotation(
         id,
         body,
       );
-      return updatedAnnotation as any;
+      return updatedAnnotation;
     },
     {
       params: uuidParamSchema,
       body: updateAnnotationSchema,
-      response: {
-        200: AnnotationSchema,
-        400: t.Object({ error: t.String(), message: t.String() }),
-      },
+      response: AnnotationSchema,
     },
   )
   .delete(
     '/:id',
     async ({ params: { id } }) => {
       await annotationsService.deleteAnnotation(id);
-      return { success: true } as any;
+      return { success: true };
     },
     {
       params: uuidParamSchema,
@@ -200,7 +190,7 @@ export const annotationsApp = new Elysia({ prefix: '/annotations' })
     async ({ query: { documentId } }) => {
       const relationships =
         await annotationsService.getRelationshipsByDocument(documentId);
-      return relationships as any;
+      return relationships;
     },
     {
       query: documentIdQuerySchema,
@@ -211,7 +201,7 @@ export const annotationsApp = new Elysia({ prefix: '/annotations' })
     '/relationships',
     async ({ body }) => {
       const newRel = await annotationsService.createRelationship(body);
-      return newRel as any;
+      return newRel;
     },
     {
       body: createRelationshipSchema,
@@ -226,10 +216,10 @@ export const annotationsApp = new Elysia({ prefix: '/annotations' })
         return {
           error: 'Bad Request',
           message: 'documentId query parameter is required',
-        } as any;
+        };
       }
       await annotationsService.deleteRelationship(documentId, relationshipId);
-      return { success: true } as any;
+      return { success: true };
     },
     {
       params: t.Object({

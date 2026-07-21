@@ -47,7 +47,7 @@ export const handler = async (event: SNSEvent) => {
         message: 'Lambda reserved concurrency throttled to 0 successfully.',
       }),
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(
       '[CIRCUIT BREAKER] Failed to update Lambda function concurrency settings:',
       error,

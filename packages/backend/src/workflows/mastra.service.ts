@@ -66,8 +66,9 @@ export class MastraService {
           JSON.stringify(saveResult.output),
         );
       }
-    } catch (error: any) {
-      console.error('[MastraService] Error executing analysis workflow', error);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error('[MastraService] Error executing analysis workflow:', msg);
       throw error;
     }
   }

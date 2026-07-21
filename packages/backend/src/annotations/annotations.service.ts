@@ -9,7 +9,7 @@ import {
 } from '../database/entities';
 
 export interface Annotation {
-  id?: string;
+  id: string;
   annotationId: string;
   documentId: string;
   text: string;
@@ -40,12 +40,14 @@ export class AnnotationsService {
       const response = await AnnotationEntity.query
         .primary({ documentId })
         .go();
-      return (
-        ((response.data || []) as any[]).map((item) => ({
-          ...item,
-          id: item.annotationId,
-        })) || []
-      );
+      return (response.data || []).map((item) => ({
+        ...item,
+        source: item.source as Annotation['source'],
+        status: item.status as Annotation['status'],
+        label: item.label as MedicalEntityLabel,
+        assertion: item.assertion as Annotation['assertion'],
+        id: item.annotationId,
+      }));
     } catch (error) {
       console.error('Error fetching annotations', error);
       return [];
@@ -53,7 +55,7 @@ export class AnnotationsService {
   }
 
   async createAnnotation(
-    data: Omit<Annotation, 'annotationId' | 'createdAt'>,
+    data: Omit<Annotation, 'annotationId' | 'createdAt' | 'id'>,
   ): Promise<Annotation> {
     // Check if document exists in the single table
     const docRes = await DocumentEntity.get({ id: data.documentId }).go();
@@ -62,13 +64,14 @@ export class AnnotationsService {
     }
 
     const annotationId = randomUUID();
+    const entityPayload = { ...data };
     const newAnnotation = {
-      ...data,
+      ...entityPayload,
       annotationId,
       createdAt: new Date().toISOString(),
     };
 
-    await AnnotationEntity.create(newAnnotation as any).go();
+    await AnnotationEntity.create(newAnnotation).go();
     await this.createAuditLog(
       data.documentId,
       'ANNOTATION_CREATED',
@@ -76,6 +79,10 @@ export class AnnotationsService {
     );
     return {
       ...newAnnotation,
+      source: newAnnotation.source,
+      status: newAnnotation.status,
+      label: newAnnotation.label,
+      assertion: newAnnotation.assertion,
       id: annotationId,
     };
   }
@@ -84,7 +91,7 @@ export class AnnotationsService {
     documentId: string,
     annotationsData: Omit<
       Annotation,
-      'annotationId' | 'createdAt' | 'documentId'
+      'annotationId' | 'createdAt' | 'documentId' | 'id'
     >[],
   ): Promise<Annotation[]> {
     if (annotationsData.length === 0) return [];
@@ -95,14 +102,17 @@ export class AnnotationsService {
     }
 
     const timestamp = new Date().toISOString();
-    const newAnnotations = annotationsData.map((data) => ({
-      ...data,
-      documentId,
-      annotationId: randomUUID(),
-      createdAt: timestamp,
-    }));
+    const newAnnotations = annotationsData.map((data) => {
+      const entityPayload = { ...data };
+      return {
+        ...entityPayload,
+        documentId,
+        annotationId: randomUUID(),
+        createdAt: timestamp,
+      };
+    });
 
-    await AnnotationEntity.put(newAnnotations as any).go();
+    await AnnotationEntity.put(newAnnotations).go();
     await this.createAuditLog(
       documentId,
       'LLM_EXTRACTION_SUCCESS',
@@ -110,6 +120,10 @@ export class AnnotationsService {
     );
     return newAnnotations.map((item) => ({
       ...item,
+      source: item.source,
+      status: item.status,
+      label: item.label,
+      assertion: item.assertion,
       id: item.annotationId,
     }));
   }
@@ -130,11 +144,12 @@ export class AnnotationsService {
     const documentId = item.documentId;
 
     // Remove keys that cannot be modified (like keys used in PK/SK)
-    const cleanedUpdates: Record<string, any> = {};
+    const cleanedUpdates: Record<string, string | number | undefined> = {};
     for (const [key, value] of Object.entries(updates)) {
       if (
         key !== 'annotationId' &&
         key !== 'documentId' &&
+        key !== 'id' &&
         value !== undefined
       ) {
         cleanedUpdates[key] = value;
@@ -144,8 +159,12 @@ export class AnnotationsService {
     if (Object.keys(cleanedUpdates).length === 0) {
       return {
         ...item,
+        source: item.source as Annotation['source'],
+        status: item.status as Annotation['status'],
+        label: item.label as MedicalEntityLabel,
+        assertion: item.assertion as Annotation['assertion'],
         id: item.annotationId,
-      } as unknown as Annotation;
+      };
     }
 
     try {
@@ -178,8 +197,12 @@ export class AnnotationsService {
 
       return {
         ...response.data,
+        source: response.data.source as Annotation['source'],
+        status: response.data.status as Annotation['status'],
+        label: response.data.label as MedicalEntityLabel,
+        assertion: response.data.assertion as Annotation['assertion'],
         id: response.data.annotationId,
-      } as unknown as Annotation;
+      };
     } catch (error) {
       console.error('Error updating annotation', error);
       throw new Error(`Annotation with id ${annotationId} not found`);
@@ -191,11 +214,18 @@ export class AnnotationsService {
     label?: MedicalEntityLabel;
     conceptCode?: string;
   }): Promise<Annotation[]> {
-    const mapItems = (items: any[]) =>
-      items.map((item) => ({
-        ...item,
-        id: item.annotationId,
-      })) as unknown as Annotation[];
+    const mapItems = (items: Array<Record<string, unknown>>): Annotation[] =>
+      items.map(
+        (item) =>
+          ({
+            ...item,
+            source: item.source as Annotation['source'],
+            status: item.status as Annotation['status'],
+            label: item.label as MedicalEntityLabel,
+            assertion: item.assertion as Annotation['assertion'],
+            id: (item.annotationId || item.id) as string,
+          }) as Annotation,
+      );
 
     try {
       if (filters.assertion && filters.label) {
