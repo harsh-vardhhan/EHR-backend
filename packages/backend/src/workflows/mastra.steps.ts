@@ -7,6 +7,37 @@ import { extractClinicalEntities } from '../clients/extractor.client';
 import { Annotation } from '../annotations/annotations.service';
 import { Relationship } from '../annotations/annotations.service';
 
+const piiDetectionSchema = z.object({
+  text: z.string(),
+  type: z.enum(['NAME', 'DATE', 'PHONE', 'SSN', 'MRN', 'EMAIL']),
+  start: z.number(),
+  end: z.number(),
+});
+
+const extractedEntitySchema = z.object({
+  text: z.string(),
+  label: z.union([
+    z.literal('Clinical Condition'),
+    z.literal('Medication Statement'),
+    z.literal('Clinical Finding'),
+    z.literal('Medical Procedure'),
+  ]),
+  confidence: z.number(),
+  assertion: z.enum(['positive', 'negated', 'possible']),
+  conceptCode: z.string(),
+  startOffset: z.number(),
+  endOffset: z.number(),
+});
+
+const extractedRelationSchema = z.object({
+  sourceStart: z.number(),
+  sourceEnd: z.number(),
+  targetStart: z.number(),
+  targetEnd: z.number(),
+  relation: z.string(),
+  confidence: z.number(),
+});
+
 export function createCheckDuplicateStep(
   annotationsService: AnnotationsService,
 ) {
@@ -42,7 +73,7 @@ export function createScrubPiiStep(piiScrubber: PiiScrubberService) {
     inputSchema: z.object({}),
     outputSchema: z.object({
       scrubbedText: z.string(),
-      detections: z.array(z.any()),
+      detections: z.array(piiDetectionSchema),
     }),
     execute: async (context) => {
       const initData = context.getInitData<{
@@ -70,7 +101,7 @@ export function createSaveScrubbedTextStep(s3Client: S3Client) {
     id: 'save-scrubbed-text',
     inputSchema: z.object({
       scrubbedText: z.string(),
-      detections: z.array(z.any()),
+      detections: z.array(piiDetectionSchema),
     }),
     outputSchema: z.object({
       success: z.boolean(),
@@ -112,11 +143,11 @@ export function createExtractionStep() {
     id: 'extract-entities',
     inputSchema: z.object({
       scrubbedText: z.string(),
-      detections: z.array(z.any()),
+      detections: z.array(piiDetectionSchema),
     }),
     outputSchema: z.object({
-      entities: z.array(z.any()),
-      relations: z.array(z.any()),
+      entities: z.array(extractedEntitySchema),
+      relations: z.array(extractedRelationSchema),
       skipped: z.boolean(),
     }),
     execute: async (context) => {
@@ -146,8 +177,8 @@ export function createResolveAndSaveStep(
         success: z.boolean(),
       }),
       'extract-entities': z.object({
-        entities: z.array(z.any()),
-        relations: z.array(z.any()),
+        entities: z.array(extractedEntitySchema),
+        relations: z.array(extractedRelationSchema),
         skipped: z.boolean(),
       }),
     }),
@@ -180,7 +211,7 @@ export function createResolveAndSaveStep(
 
       const annotationsToCreate: Omit<
         Annotation,
-        'annotationId' | 'createdAt' | 'documentId'
+        'annotationId' | 'createdAt' | 'documentId' | 'id'
       >[] = [];
 
       for (const entity of entities) {

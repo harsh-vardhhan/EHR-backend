@@ -200,7 +200,15 @@ export class PiiScrubberService {
    * Asynchronously scrubs PII from the text, using the SageMaker GLiNER endpoint
    * to perform ML-based Named Entity Recognition (NER) for high-accuracy contextual scrubbing.
    */
-  private mergeMlEntities(detections: PiiDetection[], entities: any[]): void {
+  private mergeMlEntities(
+    detections: PiiDetection[],
+    entities: Array<{
+      text: string;
+      label: string;
+      start: number;
+      end: number;
+    }>,
+  ): void {
     const labelMap: Record<string, PiiDetection['type']> = {
       'Patient Name': 'NAME',
       'Doctor Name': 'NAME',
@@ -276,7 +284,14 @@ export class PiiScrubberService {
         });
 
         if (response.ok) {
-          const parsedData = await response.json();
+          const parsedData = (await response.json()) as {
+            entities?: Array<{
+              text: string;
+              label: string;
+              start: number;
+              end: number;
+            }>;
+          };
           if (parsedData.entities && Array.isArray(parsedData.entities)) {
             this.mergeMlEntities(detections, parsedData.entities);
           }
@@ -284,11 +299,11 @@ export class PiiScrubberService {
             `[PiiScrubberService] Local ML PII extraction completed. Total detections: ${detections.length}`,
           );
         }
-      } catch (err: any) {
-        console.error(
-          `[PiiScrubberService] Local ML-based PII scrubbing failed: ${err.message || err}`,
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(
+          `[PiiScrubberService] Local ML-based PII scrubbing failed: ${msg}. Degrading gracefully to regex PII scrubber.`,
         );
-        throw err;
       }
     } else {
       const endpointName =
@@ -309,17 +324,24 @@ export class PiiScrubberService {
 
         if (response.Body) {
           const responseText = Buffer.from(response.Body).toString('utf-8');
-          const parsedData = JSON.parse(responseText);
+          const parsedData = JSON.parse(responseText) as {
+            entities?: Array<{
+              text: string;
+              label: string;
+              start: number;
+              end: number;
+            }>;
+          };
 
           if (parsedData.entities && Array.isArray(parsedData.entities)) {
             this.mergeMlEntities(detections, parsedData.entities);
           }
         }
-      } catch (err: any) {
-        console.error(
-          `[PiiScrubberService] SageMaker ML-based PII scrubbing failed: ${err.message || err}`,
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(
+          `[PiiScrubberService] SageMaker ML-based PII scrubbing failed: ${msg}. Degrading gracefully to regex PII scrubber.`,
         );
-        throw err;
       }
     }
 
