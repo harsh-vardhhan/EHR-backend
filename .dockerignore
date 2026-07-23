@@ -20,9 +20,6 @@ dist/
 # Python / ML artifacts (ML inference runs on SageMaker, not in this image)
 ml/
 
-# Frontend (not needed — backend-only Lambda image)
-packages/frontend/
-
 # Misc
 .agents/
 .ruff_cache/
