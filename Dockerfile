@@ -1,20 +1,18 @@
-FROM oven/bun:alpine AS base
+FROM oven/bun:alpine
 WORKDIR /usr/src/app
 
-# Copy the Lambda Web Adapter binary from the official ECR image
 COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.8.3 /lambda-adapter /opt/extensions/lambda-adapter
 
-# Install dependencies inside the monorepo context
 COPY package.json bun.lock ./
 COPY packages/backend/package.json ./packages/backend/
-COPY packages/frontend/package.json ./packages/frontend/
-RUN bun install --frozen-lockfile
 
-# Copy source files and configuration
+# Strip frontend workspace so Bun doesn't install frontend deps
+RUN bun -e "const p=JSON.parse(require('fs').readFileSync('package.json','utf8'));p.workspaces=['packages/backend'];require('fs').writeFileSync('package.json',JSON.stringify(p,null,2))"
+
+RUN bun install --frozen-lockfile --production
+
 COPY packages/backend ./packages/backend
-COPY ml ./ml
 
-# Expose port and run
 ENV PORT=3000
 ENV NODE_ENV=production
 EXPOSE 3000
