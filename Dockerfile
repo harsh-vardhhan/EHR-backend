@@ -9,7 +9,7 @@ COPY packages/backend/package.json ./packages/backend/
 # Strip frontend workspace so Bun doesn't install frontend deps
 RUN bun -e "const p=JSON.parse(require('fs').readFileSync('package.json','utf8'));p.workspaces=['packages/backend'];require('fs').writeFileSync('package.json',JSON.stringify(p,null,2))"
 
-RUN bun install --production
+RUN rm -f bun.lock && bun install --production
 
 COPY packages/backend ./packages/backend
 
