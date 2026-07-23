@@ -41,7 +41,7 @@ jobs:
         run: npm install -g esbuild
 
       - name: SAM Build
-        run: sam build --no-cache
+        run: sam build --no-cached
 
       - name: SAM Deploy
         run: |
