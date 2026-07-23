@@ -3,7 +3,7 @@ WORKDIR /usr/src/app
 
 COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.8.3 /lambda-adapter /opt/extensions/lambda-adapter
 
-COPY package.json bun.lock ./
+COPY package.json ./
 COPY packages/backend/package.json ./packages/backend/
 
 # Strip frontend workspace so Bun doesn't install frontend deps
