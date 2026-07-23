@@ -17,18 +17,11 @@ dist/
 .vscode/
 *.sw?
 
-# Python / ML artifacts
-.venv/
-__pycache__/
-*.pyc
-ml/model/
-ml/model.tar.gz
+# Python / ML artifacts (ML inference runs on SageMaker, not in this image)
+ml/
 
-# Frontend source (package.json still needed for workspace resolution)
-packages/frontend/src/
-packages/frontend/dist/
-packages/frontend/node_modules/
-packages/frontend/public/
+# Frontend (not needed — backend-only Lambda image)
+packages/frontend/
 
 # Misc
 .agents/
