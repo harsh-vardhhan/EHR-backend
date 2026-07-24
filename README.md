@@ -11,7 +11,7 @@ Enterprise-grade serverless backend for clinical document annotation, built with
 *   **Clinical Named Entity Recognition (NER):** Parse raw EHR notes to identify critical health variables.
 *   **Medical Ontology Tagging:** Automated ICD-10, RxNorm, and SNOMED-CT dictionary code lookups.
 *   **Clinical Assertion Parsing:** Distinguish positive, negated (ruled-out), and speculated medical claims.
-*   **Stateless De-identification Sandbox:** HIPAA-aligned safe-harbor clinical preview engine.
+*   **Automated PII De-identification:** HIPAA-aligned safe-harbor clinical PII scrubber pipeline.
 
 ## 🏥 Clinical NLP & Health-Tech Domain Design
 
@@ -24,7 +24,7 @@ The clinical NLP workflow unifies extraction, assertion, and grounding tasks acr
 | Clinical NLP Task | Machine Learning Model | Key Responsibility | Execution Layer |
 | :--- | :--- | :--- | :--- |
 | **Entity Extraction (NER)** | [`Ihor/gliner-biomed-base-v1.0`](https://huggingface.co/Ihor/gliner-biomed-base-v1.0) | Extracts clinical entities (Conditions, Findings, Medications, Procedures) from raw notes. | SageMaker (PyTorch) |
-| **Relation Extraction (RE)** | [`urchade/gliner_medium-v2.1`](https://huggingface.co/urchade/gliner_medium-v2.1) | Predicts relationships between extracted entities (e.g. `treatment_for`, `associated_with`). | SageMaker (PyTorch) |
+| **Relation Extraction (RE)** | [`knowledgator/gliner-relex-base-v1.0`](https://huggingface.co/knowledgator/gliner-relex-base-v1.0) | Predicts relationships between extracted entities (e.g. `treatment_for`, `associated_with`). | SageMaker (PyTorch) |
 | **Assertion Classification** | [`bvanaken/clinical-assertion-negation-bert`](https://huggingface.co/bvanaken/clinical-assertion-negation-bert) | Classifies entities contextually as *Positive*, *Negated* (ruled-out), or *Possible* (speculative). | SageMaker (PyTorch) |
 | **Concept Resolution** | [`cambridgeltl/SapBERT-from-PubMedBERT-fulltext`](https://huggingface.co/cambridgeltl/SapBERT-from-PubMedBERT-fulltext) | Computes semantic token embeddings to rerank candidate lookups and map them to SNOMED/RxNorm codes. | SageMaker (PyTorch) |
 
@@ -58,7 +58,7 @@ To eliminate model hallucinations and ensure accurate coding, the extracted term
 
 ### HIPAA & Data Privacy Architecture
 *   **Data Residency:** All clinical notes are isolated in an encrypted Amazon S3 bucket using KMS Customer Managed Keys (CMKs). DynamoDB stores strictly structured, de-identified annotation offsets and concept mappings.
-*   **Stateless Inferences:** The public sandbox pipeline runs completely stateless, ensuring no patient-identifiable data is cached or written to persistent storage.
+*   **PII Masking & Privacy:** The asynchronous ingestion pipeline runs automated PII scrubbing (detecting names, dates, phone numbers, SSNs, MRNs) via a Mastra AI workflow before clinical NLP inference, storing scrubbed notes in S3 (`scrubbed/`) and de-identified annotations in DynamoDB.
 
 ## 🏗 AWS Architecture
 
@@ -76,7 +76,7 @@ graph TD
 
         S3 -->|Emit Event| EB([Amazon EventBridge - Bus])
         EB -->|Route Rule| SQS
-        SQS -->|Trigger| LambdaWorker[AWS Lambda - NLP Worker]
+        SQS -->|Trigger| LambdaWorker[AWS Lambda - Mastra NLP Worker]
         SQS -.->|Failures| DLQ([AWS SQS - Dead Letter Queue])
         
         LambdaWorker -->|1. Mask PII| Scrubber[PII Scrubber Service]
@@ -202,7 +202,7 @@ sequenceDiagram
 | Component | Role in Architecture |
 | :--- | :--- |
 | **AWS Lambda (API)** | Executes the Elysia application, handling UI interactions and document metadata orchestration. |
-| **AWS Lambda (NLP Worker)** | Dedicated asynchronous worker triggered by SQS to perform LLM clinical entity extraction. |
+| **AWS Lambda (Mastra NLP Worker)** | Dedicated asynchronous worker triggered by SQS executing a Mastra AI workflow (`@mastra/core`) for PII scrubbing, SageMaker entity/relation extraction, and OMOP vocabulary concept resolution. |
 | **AWS Lambda (Kill Switch)** | Administrative helper triggered by SNS to throttle the API Lambda reserved concurrency to 0. |
 | **AWS Lambda (Audit Stream Consumer)** | Asynchronous event consumer triggered by DynamoDB Streams to filter and forward audit logs to Firehose. |
 | **AWS Lambda (OMOP Pipeline)** | Asynchronous event consumer triggered by DynamoDB Streams to map clinical annotations to standard OMOP format and forward them to Firehose. |
@@ -248,7 +248,8 @@ This backend incorporates a robust, multi-layered security architecture designed
 | Defense Vector | Implementation & Controls | Purpose & Billing Safety Impact |
 | :--- | :--- | :--- |
 | **Auth Gatekeeper** | Valid `x-api-key` header verified in Elysia middleware. | Rejects unauthenticated requests in ~2ms before executing database operations. |
-| **Stateless Sandbox Guard** | Unauthenticated `POST /annotations/preview` endpoint with TypeBox validation. | Allows public portfolio sandbox testing. Capped to **3,000 characters** input limit and **8 seconds execution timeout** to protect LLM token budget. |
+| **Origin & Header Guard** | Validates `origin` against `ALLOWED_ORIGINS` and `x-origin-verify` secret header. | Rejects unauthorized cross-origin requests before reaching application handlers. |
+| **IP Rate Limiter** | Sliding window rate limiting (60 req/min per IP) via `elysia-rate-limit`. | Prevents endpoint brute-force and request flooding attacks. |
 | **Zero-Routing Cost Gateway** | Direct Lambda Function URL (no API Gateway request fees). | Eliminates API Gateway per-request charges ($3.50/million), ensuring throttled requests cost exactly $0.00. |
 | **Automated Circuit Breaker** | CloudWatch Alarm (>2000 req/1m) $\rightarrow$ SNS $\rightarrow$ Kill-Switch Lambda. | Automatically updates backend Lambda reserved concurrency to `0` on breach, dropping resource billing to absolute zero. |
 | **Compute Scaling Caps** | `ReservedConcurrentExecutions` limits (**2** for API Lambda, **2** for SQS NLP Worker). | Caps the maximum number of concurrent running containers AWS can spin up under a flood. |
@@ -258,7 +259,7 @@ This backend incorporates a robust, multi-layered security architecture designed
 | **External API Timeouts** | SageMaker NLP call `AbortController` (capped at **30 seconds**). | Prevents hung external endpoints from keeping the worker Lambda running up to its 30-second cap, while allowing ample time for large-document entity extractions. |
 | **Database Cost Ceiling** | DynamoDB configured with on-demand capacity (`PAY_PER_REQUEST`). Active costs are only incurred per request (pennies for a Reddit spike) and drop to exactly $0.00 during dormancy. | Combined with the API Kill Switch, this acts as a hard budget boundary preventing runaway database scaling costs. |
 | **Compute Efficiency** | Parallel database writes via `Promise.all` instead of sequential writes. | Grouped DB actions run concurrently, reducing billable Lambda active execution time by over 80%. |
-| **S3 Read-Only Worker** | SQS Lambda worker has read-only S3 permissions (`S3ReadPolicy`) and never writes back to S3. | There is zero risk of an infinite S3 write-event loop. |
+| **S3 Prefix Scope & Loop Defense** | EventBridge rule filters exclusively on `documents/` key prefix for S3 events. Worker Lambda writes scrubbed text under `scrubbed/` prefix. | Prevents recursive S3 write-event trigger loops. |
 | **Agentic Role Scoping** | Dev policy (`developer-policy.json`) restricts agent actions to data-plane only (S3/DynamoDB item actions) and read-only infra visibility. | Prevents AI agent hallucinations or runaway CLI scripts from deleting infrastructure or provisioning expensive, untracked resources. |
 
 > [!TIP]
@@ -299,6 +300,10 @@ Run these scripts from the monorepo root:
 - `bun run test`: Executes the test suites.
 - `bun --filter backend run cleanup`: Wipes all DynamoDB table items and S3 objects to reset the database.
 - `bun --filter backend run seed`: Seeds the S3 bucket with sample document notes.
+- `bun --filter backend test:kill-switch`: Tests CloudWatch DDoS alarm triggering and Lambda kill-switch concurrency throttling.
+- `bun --filter backend test:dlq`: Tests SQS Dead-Letter Queue failure handling.
+- `bun --filter backend verify:sagemaker`: Verifies SageMaker PyTorch endpoint connectivity and inference payloads.
+- `bun --filter backend verify:cloud`: End-to-end cloud processing verification across S3, SQS, SageMaker, and DynamoDB.
 
 ---
 *Built for the Modern Clinical Workflow.*
