@@ -54,9 +54,16 @@ Resources:
         AuthType: NONE
         Cors:
           AllowOrigins:
-            - '*'
+            - 'https://ehr-backend-frontend.vercel.app'
+            - 'http://localhost:5173'
+            - 'http://localhost:3000'
           AllowHeaders:
-            - '*'
+            - 'Content-Type'
+            - 'Authorization'
+            - 'X-Amz-Date'
+            - 'X-Api-Key'
+            - 'X-Origin-Verify'
+            - 'X-Amz-Security-Token'
           AllowMethods:
             - '*'
       Environment:
