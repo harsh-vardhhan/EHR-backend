@@ -1,18 +1,51 @@
 import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
+import { rateLimit } from 'elysia-rate-limit';
 import { documentsApp } from './documents/documents.router';
 import { annotationsApp } from './annotations/annotations.router';
 
+const ALLOWED_ORIGINS = new Set([
+  'https://ehr-backend-frontend.vercel.app',
+  ...(process.env.NODE_ENV !== 'production'
+    ? ['http://localhost:5173', 'http://localhost:3000']
+    : []),
+]);
+
 export const app = new Elysia()
+  .use(
+    rateLimit({
+      duration: 60000,
+      max: 60,
+      generator: (req) => {
+        const forwarded = req.headers.get('x-forwarded-for');
+        if (forwarded) {
+          const ips = forwarded.split(',').map((ip) => ip.trim());
+          return ips[ips.length - 1] || 'unknown';
+        }
+        return req.headers.get('x-real-ip') || 'unknown';
+      },
+      errorResponse: new Response(
+        JSON.stringify({
+          error: 'Too Many Requests',
+          message: 'Rate limit exceeded. Please try again later.',
+        }),
+        {
+          status: 429,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    }),
+  )
   .use(
     !process.env.AWS_LAMBDA_FUNCTION_NAME
       ? cors({
-          origin: process.env.FRONTEND_URL || '*',
+          origin: Array.from(ALLOWED_ORIGINS),
           allowedHeaders: [
             'Content-Type',
             'Authorization',
             'X-Amz-Date',
             'X-Api-Key',
+            'X-Origin-Verify',
             'X-Amz-Security-Token',
           ],
           methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -29,6 +62,25 @@ export const app = new Elysia()
     const url = new URL(request.url);
     if (url.pathname === '/' || request.method === 'OPTIONS') {
       return;
+    }
+
+    const origin = request.headers.get('origin');
+    const originSecret = request.headers.get('x-origin-verify');
+
+    if (origin && !ALLOWED_ORIGINS.has(origin)) {
+      set.status = 403;
+      return { error: 'Forbidden', message: 'Unauthorized origin' };
+    }
+
+    if (
+      process.env.ORIGIN_VERIFY_SECRET &&
+      originSecret !== process.env.ORIGIN_VERIFY_SECRET
+    ) {
+      set.status = 403;
+      return {
+        error: 'Forbidden',
+        message: 'Invalid origin verification secret',
+      };
     }
 
     const apiKey = request.headers.get('x-api-key');

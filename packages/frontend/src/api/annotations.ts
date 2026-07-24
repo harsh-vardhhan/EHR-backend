@@ -34,15 +34,25 @@ export const api = {
       throw new Error(getErrorMessage(error, 'Failed to fetch document'));
     }
 
-    const annotations = (data.annotations || []).map((a) => ({
+    const annotations = (
+      ((data as Record<string, unknown>).annotations as Record<
+        string,
+        unknown
+      >[]) || []
+    ).map((a: Record<string, unknown>) => ({
       ...a,
-      id: a.annotationId || a.id,
+      id: String(a.annotationId || a.id || ''),
     }));
 
-    const relationships = (data.relationships || []).map((r) => ({
+    const relationships = (
+      ((data as Record<string, unknown>).relationships as Record<
+        string,
+        unknown
+      >[]) || []
+    ).map((r: Record<string, unknown>) => ({
       ...r,
-      id: r.id || r.relationshipId,
-      relationshipId: r.relationshipId || r.id || '',
+      id: String(r.id || r.relationshipId || ''),
+      relationshipId: String(r.relationshipId || r.id || ''),
     }));
 
     return {
@@ -67,7 +77,12 @@ export const api = {
       throw new Error(getErrorMessage(error, 'Failed to fetch annotations'));
     }
 
-    return data.map((d) => ({ ...d, id: d.annotationId || d.id }));
+    return ((data as Record<string, unknown>[]) || []).map(
+      (d: Record<string, unknown>) => ({
+        ...d,
+        id: String(d.annotationId || d.id || ''),
+      }),
+    ) as Annotation[];
   },
 
   createAnnotation: async (
@@ -118,11 +133,13 @@ export const api = {
       throw new Error(getErrorMessage(error, 'Failed to fetch relationships'));
     }
 
-    return data.map((d) => ({
-      ...d,
-      relationshipId: d.relationshipId || d.id || '',
-      id: d.id || d.relationshipId,
-    }));
+    return ((data as Record<string, unknown>[]) || []).map(
+      (d: Record<string, unknown>) => ({
+        ...d,
+        relationshipId: String(d.relationshipId || d.id || ''),
+        id: String(d.id || d.relationshipId || ''),
+      }),
+    ) as Relationship[];
   },
 
   createRelationship: async (
@@ -191,7 +208,12 @@ export const api = {
       throw new Error(getErrorMessage(error, 'Failed to search annotations'));
     }
 
-    return data.map((d) => ({ ...d, id: d.annotationId || d.id }));
+    return ((data as Record<string, unknown>[]) || []).map(
+      (d: Record<string, unknown>) => ({
+        ...d,
+        id: String(d.annotationId || d.id || ''),
+      }),
+    ) as Annotation[];
   },
 
   getAuditLogs: async (documentId: string): Promise<AuditLog[]> => {
