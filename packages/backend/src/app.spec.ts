@@ -3,9 +3,11 @@ import { app } from './app';
 
 describe('App Security & Middleware', () => {
   const originalSecret = process.env.ORIGIN_VERIFY_SECRET;
+  const originalApiKey = process.env.API_KEY;
 
   afterEach(() => {
     process.env.ORIGIN_VERIFY_SECRET = originalSecret;
+    process.env.API_KEY = originalApiKey;
   });
 
   test('GET / healthcheck returns status ok', async () => {
@@ -71,26 +73,45 @@ describe('App Security & Middleware', () => {
     expect(response.status).toBe(200);
   });
 
-  test('triggers rate limiter after exceeding max requests for an IP', async () => {
-    const testIp = '203.0.113.42';
-    const makeReq = () =>
+  test('rejects request with 401 when API key is missing or invalid on protected route', async () => {
+    process.env.API_KEY = 'test_api_key_123';
+
+    const response = await app.handle(
+      new Request('http://localhost/documents', {
+        headers: {
+          origin: 'https://ehr-backend-frontend.vercel.app',
+          'x-api-key': 'wrong_key',
+        },
+      }),
+    );
+    expect(response.status).toBe(401);
+    const data = await response.json();
+    expect(data).toEqual({
+      error: 'Unauthorized',
+      message: 'Invalid or missing API Key',
+    });
+  });
+
+  test('triggers rate limiter based on right-most IP in X-Forwarded-For', async () => {
+    const targetIp = '203.0.113.99';
+    const makeReq = (spoofedPrefix: string) =>
       app.handle(
         new Request('http://localhost/', {
           headers: {
-            'x-forwarded-for': testIp,
+            'x-forwarded-for': `${spoofedPrefix}, ${targetIp}`,
             origin: 'https://ehr-backend-frontend.vercel.app',
           },
         }),
       );
 
-    // Send 60 allowed requests
+    // Send 60 requests with varying spoofed prefixes but same right-most IP
     for (let i = 0; i < 60; i++) {
-      const res = await makeReq();
+      const res = await makeReq(`1.2.3.${i}`);
       expect(res.status).toBe(200);
     }
 
-    // 61st request should be rate-limited
-    const rateLimitedRes = await makeReq();
+    // 61st request should be rate limited because right-most IP matches
+    const rateLimitedRes = await makeReq('9.9.9.9');
     expect(rateLimitedRes.status).toBe(429);
   });
 });

@@ -6,8 +6,9 @@ import { annotationsApp } from './annotations/annotations.router';
 
 const ALLOWED_ORIGINS = new Set([
   'https://ehr-backend-frontend.vercel.app',
-  'http://localhost:5173',
-  'http://localhost:3000',
+  ...(process.env.NODE_ENV !== 'production'
+    ? ['http://localhost:5173', 'http://localhost:3000']
+    : []),
 ]);
 
 export const app = new Elysia()
@@ -15,8 +16,14 @@ export const app = new Elysia()
     rateLimit({
       duration: 60000,
       max: 60,
-      generator: (req) =>
-        req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown',
+      generator: (req) => {
+        const forwarded = req.headers.get('x-forwarded-for');
+        if (forwarded) {
+          const ips = forwarded.split(',').map((ip) => ip.trim());
+          return ips[ips.length - 1] || 'unknown';
+        }
+        return req.headers.get('x-real-ip') || 'unknown';
+      },
       errorResponse: new Response(
         JSON.stringify({
           error: 'Too Many Requests',
@@ -79,7 +86,7 @@ export const app = new Elysia()
     const apiKey = request.headers.get('x-api-key');
     const expectedApiKey = process.env.API_KEY;
 
-    if (expectedApiKey && (!apiKey || apiKey !== expectedApiKey)) {
+    if (!apiKey || apiKey !== expectedApiKey) {
       set.status = 401;
       return { error: 'Unauthorized', message: 'Invalid or missing API Key' };
     }
