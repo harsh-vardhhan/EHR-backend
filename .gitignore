@@ -26,6 +26,5 @@ ml/model.tar.gz
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?
-.agents/
+*.sln
