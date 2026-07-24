@@ -17,10 +17,16 @@ export const app = new Elysia()
       max: 60,
       generator: (req) =>
         req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown',
-      errorResponse: {
-        error: 'Too Many Requests',
-        message: 'Rate limit exceeded. Please try again later.',
-      },
+      errorResponse: new Response(
+        JSON.stringify({
+          error: 'Too Many Requests',
+          message: 'Rate limit exceeded. Please try again later.',
+        }),
+        {
+          status: 429,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
     }),
   )
   .use(
