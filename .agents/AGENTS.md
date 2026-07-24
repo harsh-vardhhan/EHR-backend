@@ -23,6 +23,7 @@
 ## Git & GitHub Workflow
 * **Restricted Main Branch:** Direct pushes to `main` are strictly prohibited.
 * **Branch & PR Strategy:** Always create a feature/bugfix branch and use the GitHub CLI (`gh`) to create branches and open Pull Requests for code changes.
+* **PR CI & Automated Review Inspection:** After creating or pushing to a Pull Request, always monitor and verify that GitHub Actions CI checks pass (`gh pr checks`) and inspect automated review feedback (such as Greptile reviews via `gh pr view --comments`). Proactively address any build failures or valid security/logic findings before completing the task.
 
 ## Testing, Linting & Python Tooling
 * **JS/TS Testing & Linting:** Run tests via `bun test` and linting via `bun run lint`.
