@@ -242,7 +242,7 @@ export function createResolveAndSaveStep(
       // Bridge extracted relations using character offsets to resolved DB UUID annotationIds
       const relationshipsToCreate: Omit<
         Relationship,
-        'relationshipId' | 'createdAt' | 'documentId'
+        'relationshipId' | 'createdAt' | 'documentId' | 'id'
       >[] = [];
 
       for (const rel of relations) {
@@ -258,12 +258,16 @@ export function createResolveAndSaveStep(
         );
 
         if (sourceAnn && targetAnn) {
-          relationshipsToCreate.push({
-            sourceAnnotationId: sourceAnn.annotationId,
-            targetAnnotationId: targetAnn.annotationId,
-            relationType: rel.relation,
-            confidence: rel.confidence,
-          });
+          const sourceId = sourceAnn.id || sourceAnn.annotationId;
+          const targetId = targetAnn.id || targetAnn.annotationId;
+          if (sourceId && targetId) {
+            relationshipsToCreate.push({
+              sourceAnnotationId: sourceId,
+              targetAnnotationId: targetId,
+              relationType: rel.relation,
+              confidence: rel.confidence,
+            });
+          }
         }
       }
 

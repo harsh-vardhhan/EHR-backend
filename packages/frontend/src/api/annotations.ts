@@ -56,7 +56,7 @@ export const api = {
   },
 
   createAnnotation: async (
-    payload: Omit<Annotation, 'id' | 'createdAt'>,
+    payload: Omit<Annotation, 'id' | 'createdAt' | 'annotationId'>,
   ): Promise<Annotation> => {
     const { data, error } = await client.annotations.post({
       ...payload,
