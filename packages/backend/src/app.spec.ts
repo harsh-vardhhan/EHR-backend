@@ -127,19 +127,31 @@ describe('Boot-Time Environment Variable Validation (TypeBox)', () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  test('catches invalid NODE_ENV deployment mode', () => {
-    const result = validateEnv({
-      NODE_ENV: 'staging',
-    });
+  test('catches invalid NODE_ENV deployment mode and throws error', () => {
+    const result = validateEnv(
+      {
+        NODE_ENV: 'staging',
+      },
+      { throwOnError: false },
+    );
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.includes('NODE_ENV'))).toBe(true);
+
+    expect(() => {
+      validateEnv({
+        NODE_ENV: 'staging',
+      });
+    }).toThrow('Boot-Time Config Validation Failed');
   });
 
   test('catches invalid data type format via TypeBox schema', () => {
-    const result = validateEnv({
-      NODE_ENV: 'development',
-      PORT: 'invalid_port_string',
-    });
+    const result = validateEnv(
+      {
+        NODE_ENV: 'development',
+        PORT: 'invalid_port_string',
+      },
+      { throwOnError: false },
+    );
     expect(result.valid).toBe(false);
     expect(result.errors.length).toBeGreaterThan(0);
   });

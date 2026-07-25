@@ -70,9 +70,7 @@ export function validateEnv(
     }
   }
 
-  const shouldThrow =
-    options.throwOnError ??
-    (env.NODE_ENV === 'production' && errors.length > 0);
+  const shouldThrow = options.throwOnError ?? errors.length > 0;
 
   if (errors.length > 0) {
     console.error('❌ Boot-Time Environment Variable Validation Failed:');
