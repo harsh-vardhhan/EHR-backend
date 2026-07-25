@@ -3,9 +3,8 @@ import dotenv from 'dotenv';
 
 dotenv.config({
   path: path.resolve(__dirname, '../../../.env'),
-  override: true,
 });
-dotenv.config({ override: true });
+dotenv.config();
 
 import { handler } from '../worker';
 import { SQSEvent } from 'aws-lambda';

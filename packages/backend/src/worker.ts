@@ -1,11 +1,8 @@
 import * as path from 'path';
 import dotenv from 'dotenv';
 
-dotenv.config({
-  path: path.resolve(__dirname, '../../../.env'),
-  override: true,
-});
-dotenv.config({ override: true });
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config();
 
 import { SQSEvent, SQSBatchResponse } from 'aws-lambda';
 import { documentsService } from './documents/documents.service';

@@ -9,7 +9,7 @@ from reranker import resolve_concepts
 from transformers import AutoModel, AutoModelForSequenceClassification, AutoTokenizer
 
 
-def model_fn(model_dir):
+def model_fn(model_dir, context=None):
     print(f"model_dir path: {model_dir}")
     try:
         print("Contents of model_dir:", os.listdir(model_dir))

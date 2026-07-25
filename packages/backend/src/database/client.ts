@@ -3,9 +3,8 @@ import dotenv from 'dotenv';
 
 dotenv.config({
   path: path.resolve(__dirname, '../../../.env'),
-  override: true,
 });
-dotenv.config({ override: true });
+dotenv.config();
 
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 
