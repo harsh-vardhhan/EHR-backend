@@ -2,7 +2,7 @@ import * as path from 'path';
 import dotenv from 'dotenv';
 
 // Load root .env if present, preserving existing process.env CLI values
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 dotenv.config();
 
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
