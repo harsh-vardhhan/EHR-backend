@@ -115,3 +115,34 @@ describe('App Security & Middleware', () => {
     expect(rateLimitedRes.status).toBe(429);
   });
 });
+
+describe('Boot-Time Environment Variable Validation (TypeBox)', () => {
+  const { validateEnv } = require('./config');
+
+  test('validates valid environment configuration successfully', () => {
+    const result = validateEnv({
+      NODE_ENV: 'development',
+      PORT: '3000',
+    });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  test('catches invalid data type format via TypeBox schema', () => {
+    const result = validateEnv({
+      NODE_ENV: 'development',
+      PORT: 'invalid_port_string',
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+
+  test('throws error in production when mandatory environment variables are missing', () => {
+    expect(() => {
+      validateEnv({
+        NODE_ENV: 'production',
+      });
+    }).toThrow('Boot-Time Config Validation Failed');
+  });
+});
+
