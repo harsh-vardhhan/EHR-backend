@@ -3,33 +3,36 @@ import { t, getSchemaValidator } from 'elysia';
 /**
  * TypeBox Schema for Application Environment Variables
  */
-export const EnvSchema = t.Object({
-  NODE_ENV: t.Optional(
-    t.Union([
-      t.Literal('development'),
-      t.Literal('production'),
-      t.Literal('test'),
-    ]),
-  ),
-  PORT: t.Optional(
-    t.String({
-      pattern: '^[0-9]+$',
-      error: 'PORT must be a numeric string',
-    }),
-  ),
-  AWS_REGION: t.Optional(t.String()),
-  EHR_TABLE_NAME: t.Optional(t.String()),
-  DOCUMENTS_BUCKET_NAME: t.Optional(t.String()),
-  ANNOTATION_QUEUE_URL: t.Optional(t.String()),
-  AUDIT_DELIVERY_STREAM_NAME: t.Optional(t.String()),
-  OMOP_DELIVERY_STREAM_NAME: t.Optional(t.String()),
-  BACKEND_FUNCTION_NAME: t.Optional(t.String()),
-  ORIGIN_VERIFY_SECRET: t.Optional(t.String()),
-  API_KEY: t.Optional(t.String()),
-  LOCAL_ML_URL: t.Optional(t.String()),
-  SAGEMAKER_ENDPOINT_NAME: t.Optional(t.String()),
-  ALLOWED_ORIGINS: t.Optional(t.String()),
-}, { additionalProperties: true });
+export const EnvSchema = t.Object(
+  {
+    NODE_ENV: t.Optional(
+      t.Union([
+        t.Literal('development'),
+        t.Literal('production'),
+        t.Literal('test'),
+      ]),
+    ),
+    PORT: t.Optional(
+      t.String({
+        pattern: '^[0-9]+$',
+        error: 'PORT must be a numeric string',
+      }),
+    ),
+    AWS_REGION: t.Optional(t.String()),
+    EHR_TABLE_NAME: t.Optional(t.String()),
+    DOCUMENTS_BUCKET_NAME: t.Optional(t.String()),
+    ANNOTATION_QUEUE_URL: t.Optional(t.String()),
+    AUDIT_DELIVERY_STREAM_NAME: t.Optional(t.String()),
+    OMOP_DELIVERY_STREAM_NAME: t.Optional(t.String()),
+    BACKEND_FUNCTION_NAME: t.Optional(t.String()),
+    ORIGIN_VERIFY_SECRET: t.Optional(t.String()),
+    API_KEY: t.Optional(t.String()),
+    LOCAL_ML_URL: t.Optional(t.String()),
+    SAGEMAKER_ENDPOINT_NAME: t.Optional(t.String()),
+    ALLOWED_ORIGINS: t.Optional(t.String()),
+  },
+  { additionalProperties: true },
+);
 
 const envValidator = getSchemaValidator(EnvSchema);
 
@@ -155,4 +158,3 @@ export const config = {
     return process.env.SAGEMAKER_ENDPOINT_NAME || 'gliner-relex-endpoint';
   },
 };
-

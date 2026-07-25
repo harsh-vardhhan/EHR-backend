@@ -1,5 +1,6 @@
 import { describe, expect, test, afterEach } from 'bun:test';
 import { app } from './app';
+import { validateEnv } from './config';
 
 describe('App Security & Middleware', () => {
   const originalSecret = process.env.ORIGIN_VERIFY_SECRET;
@@ -117,8 +118,6 @@ describe('App Security & Middleware', () => {
 });
 
 describe('Boot-Time Environment Variable Validation (TypeBox)', () => {
-  const { validateEnv } = require('./config');
-
   test('validates valid environment configuration successfully', () => {
     const result = validateEnv({
       NODE_ENV: 'development',
@@ -145,4 +144,3 @@ describe('Boot-Time Environment Variable Validation (TypeBox)', () => {
     }).toThrow('Boot-Time Config Validation Failed');
   });
 });
-
