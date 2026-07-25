@@ -2,9 +2,9 @@
   "name": "ehr-monorepo",
   "private": true,
   "type": "module",
-  "packageManager": "bun@1.x",
+  "packageManager": "bun@1.1.42",
   "engines": {
-    "bun": ">=1.x"
+    "bun": ">=1.1.0"
   },
   "workspaces": [
     "packages/backend",
