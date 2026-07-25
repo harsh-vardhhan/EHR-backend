@@ -1,5 +1,6 @@
 import { describe, expect, test, afterEach } from 'bun:test';
 import { app } from './app';
+import { validateEnv } from './config';
 
 describe('App Security & Middleware', () => {
   const originalSecret = process.env.ORIGIN_VERIFY_SECRET;
@@ -113,5 +114,67 @@ describe('App Security & Middleware', () => {
     // 61st request should be rate limited because right-most IP matches
     const rateLimitedRes = await makeReq('9.9.9.9');
     expect(rateLimitedRes.status).toBe(429);
+  });
+});
+
+describe('Boot-Time Environment Variable Validation (TypeBox)', () => {
+  test('validates valid environment configuration successfully', () => {
+    const result = validateEnv({
+      NODE_ENV: 'development',
+      PORT: '3000',
+    });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  test('catches invalid NODE_ENV deployment mode and throws error', () => {
+    const result = validateEnv(
+      {
+        NODE_ENV: 'staging',
+      },
+      { throwOnError: false },
+    );
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes('NODE_ENV'))).toBe(true);
+
+    expect(() => {
+      validateEnv({
+        NODE_ENV: 'staging',
+      });
+    }).toThrow('Boot-Time Config Validation Failed');
+  });
+
+  test('catches invalid data type format via TypeBox schema', () => {
+    const result = validateEnv(
+      {
+        NODE_ENV: 'development',
+        PORT: 'invalid_port_string',
+      },
+      { throwOnError: false },
+    );
+    expect(result.valid).toBe(false);
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+
+  test('throws error in production when mandatory variables (including API_KEY) are missing', () => {
+    expect(() => {
+      validateEnv({
+        NODE_ENV: 'production',
+        DOCUMENTS_BUCKET_NAME: 'test-bucket',
+        EHR_TABLE_NAME: 'test-table',
+        // missing API_KEY
+      });
+    }).toThrow('Boot-Time Config Validation Failed');
+  });
+
+  test('passes validation in production when all required variables are set', () => {
+    const result = validateEnv({
+      NODE_ENV: 'production',
+      DOCUMENTS_BUCKET_NAME: 'test-bucket',
+      EHR_TABLE_NAME: 'test-table',
+      API_KEY: 'secret-key-123456789',
+    });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
   });
 });

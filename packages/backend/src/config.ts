@@ -1,3 +1,95 @@
+import { t } from 'elysia';
+import { Value } from '@sinclair/typebox/value';
+
+/**
+ * TypeBox Schema for Application Environment Variables
+ */
+export const EnvSchema = t.Object(
+  {
+    NODE_ENV: t.Optional(
+      t.Union(
+        [t.Literal('development'), t.Literal('production'), t.Literal('test')],
+        { error: 'NODE_ENV must be "development", "production", or "test"' },
+      ),
+    ),
+    PORT: t.Optional(
+      t.String({
+        pattern: '^[0-9]+$',
+        error: 'PORT must be a numeric string',
+      }),
+    ),
+    AWS_REGION: t.Optional(t.String()),
+    EHR_TABLE_NAME: t.Optional(t.String()),
+    DOCUMENTS_BUCKET_NAME: t.Optional(t.String()),
+    ANNOTATION_QUEUE_URL: t.Optional(t.String()),
+    AUDIT_DELIVERY_STREAM_NAME: t.Optional(t.String()),
+    OMOP_DELIVERY_STREAM_NAME: t.Optional(t.String()),
+    BACKEND_FUNCTION_NAME: t.Optional(t.String()),
+    ORIGIN_VERIFY_SECRET: t.Optional(t.String()),
+    API_KEY: t.Optional(t.String()),
+    LOCAL_ML_URL: t.Optional(t.String()),
+    SAGEMAKER_ENDPOINT_NAME: t.Optional(t.String()),
+    ALLOWED_ORIGINS: t.Optional(t.String()),
+  },
+  { additionalProperties: true },
+);
+
+export interface ValidateEnvOptions {
+  throwOnError?: boolean;
+}
+
+/**
+ * Fail-fast boot-time validation using TypeBox.
+ * Validates process.env against EnvSchema and enforces strict required keys (including API_KEY) in production.
+ */
+export function validateEnv(
+  env: Record<string, string | undefined> = process.env,
+  options: ValidateEnvOptions = {},
+): {
+  valid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+
+  const schemaErrors = [...Value.Errors(EnvSchema, env)];
+  for (const err of schemaErrors) {
+    const field = err.path.replace('/', '');
+    errors.push(`[${field || 'env'}] ${err.message}`);
+  }
+
+  if (env.NODE_ENV === 'production') {
+    const requiredProdVars = [
+      'DOCUMENTS_BUCKET_NAME',
+      'EHR_TABLE_NAME',
+      'API_KEY',
+    ];
+    for (const key of requiredProdVars) {
+      if (!env[key] || env[key]?.trim() === '') {
+        errors.push(`Missing required production variable: ${key}`);
+      }
+    }
+  }
+
+  const shouldThrow = options.throwOnError ?? errors.length > 0;
+
+  if (errors.length > 0) {
+    console.error('❌ Boot-Time Environment Variable Validation Failed:');
+    for (const err of errors) {
+      console.error(`  - ${err}`);
+    }
+    if (shouldThrow) {
+      throw new Error(
+        `Boot-Time Config Validation Failed:\n${errors.join('\n')}`,
+      );
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+// Perform fail-fast validation on import
+validateEnv();
+
 /**
  * Centralized Application Configuration
  * Encapsulates environment variables with getter accessors to support dynamic runtime overrides (e.g. unit tests).
