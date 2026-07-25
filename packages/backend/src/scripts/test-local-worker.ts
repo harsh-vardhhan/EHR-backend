@@ -1,8 +1,14 @@
-import 'dotenv/config';
+import * as path from 'path';
+import dotenv from 'dotenv';
+
+dotenv.config({
+  path: path.resolve(__dirname, '../../../../.env'),
+});
+dotenv.config();
+
 import { handler } from '../worker';
 import { SQSEvent } from 'aws-lambda';
 import * as fs from 'fs';
-import * as path from 'path';
 
 const BUCKET_NAME = process.env.DOCUMENTS_BUCKET_NAME || 'ehr-demo-docs-bucket';
 

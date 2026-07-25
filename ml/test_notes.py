@@ -7,7 +7,13 @@ from gliner import GLiNER
 def test_notes():
     # Path to notes.json
     notes_path = os.path.join(
-        os.path.dirname(__file__), "..", "src", "scripts", "notes.json"
+        os.path.dirname(__file__),
+        "..",
+        "packages",
+        "backend",
+        "src",
+        "scripts",
+        "notes.json",
     )
     print(f"Reading clinical notes from {notes_path}...")
 

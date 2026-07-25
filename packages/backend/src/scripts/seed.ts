@@ -1,13 +1,19 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import 'dotenv/config';
+import dotenv from 'dotenv';
+
+dotenv.config({
+  path: path.resolve(__dirname, '../../../../.env'),
+});
+dotenv.config();
+
 import {
   S3Client,
   PutObjectCommand,
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 
-const BUCKET_NAME = process.env.DOCUMENTS_BUCKET_NAME;
+const BUCKET_NAME = process.env.DOCUMENTS_BUCKET_NAME || 'ehr-demo-docs-bucket';
 
 const s3Client = new S3Client({});
 

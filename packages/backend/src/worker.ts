@@ -1,3 +1,10 @@
+import * as path from 'path';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+dotenv.config();
+
 import { SQSEvent, SQSBatchResponse } from 'aws-lambda';
 import { documentsService } from './documents/documents.service';
 import { mastraService } from './workflows/mastra.service';

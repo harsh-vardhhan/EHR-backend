@@ -15,7 +15,13 @@ def test_notes_onnx():
     print(f"1. Baseline memory usage: {get_memory_usage_mb():.2f} MB")
 
     notes_path = os.path.join(
-        os.path.dirname(__file__), "..", "src", "scripts", "notes.json"
+        os.path.dirname(__file__),
+        "..",
+        "packages",
+        "backend",
+        "src",
+        "scripts",
+        "notes.json",
     )
     print(f"Reading clinical notes from {notes_path}...")
     with open(notes_path) as f:
