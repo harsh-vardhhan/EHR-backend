@@ -6,6 +6,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 dotenv.config();
 
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { config } from '../config';
 
 export const client = new DynamoDBClient({});
-export const table = process.env.EHR_TABLE_NAME || 'ehr-table';
+export const table = config.tableName;

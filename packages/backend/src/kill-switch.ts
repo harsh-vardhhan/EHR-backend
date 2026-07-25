@@ -3,6 +3,7 @@ import {
   PutFunctionConcurrencyCommand,
 } from '@aws-sdk/client-lambda';
 import { SNSEvent } from 'aws-lambda';
+import { config } from './config';
 
 const client = new LambdaClient({});
 
@@ -17,7 +18,7 @@ export const handler = async (event: SNSEvent) => {
     JSON.stringify(event, null, 2),
   );
 
-  const functionName = process.env.BACKEND_FUNCTION_NAME;
+  const functionName = config.backendFunctionName;
 
   if (!functionName) {
     const errorMsg = 'BACKEND_FUNCTION_NAME environment variable is not set.';

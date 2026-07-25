@@ -4,6 +4,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { AnnotationsService } from '../annotations/annotations.service';
 import { PiiScrubberService } from '../annotations/pii-scrubber.service';
 import { extractClinicalEntities } from '../clients/extractor.client';
+import { config } from '../config';
 import { Annotation } from '../annotations/annotations.service';
 import { Relationship } from '../annotations/annotations.service';
 
@@ -126,7 +127,7 @@ export function createSaveScrubbedTextStep(s3Client: S3Client) {
 
       await s3Client.send(
         new PutObjectCommand({
-          Bucket: process.env.DOCUMENTS_BUCKET_NAME || 'ehr-demo-docs-bucket',
+          Bucket: config.documentsBucketName,
           Key: `scrubbed/${initData.documentId}.txt`,
           Body: scrubbedText,
           ContentType: 'text/plain',
@@ -241,7 +242,7 @@ export function createResolveAndSaveStep(
       // Bridge extracted relations using character offsets to resolved DB UUID annotationIds
       const relationshipsToCreate: Omit<
         Relationship,
-        'relationshipId' | 'createdAt' | 'documentId'
+        'relationshipId' | 'createdAt' | 'documentId' | 'id'
       >[] = [];
 
       for (const rel of relations) {
@@ -257,12 +258,16 @@ export function createResolveAndSaveStep(
         );
 
         if (sourceAnn && targetAnn) {
-          relationshipsToCreate.push({
-            sourceAnnotationId: sourceAnn.annotationId,
-            targetAnnotationId: targetAnn.annotationId,
-            relationType: rel.relation,
-            confidence: rel.confidence,
-          });
+          const sourceId = sourceAnn.id || sourceAnn.annotationId;
+          const targetId = targetAnn.id || targetAnn.annotationId;
+          if (sourceId && targetId) {
+            relationshipsToCreate.push({
+              sourceAnnotationId: sourceId,
+              targetAnnotationId: targetId,
+              relationType: rel.relation,
+              confidence: rel.confidence,
+            });
+          }
         }
       }
 

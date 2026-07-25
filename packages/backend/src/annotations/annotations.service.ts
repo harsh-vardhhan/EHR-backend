@@ -25,6 +25,7 @@ export interface Annotation {
 }
 
 export interface Relationship {
+  id: string;
   relationshipId: string;
   documentId: string;
   sourceAnnotationId: string;
@@ -356,7 +357,11 @@ export class AnnotationsService {
       const response = await RelationshipEntity.query
         .primary({ documentId })
         .go();
-      return response.data || [];
+      return (response.data || []).map((item) => ({
+        ...item,
+        id: item.relationshipId,
+        relationshipId: item.relationshipId,
+      }));
     } catch (error) {
       console.error('Error fetching relationships', error);
       return [];
@@ -364,7 +369,7 @@ export class AnnotationsService {
   }
 
   async createRelationship(
-    data: Omit<Relationship, 'relationshipId' | 'createdAt'>,
+    data: Omit<Relationship, 'relationshipId' | 'createdAt' | 'id'>,
   ): Promise<Relationship> {
     const docRes = await DocumentEntity.get({ id: data.documentId }).go();
     if (!docRes.data) {
@@ -394,26 +399,29 @@ export class AnnotationsService {
     }
 
     const relationshipId = randomUUID();
-    const newRelationship: Relationship = {
+    const entityPayload = {
       ...data,
       relationshipId,
       createdAt: new Date().toISOString(),
     };
 
-    await RelationshipEntity.create(newRelationship).go();
+    await RelationshipEntity.create(entityPayload).go();
     await this.createAuditLog(
       data.documentId,
       'RELATIONSHIP_CREATED',
       `Clinician manually linked annotation ${data.sourceAnnotationId} to ${data.targetAnnotationId} as ${data.relationType}`,
     );
-    return newRelationship;
+    return {
+      ...entityPayload,
+      id: relationshipId,
+    };
   }
 
   async createRelationships(
     documentId: string,
     relationshipsData: Omit<
       Relationship,
-      'relationshipId' | 'createdAt' | 'documentId'
+      'relationshipId' | 'createdAt' | 'documentId' | 'id'
     >[],
   ): Promise<Relationship[]> {
     if (relationshipsData.length === 0) return [];
@@ -424,12 +432,15 @@ export class AnnotationsService {
     }
 
     const timestamp = new Date().toISOString();
-    const newRelationships: Relationship[] = relationshipsData.map((data) => ({
-      ...data,
-      documentId,
-      relationshipId: randomUUID(),
-      createdAt: timestamp,
-    }));
+    const newRelationships = relationshipsData.map((data) => {
+      const relationshipId = randomUUID();
+      return {
+        ...data,
+        documentId,
+        relationshipId,
+        createdAt: timestamp,
+      };
+    });
 
     await RelationshipEntity.put(newRelationships).go();
     await this.createAuditLog(
@@ -437,7 +448,10 @@ export class AnnotationsService {
       'LLM_RELATIONS_EXTRACTED',
       `AI pipeline successfully extracted and saved ${newRelationships.length} relationships.`,
     );
-    return newRelationships;
+    return newRelationships.map((item) => ({
+      ...item,
+      id: item.relationshipId,
+    }));
   }
 
   async deleteRelationship(

@@ -4,6 +4,7 @@ import {
 } from '@aws-sdk/client-sagemaker-runtime';
 import { z } from 'zod';
 import { MedicalEntityLabel } from '../constants/labels';
+import { config } from '../config';
 
 export interface ExtractedEntity {
   text: string;
@@ -54,7 +55,7 @@ const sagemakerResponseSchema = z.object({
 });
 
 const client = new SageMakerRuntimeClient({
-  region: process.env.AWS_REGION || 'ap-south-1',
+  region: config.awsRegion,
 });
 
 function mapMlResponse(parsedData: unknown): ExtractionResult {
@@ -85,7 +86,7 @@ function mapMlResponse(parsedData: unknown): ExtractionResult {
 export async function extractClinicalEntities(
   text: string,
 ): Promise<ExtractionResult> {
-  const localMlUrl = process.env.LOCAL_ML_URL;
+  const localMlUrl = config.localMlUrl;
   if (localMlUrl) {
     try {
       console.log(
@@ -119,8 +120,7 @@ export async function extractClinicalEntities(
     }
   }
 
-  const endpointName =
-    process.env.SAGEMAKER_ENDPOINT_NAME || 'gliner-relex-endpoint';
+  const endpointName = config.sagemakerEndpointName;
 
   try {
     const payload = { text };

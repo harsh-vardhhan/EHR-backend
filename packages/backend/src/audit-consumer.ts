@@ -1,13 +1,14 @@
 import { DynamoDBStreamEvent } from 'aws-lambda';
 import { FirehoseClient, PutRecordCommand } from '@aws-sdk/client-firehose';
+import { config } from './config';
 
 const firehoseClient = new FirehoseClient({});
-const DELIVERY_STREAM_NAME = process.env.AUDIT_DELIVERY_STREAM_NAME;
 
 export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
   console.log('Audit Consumer received event:', JSON.stringify(event, null, 2));
 
-  if (!DELIVERY_STREAM_NAME) {
+  const deliveryStreamName = config.auditDeliveryStreamName;
+  if (!deliveryStreamName) {
     console.error(
       'AUDIT_DELIVERY_STREAM_NAME environment variable is not set. Cannot stream logs.',
     );
@@ -53,7 +54,7 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
       const recordData = JSON.stringify(auditRecord) + '\n';
 
       const command = new PutRecordCommand({
-        DeliveryStreamName: DELIVERY_STREAM_NAME,
+        DeliveryStreamName: deliveryStreamName,
         Record: {
           Data: new TextEncoder().encode(recordData),
         },

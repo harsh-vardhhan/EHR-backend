@@ -2,6 +2,7 @@ import {
   SageMakerRuntimeClient,
   InvokeEndpointCommand,
 } from '@aws-sdk/client-sagemaker-runtime';
+import { config } from '../config';
 
 export interface PiiDetection {
   text: string;
@@ -12,7 +13,7 @@ export interface PiiDetection {
 
 export class PiiScrubberService {
   private sagemakerClient = new SageMakerRuntimeClient({
-    region: process.env.AWS_REGION || 'ap-south-1',
+    region: config.awsRegion,
   });
 
   /**
@@ -253,7 +254,7 @@ export class PiiScrubberService {
     // 1. Run the standard regex-based scrubber first (acts as baseline)
     const { detections } = this.scrubText(text);
 
-    const localMlUrl = process.env.LOCAL_ML_URL;
+    const localMlUrl = config.localMlUrl;
     const piiLabels = [
       'Patient Name',
       'Doctor Name',
@@ -306,8 +307,7 @@ export class PiiScrubberService {
         );
       }
     } else {
-      const endpointName =
-        process.env.SAGEMAKER_ENDPOINT_NAME || 'gliner-relex-endpoint';
+      const endpointName = config.sagemakerEndpointName;
 
       try {
         console.log(

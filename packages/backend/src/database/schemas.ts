@@ -9,7 +9,7 @@ export const LabelSchema = t.Union([
 
 export const AnnotationSchema = t.Object({
   id: t.String(),
-  annotationId: t.Optional(t.String()),
+  annotationId: t.String(),
   documentId: t.String(),
   text: t.String(),
   label: LabelSchema,
@@ -37,8 +37,8 @@ export const AnnotationSchema = t.Object({
 });
 
 export const RelationshipSchema = t.Object({
+  id: t.String(),
   relationshipId: t.String(),
-  id: t.Optional(t.String()),
   documentId: t.String(),
   sourceAnnotationId: t.String(),
   targetAnnotationId: t.String(),
