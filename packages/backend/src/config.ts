@@ -1,4 +1,5 @@
-import { t, getSchemaValidator } from 'elysia';
+import { t } from 'elysia';
+import { Value } from '@sinclair/typebox/value';
 
 /**
  * TypeBox Schema for Application Environment Variables
@@ -6,11 +7,10 @@ import { t, getSchemaValidator } from 'elysia';
 export const EnvSchema = t.Object(
   {
     NODE_ENV: t.Optional(
-      t.Union([
-        t.Literal('development'),
-        t.Literal('production'),
-        t.Literal('test'),
-      ]),
+      t.Union(
+        [t.Literal('development'), t.Literal('production'), t.Literal('test')],
+        { error: 'NODE_ENV must be "development", "production", or "test"' },
+      ),
     ),
     PORT: t.Optional(
       t.String({
@@ -34,40 +34,52 @@ export const EnvSchema = t.Object(
   { additionalProperties: true },
 );
 
-const envValidator = getSchemaValidator(EnvSchema);
+export interface ValidateEnvOptions {
+  throwOnError?: boolean;
+}
 
 /**
  * Fail-fast boot-time validation using TypeBox.
- * Validates process.env against EnvSchema and enforces strict required keys in production.
+ * Validates process.env against EnvSchema and enforces strict required keys (including API_KEY) in production.
  */
 export function validateEnv(
   env: Record<string, string | undefined> = process.env,
+  options: ValidateEnvOptions = {},
 ): {
   valid: boolean;
   errors: string[];
 } {
   const errors: string[] = [];
 
-  const schemaErrors = [...envValidator.Errors(env)];
+  const schemaErrors = [...Value.Errors(EnvSchema, env)];
   for (const err of schemaErrors) {
-    errors.push(`[${err.path.replace('/', '')}] ${err.message}`);
+    const field = err.path.replace('/', '');
+    errors.push(`[${field || 'env'}] ${err.message}`);
   }
 
   if (env.NODE_ENV === 'production') {
-    const requiredProdVars = ['DOCUMENTS_BUCKET_NAME', 'EHR_TABLE_NAME'];
+    const requiredProdVars = [
+      'DOCUMENTS_BUCKET_NAME',
+      'EHR_TABLE_NAME',
+      'API_KEY',
+    ];
     for (const key of requiredProdVars) {
-      if (!env[key]) {
+      if (!env[key] || env[key]?.trim() === '') {
         errors.push(`Missing required production variable: ${key}`);
       }
     }
   }
+
+  const shouldThrow =
+    options.throwOnError ??
+    (env.NODE_ENV === 'production' && errors.length > 0);
 
   if (errors.length > 0) {
     console.error('❌ Boot-Time Environment Variable Validation Failed:');
     for (const err of errors) {
       console.error(`  - ${err}`);
     }
-    if (env.NODE_ENV === 'production') {
+    if (shouldThrow) {
       throw new Error(
         `Boot-Time Config Validation Failed:\n${errors.join('\n')}`,
       );

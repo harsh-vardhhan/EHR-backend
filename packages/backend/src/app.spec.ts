@@ -127,6 +127,14 @@ describe('Boot-Time Environment Variable Validation (TypeBox)', () => {
     expect(result.errors).toHaveLength(0);
   });
 
+  test('catches invalid NODE_ENV deployment mode', () => {
+    const result = validateEnv({
+      NODE_ENV: 'staging',
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes('NODE_ENV'))).toBe(true);
+  });
+
   test('catches invalid data type format via TypeBox schema', () => {
     const result = validateEnv({
       NODE_ENV: 'development',
@@ -136,11 +144,25 @@ describe('Boot-Time Environment Variable Validation (TypeBox)', () => {
     expect(result.errors.length).toBeGreaterThan(0);
   });
 
-  test('throws error in production when mandatory environment variables are missing', () => {
+  test('throws error in production when mandatory variables (including API_KEY) are missing', () => {
     expect(() => {
       validateEnv({
         NODE_ENV: 'production',
+        DOCUMENTS_BUCKET_NAME: 'test-bucket',
+        EHR_TABLE_NAME: 'test-table',
+        // missing API_KEY
       });
     }).toThrow('Boot-Time Config Validation Failed');
+  });
+
+  test('passes validation in production when all required variables are set', () => {
+    const result = validateEnv({
+      NODE_ENV: 'production',
+      DOCUMENTS_BUCKET_NAME: 'test-bucket',
+      EHR_TABLE_NAME: 'test-table',
+      API_KEY: 'secret-key-123456789',
+    });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
   });
 });
