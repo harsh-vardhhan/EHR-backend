@@ -47,6 +47,19 @@ export const config = {
     return Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
   },
 
+  get allowedOrigins(): Set<string> {
+    const defaultProdOrigin = 'https://ehr-backend-frontend.vercel.app';
+    const envOrigins = process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(',')
+          .map((o) => o.trim())
+          .filter(Boolean)
+      : [defaultProdOrigin];
+    const devOrigins = !this.isProduction
+      ? ['http://localhost:5173', 'http://localhost:3000']
+      : [];
+    return new Set([...envOrigins, ...devOrigins]);
+  },
+
   get originVerifySecret(): string | undefined {
     return process.env.ORIGIN_VERIFY_SECRET;
   },

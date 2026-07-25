@@ -22,7 +22,7 @@ function getErrorMessage(error: unknown, fallback: string): string {
 export const api = {
   getDocuments: async (): Promise<Document[]> => {
     const { data, error } = await client.documents.get();
-    if (error) {
+    if (error || !data) {
       throw new Error(getErrorMessage(error, 'Failed to fetch documents'));
     }
     return data;
@@ -30,11 +30,11 @@ export const api = {
 
   getDocument: async (id: string): Promise<Document> => {
     const { data, error } = await client.documents({ id }).get();
-    if (error) {
+    if (error || !data) {
       throw new Error(getErrorMessage(error, 'Failed to fetch document'));
     }
 
-    return data as Document;
+    return data;
   },
 
   triggerAnalysis: async (documentId: string): Promise<void> => {
@@ -48,11 +48,11 @@ export const api = {
     const { data, error } = await client.annotations.get({
       query: { documentId },
     });
-    if (error) {
+    if (error || !data) {
       throw new Error(getErrorMessage(error, 'Failed to fetch annotations'));
     }
 
-    return data as Annotation[];
+    return data;
   },
 
   createAnnotation: async (
@@ -64,11 +64,11 @@ export const api = {
       assertion: payload.assertion ?? undefined,
       conceptCode: payload.conceptCode ?? undefined,
     });
-    if (error) {
+    if (error || !data) {
       throw new Error(getErrorMessage(error, 'Failed to create annotation'));
     }
 
-    return data as Annotation;
+    return data;
   },
 
   updateAnnotation: async (
@@ -81,11 +81,11 @@ export const api = {
       assertion: updates.assertion ?? undefined,
       conceptCode: updates.conceptCode ?? undefined,
     });
-    if (error) {
+    if (error || !data) {
       throw new Error(getErrorMessage(error, 'Failed to update annotation'));
     }
 
-    return data as Annotation;
+    return data;
   },
 
   deleteAnnotation: async (id: string): Promise<void> => {
@@ -99,11 +99,11 @@ export const api = {
     const { data, error } = await client.annotations.relationships.get({
       query: { documentId },
     });
-    if (error) {
+    if (error || !data) {
       throw new Error(getErrorMessage(error, 'Failed to fetch relationships'));
     }
 
-    return data as Relationship[];
+    return data;
   },
 
   createRelationship: async (
@@ -113,11 +113,11 @@ export const api = {
       ...payload,
       confidence: payload.confidence ?? undefined,
     });
-    if (error) {
+    if (error || !data) {
       throw new Error(getErrorMessage(error, 'Failed to create relationship'));
     }
 
-    return data as Relationship;
+    return data;
   },
 
   deleteRelationship: async (id: string, documentId: string): Promise<void> => {
@@ -164,18 +164,18 @@ export const api = {
     }
 
     const { data, error } = await client.annotations.search.get({ query });
-    if (error) {
+    if (error || !data) {
       throw new Error(getErrorMessage(error, 'Failed to search annotations'));
     }
 
-    return data as Annotation[];
+    return data;
   },
 
   getAuditLogs: async (documentId: string): Promise<AuditLog[]> => {
     const { data, error } = await client
       .documents({ id: documentId })
       .audit.get();
-    if (error) {
+    if (error || !data) {
       throw new Error(getErrorMessage(error, 'Failed to fetch audit logs'));
     }
     return data;

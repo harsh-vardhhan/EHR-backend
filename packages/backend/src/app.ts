@@ -5,13 +5,6 @@ import { documentsApp } from './documents/documents.router';
 import { annotationsApp } from './annotations/annotations.router';
 import { config } from './config';
 
-const ALLOWED_ORIGINS = new Set([
-  'https://ehr-backend-frontend.vercel.app',
-  ...(!config.isProduction
-    ? ['http://localhost:5173', 'http://localhost:3000']
-    : []),
-]);
-
 export const app = new Elysia()
   .use(
     rateLimit({
@@ -40,7 +33,7 @@ export const app = new Elysia()
   .use(
     !config.isLambda
       ? cors({
-          origin: Array.from(ALLOWED_ORIGINS),
+          origin: Array.from(config.allowedOrigins),
           allowedHeaders: [
             'Content-Type',
             'Authorization',
@@ -68,7 +61,7 @@ export const app = new Elysia()
     const origin = request.headers.get('origin');
     const originSecret = request.headers.get('x-origin-verify');
 
-    if (origin && !ALLOWED_ORIGINS.has(origin)) {
+    if (origin && !config.allowedOrigins.has(origin)) {
       set.status = 403;
       return { error: 'Forbidden', message: 'Unauthorized origin' };
     }
