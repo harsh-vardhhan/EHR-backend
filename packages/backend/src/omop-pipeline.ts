@@ -1,5 +1,6 @@
 import { DynamoDBStreamEvent } from 'aws-lambda';
 import { FirehoseClient, PutRecordCommand } from '@aws-sdk/client-firehose';
+import { config } from './config';
 
 const firehoseClient = new FirehoseClient({});
 
@@ -19,7 +20,7 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
     JSON.stringify(event, null, 2),
   );
 
-  const deliveryStreamName = process.env.OMOP_DELIVERY_STREAM_NAME;
+  const deliveryStreamName = config.omopDeliveryStreamName;
   if (!deliveryStreamName) {
     console.error(
       'OMOP_DELIVERY_STREAM_NAME environment variable is not configured.',

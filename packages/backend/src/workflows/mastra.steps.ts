@@ -4,6 +4,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { AnnotationsService } from '../annotations/annotations.service';
 import { PiiScrubberService } from '../annotations/pii-scrubber.service';
 import { extractClinicalEntities } from '../clients/extractor.client';
+import { config } from '../config';
 import { Annotation } from '../annotations/annotations.service';
 import { Relationship } from '../annotations/annotations.service';
 
@@ -126,7 +127,7 @@ export function createSaveScrubbedTextStep(s3Client: S3Client) {
 
       await s3Client.send(
         new PutObjectCommand({
-          Bucket: process.env.DOCUMENTS_BUCKET_NAME || 'ehr-demo-docs-bucket',
+          Bucket: config.documentsBucketName,
           Key: `scrubbed/${initData.documentId}.txt`,
           Body: scrubbedText,
           ContentType: 'text/plain',

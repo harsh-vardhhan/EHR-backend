@@ -34,32 +34,7 @@ export const api = {
       throw new Error(getErrorMessage(error, 'Failed to fetch document'));
     }
 
-    const annotations = (
-      ((data as Record<string, unknown>).annotations as Record<
-        string,
-        unknown
-      >[]) || []
-    ).map((a: Record<string, unknown>) => ({
-      ...a,
-      id: String(a.annotationId || a.id || ''),
-    }));
-
-    const relationships = (
-      ((data as Record<string, unknown>).relationships as Record<
-        string,
-        unknown
-      >[]) || []
-    ).map((r: Record<string, unknown>) => ({
-      ...r,
-      id: String(r.id || r.relationshipId || ''),
-      relationshipId: String(r.relationshipId || r.id || ''),
-    }));
-
-    return {
-      ...data,
-      annotations,
-      relationships,
-    };
+    return data as Document;
   },
 
   triggerAnalysis: async (documentId: string): Promise<void> => {
@@ -77,12 +52,7 @@ export const api = {
       throw new Error(getErrorMessage(error, 'Failed to fetch annotations'));
     }
 
-    return ((data as Record<string, unknown>[]) || []).map(
-      (d: Record<string, unknown>) => ({
-        ...d,
-        id: String(d.annotationId || d.id || ''),
-      }),
-    ) as Annotation[];
+    return data as Annotation[];
   },
 
   createAnnotation: async (
@@ -98,7 +68,7 @@ export const api = {
       throw new Error(getErrorMessage(error, 'Failed to create annotation'));
     }
 
-    return { ...data, id: data.annotationId || data.id };
+    return data as Annotation;
   },
 
   updateAnnotation: async (
@@ -115,7 +85,7 @@ export const api = {
       throw new Error(getErrorMessage(error, 'Failed to update annotation'));
     }
 
-    return { ...data, id: data.annotationId || data.id };
+    return data as Annotation;
   },
 
   deleteAnnotation: async (id: string): Promise<void> => {
@@ -133,17 +103,11 @@ export const api = {
       throw new Error(getErrorMessage(error, 'Failed to fetch relationships'));
     }
 
-    return ((data as Record<string, unknown>[]) || []).map(
-      (d: Record<string, unknown>) => ({
-        ...d,
-        relationshipId: String(d.relationshipId || d.id || ''),
-        id: String(d.id || d.relationshipId || ''),
-      }),
-    ) as Relationship[];
+    return data as Relationship[];
   },
 
   createRelationship: async (
-    payload: Omit<Relationship, 'relationshipId' | 'createdAt'>,
+    payload: Omit<Relationship, 'relationshipId' | 'createdAt' | 'id'>,
   ): Promise<Relationship> => {
     const { data, error } = await client.annotations.relationships.post({
       ...payload,
@@ -153,11 +117,7 @@ export const api = {
       throw new Error(getErrorMessage(error, 'Failed to create relationship'));
     }
 
-    return {
-      ...data,
-      relationshipId: data.relationshipId || data.id || '',
-      id: data.id || data.relationshipId,
-    };
+    return data as Relationship;
   },
 
   deleteRelationship: async (id: string, documentId: string): Promise<void> => {
@@ -208,12 +168,7 @@ export const api = {
       throw new Error(getErrorMessage(error, 'Failed to search annotations'));
     }
 
-    return ((data as Record<string, unknown>[]) || []).map(
-      (d: Record<string, unknown>) => ({
-        ...d,
-        id: String(d.annotationId || d.id || ''),
-      }),
-    ) as Annotation[];
+    return data as Annotation[];
   },
 
   getAuditLogs: async (documentId: string): Promise<AuditLog[]> => {

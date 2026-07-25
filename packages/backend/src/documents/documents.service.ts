@@ -8,6 +8,7 @@ import {
   RelationshipEntity,
 } from '../database/entities';
 
+import { config } from '../config';
 import type { Document } from '../database/schemas';
 import type { MedicalEntityLabel } from '../constants/labels';
 import type { Annotation } from '../annotations/annotations.service';
@@ -35,8 +36,7 @@ export class DocumentsService {
   }
 
   async getDocument(id: string): Promise<Document> {
-    const bucketName =
-      process.env.DOCUMENTS_BUCKET_NAME || 'ehr-demo-docs-bucket';
+    const bucketName = config.documentsBucketName;
 
     if (!bucketName) {
       throw new Error(
@@ -93,9 +93,8 @@ export class DocumentsService {
   }
 
   async triggerAnalysis(docId: string, s3Key: string) {
-    const queueUrl = process.env.ANNOTATION_QUEUE_URL;
-    const bucketName =
-      process.env.DOCUMENTS_BUCKET_NAME || 'ehr-demo-docs-bucket';
+    const queueUrl = config.annotationQueueUrl;
+    const bucketName = config.documentsBucketName;
 
     if (!queueUrl || !bucketName) {
       console.warn(

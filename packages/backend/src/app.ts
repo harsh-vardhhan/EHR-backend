@@ -3,10 +3,11 @@ import { cors } from '@elysiajs/cors';
 import { rateLimit } from 'elysia-rate-limit';
 import { documentsApp } from './documents/documents.router';
 import { annotationsApp } from './annotations/annotations.router';
+import { config } from './config';
 
 const ALLOWED_ORIGINS = new Set([
   'https://ehr-backend-frontend.vercel.app',
-  ...(process.env.NODE_ENV !== 'production'
+  ...(!config.isProduction
     ? ['http://localhost:5173', 'http://localhost:3000']
     : []),
 ]);
@@ -37,7 +38,7 @@ export const app = new Elysia()
     }),
   )
   .use(
-    !process.env.AWS_LAMBDA_FUNCTION_NAME
+    !config.isLambda
       ? cors({
           origin: Array.from(ALLOWED_ORIGINS),
           allowedHeaders: [
@@ -53,7 +54,7 @@ export const app = new Elysia()
       : (x) => x,
   )
   .onRequest(({ request }) => {
-    if (process.env.NODE_ENV !== 'production') {
+    if (!config.isProduction) {
       const url = new URL(request.url);
       console.log(`[Elysia Logger] ${request.method} ${url.pathname}`);
     }
@@ -73,8 +74,8 @@ export const app = new Elysia()
     }
 
     if (
-      process.env.ORIGIN_VERIFY_SECRET &&
-      originSecret !== process.env.ORIGIN_VERIFY_SECRET
+      config.originVerifySecret &&
+      originSecret !== config.originVerifySecret
     ) {
       set.status = 403;
       return {
@@ -84,7 +85,7 @@ export const app = new Elysia()
     }
 
     const apiKey = request.headers.get('x-api-key');
-    const expectedApiKey = process.env.API_KEY;
+    const expectedApiKey = config.apiKey;
 
     if (!apiKey || apiKey !== expectedApiKey) {
       set.status = 401;
