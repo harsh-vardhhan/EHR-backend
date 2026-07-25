@@ -1,7 +1,7 @@
 # Agent Guidelines
 
 ## Monorepo & Package Management
-* **Runtime & Package Manager:** Always use `bun` (v1.1+) for JS/TS dependency management and running scripts across workspaces (`packages/backend`, `packages/frontend`). Do NOT use `npm` or `yarn`.
+* **Runtime & Package Manager:** Always use `bun` (v1.4+) for JS/TS dependency management and running scripts across workspaces (`packages/backend`, `packages/frontend`). Do NOT use `npm` or `yarn`.
 
 ## Sandbox Egress & Command Executions
 * **Do NOT execute the following test/seeding commands inside the terminal sandbox:**
