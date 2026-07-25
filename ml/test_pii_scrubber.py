@@ -16,7 +16,13 @@ def mask_string(matched_text, label):
 
 def test_ml_pii_scrubber():
     notes_path = os.path.join(
-        os.path.dirname(__file__), "..", "src", "scripts", "notes.json"
+        os.path.dirname(__file__),
+        "..",
+        "packages",
+        "backend",
+        "src",
+        "scripts",
+        "notes.json",
     )
     print(f"Reading clinical notes from {notes_path}...")
     with open(notes_path) as f:

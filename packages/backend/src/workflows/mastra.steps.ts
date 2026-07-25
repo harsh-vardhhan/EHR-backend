@@ -126,7 +126,7 @@ export function createSaveScrubbedTextStep(s3Client: S3Client) {
 
       await s3Client.send(
         new PutObjectCommand({
-          Bucket: process.env.DOCUMENTS_BUCKET_NAME,
+          Bucket: process.env.DOCUMENTS_BUCKET_NAME || 'ehr-demo-docs-bucket',
           Key: `scrubbed/${initData.documentId}.txt`,
           Body: scrubbedText,
           ContentType: 'text/plain',

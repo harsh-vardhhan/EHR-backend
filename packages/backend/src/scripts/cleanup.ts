@@ -1,4 +1,12 @@
-import 'dotenv/config';
+import * as path from 'path';
+import dotenv from 'dotenv';
+
+dotenv.config({
+  path: path.resolve(__dirname, '../../../.env'),
+  override: true,
+});
+dotenv.config({ override: true });
+
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
   DynamoDBDocumentClient,
@@ -11,8 +19,9 @@ import {
   DeleteObjectsCommand,
 } from '@aws-sdk/client-s3';
 
-const EHR_TABLE_NAME = process.env.EHR_TABLE_NAME;
-const DOCUMENTS_BUCKET_NAME = process.env.DOCUMENTS_BUCKET_NAME;
+const EHR_TABLE_NAME = process.env.EHR_TABLE_NAME || 'ehr-table';
+const DOCUMENTS_BUCKET_NAME =
+  process.env.DOCUMENTS_BUCKET_NAME || 'ehr-demo-docs-bucket';
 
 const ddbClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(ddbClient);

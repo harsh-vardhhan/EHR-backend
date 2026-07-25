@@ -259,7 +259,13 @@ def main():
 
     # 1. Load Notes
     notes_path = os.path.join(
-        os.path.dirname(__file__), "..", "src", "scripts", "notes.json"
+        os.path.dirname(__file__),
+        "..",
+        "packages",
+        "backend",
+        "src",
+        "scripts",
+        "notes.json",
     )
     with open(notes_path) as f:
         notes = json.load(f)
