@@ -37,13 +37,6 @@ export const api = {
     return data;
   },
 
-  triggerAnalysis: async (documentId: string): Promise<void> => {
-    const { error } = await client.documents({ id: documentId }).analyze.post();
-    if (error) {
-      throw new Error(getErrorMessage(error, 'Failed to trigger analysis'));
-    }
-  },
-
   getAnnotations: async (documentId: string): Promise<Annotation[]> => {
     const { data, error } = await client.annotations.get({
       query: { documentId },

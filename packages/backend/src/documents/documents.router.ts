@@ -63,19 +63,4 @@ export const documentsApp = new Elysia({ prefix: '/documents' })
       params: idParamSchema,
       response: t.Array(AuditLogSchema),
     },
-  )
-  .post(
-    '/:id/analyze',
-    async ({ params: { id } }) => {
-      const doc = await documentsService.getDocument(id);
-      await documentsService.triggerAnalysis(doc.id, doc.s3Key || '');
-      return { success: true, message: 'Analysis queued successfully' };
-    },
-    {
-      params: idParamSchema,
-      response: t.Object({
-        success: t.Boolean(),
-        message: t.String(),
-      }),
-    },
   );
