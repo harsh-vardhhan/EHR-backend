@@ -85,6 +85,23 @@ export class AnnotationsService {
       throw new Error(`Document with id ${data.documentId} not found`);
     }
 
+    // Check for duplicate tuple (handles both legacy random-ID and new deterministic-ID records)
+    const existingAnnotations = await this.getAnnotationsByDocument(
+      data.documentId,
+    );
+    const isDuplicate = existingAnnotations.some(
+      (existing) =>
+        existing.startOffset === data.startOffset &&
+        existing.endOffset === data.endOffset &&
+        existing.label === data.label,
+    );
+
+    if (isDuplicate) {
+      throw new Error(
+        `An annotation for label "${data.label}" at offsets [${data.startOffset}-${data.endOffset}] already exists for document ${data.documentId}`,
+      );
+    }
+
     // Deterministic UUID based on documentId, span offsets, and label
     const annotationId = this.generateDeterministicUuid(
       data.documentId,
@@ -144,14 +161,19 @@ export class AnnotationsService {
       throw new Error(`Document with id ${documentId} not found`);
     }
 
-    const existingAnnotations =
-      await this.getAnnotationsByDocument(documentId);
+    const existingAnnotations = await this.getAnnotationsByDocument(documentId);
     const existingIds = new Set(
       existingAnnotations.map((ann) => ann.annotationId),
+    );
+    const existingTupleKeys = new Set(
+      existingAnnotations.map(
+        (ann) => `${ann.startOffset}:${ann.endOffset}:${ann.label}`,
+      ),
     );
 
     const timestamp = new Date().toISOString();
     const seenUuids = new Set<string>();
+    const seenTupleKeys = new Set<string>();
 
     const uniqueAnnotations = annotationsData
       .map((data) => {
@@ -169,13 +191,17 @@ export class AnnotationsService {
         };
       })
       .filter((ann) => {
+        const tupleKey = `${ann.startOffset}:${ann.endOffset}:${ann.label}`;
         if (
           seenUuids.has(ann.annotationId) ||
-          existingIds.has(ann.annotationId)
+          existingIds.has(ann.annotationId) ||
+          seenTupleKeys.has(tupleKey) ||
+          existingTupleKeys.has(tupleKey)
         ) {
           return false;
         }
         seenUuids.add(ann.annotationId);
+        seenTupleKeys.add(tupleKey);
         return true;
       });
 
@@ -189,10 +215,10 @@ export class AnnotationsService {
           await AnnotationEntity.create(item).go();
           createdAnnotations.push({
             ...item,
-            source: item.source as Annotation['source'],
-            status: item.status as Annotation['status'],
-            label: item.label as MedicalEntityLabel,
-            assertion: item.assertion as Annotation['assertion'],
+            source: item.source,
+            status: item.status,
+            label: item.label,
+            assertion: item.assertion,
             id: item.annotationId,
           });
         } catch (error: any) {
