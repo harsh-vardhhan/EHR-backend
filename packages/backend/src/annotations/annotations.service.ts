@@ -181,20 +181,42 @@ export class AnnotationsService {
 
     if (uniqueAnnotations.length === 0) return [];
 
-    await AnnotationEntity.put(uniqueAnnotations).go();
-    await this.createAuditLog(
-      documentId,
-      'LLM_EXTRACTION_SUCCESS',
-      `AI pipeline successfully completed clinical NER and extracted ${uniqueAnnotations.length} concepts.`,
+    const createdAnnotations: Annotation[] = [];
+
+    await Promise.all(
+      uniqueAnnotations.map(async (item) => {
+        try {
+          await AnnotationEntity.create(item).go();
+          createdAnnotations.push({
+            ...item,
+            source: item.source as Annotation['source'],
+            status: item.status as Annotation['status'],
+            label: item.label as MedicalEntityLabel,
+            assertion: item.assertion as Annotation['assertion'],
+            id: item.annotationId,
+          });
+        } catch (error: any) {
+          const errorMsg = error?.message || String(error);
+          if (
+            errorMsg.includes('already exists') ||
+            errorMsg.includes('ConditionalCheckFailedException')
+          ) {
+            // Already exists in DB (e.g. human annotation created), safely skip overwriting
+            return;
+          }
+          throw error;
+        }
+      }),
     );
-    return uniqueAnnotations.map((item) => ({
-      ...item,
-      source: item.source,
-      status: item.status,
-      label: item.label,
-      assertion: item.assertion,
-      id: item.annotationId,
-    }));
+
+    if (createdAnnotations.length > 0) {
+      await this.createAuditLog(
+        documentId,
+        'LLM_EXTRACTION_SUCCESS',
+        `AI pipeline successfully completed clinical NER and extracted ${createdAnnotations.length} concepts.`,
+      );
+    }
+    return createdAnnotations;
   }
 
   async updateAnnotation(
