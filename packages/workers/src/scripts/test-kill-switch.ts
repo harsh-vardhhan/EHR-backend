@@ -48,7 +48,7 @@ async function main() {
           `Check CloudWatch Alarms or SNS subscription to confirm alarm state.`,
         );
         resolve();
-        process.exit(0);
+        process.exit(1);
         return;
       }
 

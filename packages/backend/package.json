@@ -14,11 +14,7 @@
     "test": "bun test",
     "cleanup": "bun run src/scripts/cleanup.ts",
     "seed": "bun run src/scripts/seed.ts",
-    "test:dlq": "bun run src/scripts/test-dlq.ts",
-    "test:kill-switch": "bun run src/scripts/test-kill-switch.ts",
-    "test:local-worker": "bun run src/scripts/test-local-worker.ts",
-    "verify:cloud": "bun run src/scripts/verify-cloud-processing.ts",
-    "verify:sagemaker": "bun run src/scripts/verify-sagemaker.ts"
+    "verify:cloud": "bun run src/scripts/verify-cloud-processing.ts"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1045.0",

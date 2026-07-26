@@ -2,6 +2,12 @@
   "name": "workers",
   "version": "0.0.1",
   "private": true,
+  "scripts": {
+    "test:dlq": "bun run src/scripts/test-dlq.ts",
+    "test:kill-switch": "bun run src/scripts/test-kill-switch.ts",
+    "test:local-worker": "bun run src/scripts/test-local-worker.ts",
+    "verify:sagemaker": "bun run src/scripts/verify-sagemaker.ts"
+  },
   "dependencies": {
     "@aws-sdk/client-sagemaker-runtime": "^3.1063.0",
     "@aws-sdk/client-sqs": "^3.1052.0",
