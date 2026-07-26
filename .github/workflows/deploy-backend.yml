@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'packages/backend/**'
+      - 'packages/shared/**'
+      - 'packages/workers/**'
       - '.github/workflows/deploy-backend.yml'
       - 'template.yaml'
       - 'Dockerfile'
