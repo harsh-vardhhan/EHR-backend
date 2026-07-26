@@ -279,7 +279,7 @@ This backend incorporates a robust, multi-layered security architecture designed
 $ bun install
 ```
 
-2. Create a `.env` file in the root of the `packages/backend` directory containing your API keys and configuration parameters:
+2. Create a `.env` file in the root of the `packages/api` directory containing your API keys and configuration parameters:
 ```env
 EHR_TABLE_NAME=ehr-table
 DOCUMENTS_BUCKET_NAME=your_s3_bucket_name
@@ -298,12 +298,12 @@ Run these scripts from the monorepo root:
 - `bun run build`: Compiles all workspace packages.
 - `bun run lint`: Lints the monorepo.
 - `bun run test`: Executes the test suites.
-- `bun --filter backend run cleanup`: Wipes all DynamoDB table items and S3 objects to reset the database.
-- `bun --filter backend run seed`: Seeds the S3 bucket with sample document notes.
+- `bun --filter api run cleanup`: Wipes all DynamoDB table items and S3 objects to reset the database.
+- `bun --filter api run seed`: Seeds the S3 bucket with sample document notes.
 - `bun --filter workers test:kill-switch`: Tests CloudWatch DDoS alarm triggering and Lambda kill-switch concurrency throttling.
 - `bun --filter workers test:dlq`: Tests SQS Dead-Letter Queue failure handling.
 - `bun --filter workers verify:sagemaker`: Verifies SageMaker PyTorch endpoint connectivity and inference payloads.
-- `bun --filter backend verify:cloud`: End-to-end cloud processing verification across S3, SQS, SageMaker, and DynamoDB.
+- `bun --filter api verify:cloud`: End-to-end cloud processing verification across S3, SQS, SageMaker, and DynamoDB.
 
 ---
 *Built for the Modern Clinical Workflow.*

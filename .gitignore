@@ -13,7 +13,7 @@ __pycache__/
 # Builds
 dist/
 .aws-sam/
-packages/backend/dist/
+packages/api/dist/
 packages/frontend/dist/
 
 # ML specific files
