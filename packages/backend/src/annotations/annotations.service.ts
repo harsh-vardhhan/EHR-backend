@@ -58,22 +58,15 @@ export class AnnotationsService {
   }
 
   async getAnnotationsByDocument(documentId: string): Promise<Annotation[]> {
-    try {
-      const response = await AnnotationEntity.query
-        .primary({ documentId })
-        .go();
-      return (response.data || []).map((item) => ({
-        ...item,
-        source: item.source as Annotation['source'],
-        status: item.status as Annotation['status'],
-        label: item.label as MedicalEntityLabel,
-        assertion: item.assertion as Annotation['assertion'],
-        id: item.annotationId,
-      }));
-    } catch (error) {
-      console.error('Error fetching annotations', error);
-      return [];
-    }
+    const response = await AnnotationEntity.query.primary({ documentId }).go();
+    return (response.data || []).map((item) => ({
+      ...item,
+      source: item.source as Annotation['source'],
+      status: item.status as Annotation['status'],
+      label: item.label as MedicalEntityLabel,
+      assertion: item.assertion as Annotation['assertion'],
+      id: item.annotationId,
+    }));
   }
 
   async createAnnotation(
@@ -208,8 +201,9 @@ export class AnnotationsService {
     if (uniqueAnnotations.length === 0) return [];
 
     const createdAnnotations: Annotation[] = [];
+    const unexpectedErrors: Error[] = [];
 
-    await Promise.all(
+    const results = await Promise.allSettled(
       uniqueAnnotations.map(async (item) => {
         try {
           await AnnotationEntity.create(item).go();
@@ -235,6 +229,13 @@ export class AnnotationsService {
       }),
     );
 
+    // Collect unexpected failures (non-duplicate errors)
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        unexpectedErrors.push(result.reason);
+      }
+    }
+
     if (createdAnnotations.length > 0) {
       await this.createAuditLog(
         documentId,
@@ -242,6 +243,12 @@ export class AnnotationsService {
         `AI pipeline successfully completed clinical NER and extracted ${createdAnnotations.length} concepts.`,
       );
     }
+
+    // Re-throw after auditing so persisted annotations are never left unaudited
+    if (unexpectedErrors.length > 0) {
+      throw unexpectedErrors[0];
+    }
+
     return createdAnnotations;
   }
 
