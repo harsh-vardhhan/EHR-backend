@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'packages/backend/**'
+      - 'packages/api/**'
       - 'packages/shared/**'
       - 'packages/workers/**'
       - '.github/workflows/deploy-backend.yml'
@@ -31,7 +31,7 @@ jobs:
         run: bun install
 
       - name: Build backend application
-        run: bun run --filter backend build
+        run: bun run --filter api build
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
