@@ -25,7 +25,6 @@
     "@aws-sdk/client-firehose": "^3.1045.0",
     "@aws-sdk/client-lambda": "^3.1063.0",
     "@aws-sdk/client-s3": "^3.1045.0",
-    "@aws-sdk/client-sagemaker-runtime": "^3.1063.0",
     "@aws-sdk/lib-dynamodb": "^3.1045.0",
     "@elysiajs/cors": "^1.1.1",
     "@sinclair/typebox": "^0.34.52",

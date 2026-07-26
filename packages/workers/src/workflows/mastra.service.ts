@@ -5,7 +5,7 @@ import {
   AnnotationsService,
   annotationsService,
 } from '../../../backend/src/annotations/annotations.service';
-import { PiiScrubberService } from '../../../backend/src/annotations/pii-scrubber.service';
+import { PiiScrubberService } from './pii-scrubber.service';
 import { S3Client } from '@aws-sdk/client-s3';
 import {
   createCheckDuplicateStep,
