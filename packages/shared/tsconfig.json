@@ -14,9 +14,6 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
-    "paths": {
-      "shared": ["../shared/src/index.ts"]
-    },
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
@@ -25,5 +22,5 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false
   },
-  "exclude": ["eslint.config.ts", "dist"]
+  "exclude": ["dist"]
 }

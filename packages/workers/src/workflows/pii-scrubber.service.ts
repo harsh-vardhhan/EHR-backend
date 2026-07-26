@@ -2,7 +2,7 @@ import {
   SageMakerRuntimeClient,
   InvokeEndpointCommand,
 } from '@aws-sdk/client-sagemaker-runtime';
-import { config } from '../config';
+import { config } from 'shared';
 
 export interface PiiDetection {
   text: string;

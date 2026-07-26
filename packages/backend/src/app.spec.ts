@@ -1,6 +1,6 @@
 import { describe, expect, test, afterEach } from 'bun:test';
 import { app } from './app';
-import { validateEnv } from './config';
+import { validateEnv } from 'shared';
 
 describe('App Security & Middleware', () => {
   const originalSecret = process.env.ORIGIN_VERIFY_SECRET;

@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia';
 import { annotationsService } from './annotations.service';
-import { MEDICAL_ENTITIES } from '../constants/labels';
+import { MEDICAL_ENTITIES } from 'shared';
 
 const documentIdQuerySchema = t.Object({
   documentId: t.String({
@@ -97,7 +97,7 @@ const createRelationshipSchema = t.Object({
   confidence: t.Optional(t.Numeric({ minimum: 0, maximum: 1 })),
 });
 
-import { AnnotationSchema, RelationshipSchema } from '../database/schemas';
+import { AnnotationSchema, RelationshipSchema } from 'shared';
 
 export const annotationsApp = new Elysia({ prefix: '/annotations' })
   .onError(({ error, set }) => {

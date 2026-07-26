@@ -25,5 +25,5 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false
   },
-  "exclude": ["eslint.config.ts", "dist"]
+  "exclude": ["dist"]
 }

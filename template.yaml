@@ -39,9 +39,17 @@ Parameters:
       - "true"
       - "false"
     Description: "Whether to deploy the SageMaker endpoint and model resources"
+  EnableStreamingPipelines:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "Whether to enable DynamoDB Stream triggers for Audit & OMOP pipelines"
 
 Conditions:
   ShouldDeploySageMaker: !Equals [ !Ref DeploySageMaker, "true" ]
+  ShouldEnableStreams: !Equals [ !Ref EnableStreamingPipelines, "true" ]
 
 Resources:
   EhrBackendFunction:
@@ -94,8 +102,8 @@ Resources:
   EhrAnnotationWorkerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./packages/backend
-      Handler: src/worker.handler
+      CodeUri: .
+      Handler: packages/workers/src/worker.handler
       Runtime: nodejs20.x
       Timeout: 120
       ReservedConcurrentExecutions: 2 # Hard cap on LLM parallel processing
@@ -135,7 +143,7 @@ Resources:
         Target: "node20"
         Sourcemap: true
         EntryPoints:
-          - src/worker.ts
+          - packages/workers/src/worker.ts
         External:
           - "@aws-sdk/*"
 
@@ -292,8 +300,8 @@ Resources:
   EhrLambdaKillSwitchFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./packages/backend
-      Handler: src/kill-switch.handler
+      CodeUri: .
+      Handler: packages/workers/src/kill-switch.handler
       Runtime: nodejs20.x
       Timeout: 30
       MemorySize: 128
@@ -320,7 +328,7 @@ Resources:
         Target: "node20"
         Sourcemap: true
         EntryPoints:
-          - src/kill-switch.ts
+          - packages/workers/src/kill-switch.ts
         External:
           - "@aws-sdk/*"
 
@@ -385,8 +393,8 @@ Resources:
   EhrAuditStreamFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./packages/backend
-      Handler: src/audit-consumer.handler
+      CodeUri: .
+      Handler: packages/workers/src/audit-consumer.handler
       Runtime: nodejs20.x
       Timeout: 30
       MemorySize: 128
@@ -397,6 +405,7 @@ Resources:
             Stream: !GetAtt EhrTable.StreamArn
             StartingPosition: LATEST
             BatchSize: 100
+            Enabled: !If [ ShouldEnableStreams, true, false ]
       Environment:
         Variables:
           AUDIT_DELIVERY_STREAM_NAME: !Ref EhrAuditDeliveryStream
@@ -415,7 +424,7 @@ Resources:
         Target: "node20"
         Sourcemap: true
         EntryPoints:
-          - src/audit-consumer.ts
+          - packages/workers/src/audit-consumer.ts
         External:
           - "@aws-sdk/*"
 
@@ -512,8 +521,8 @@ Resources:
   EhrOmopPipelineFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./packages/backend
-      Handler: src/omop-pipeline.handler
+      CodeUri: .
+      Handler: packages/workers/src/omop-pipeline.handler
       Runtime: nodejs20.x
       Timeout: 30
       MemorySize: 128
@@ -524,6 +533,7 @@ Resources:
             Stream: !GetAtt EhrTable.StreamArn
             StartingPosition: LATEST
             BatchSize: 100
+            Enabled: !If [ ShouldEnableStreams, true, false ]
       Environment:
         Variables:
           OMOP_DELIVERY_STREAM_NAME: !Ref EhrOmopDeliveryStream
@@ -542,7 +552,7 @@ Resources:
         Target: "node20"
         Sourcemap: true
         EntryPoints:
-          - src/omop-pipeline.ts
+          - packages/workers/src/omop-pipeline.ts
         External:
           - "@aws-sdk/*"
 

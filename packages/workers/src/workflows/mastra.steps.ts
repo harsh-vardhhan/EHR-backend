@@ -1,12 +1,9 @@
 import { createStep } from '@mastra/core/workflows';
 import { z } from 'zod';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { AnnotationsService } from '../annotations/annotations.service';
-import { PiiScrubberService } from '../annotations/pii-scrubber.service';
-import { extractClinicalEntities } from '../clients/extractor.client';
-import { config } from '../config';
-import { Annotation } from '../annotations/annotations.service';
-import { Relationship } from '../annotations/annotations.service';
+import { AnnotationsService, Annotation, Relationship } from '../../../backend/src/annotations/annotations.service';
+import { PiiScrubberService } from './pii-scrubber.service';
+import { extractClinicalEntities, config } from 'shared';
 
 const piiDetectionSchema = z.object({
   text: z.string(),

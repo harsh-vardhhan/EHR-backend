@@ -1,4 +1,4 @@
-export type { Document, Annotation, Relationship, AuditLog, Label } from '../../../backend/src/database/schemas';
+export type { Document, Annotation, Relationship, AuditLog, Label } from 'shared';
 
 // Re-export any other common front-end specific types if any
 export type DocumentStatus = 'ready_for_review' | 'in_progress' | 'reviewed';

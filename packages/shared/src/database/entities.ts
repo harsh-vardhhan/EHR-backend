@@ -1,8 +1,8 @@
-import { DocumentEntity } from '../documents/documents.entity';
+import { DocumentEntity } from './documents.entity';
 import {
   AnnotationEntity,
   RelationshipEntity,
   AuditLogEntity,
-} from '../annotations/annotations.entity';
+} from './annotations.entity';
 
 export { DocumentEntity, AnnotationEntity, RelationshipEntity, AuditLogEntity };

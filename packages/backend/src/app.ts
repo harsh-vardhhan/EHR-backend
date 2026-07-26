@@ -3,7 +3,7 @@ import { cors } from '@elysiajs/cors';
 import { rateLimit } from 'elysia-rate-limit';
 import { documentsApp } from './documents/documents.router';
 import { annotationsApp } from './annotations/annotations.router';
-import { config } from './config';
+import { config } from 'shared';
 
 export const app = new Elysia()
   .use(
