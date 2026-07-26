@@ -262,7 +262,7 @@ def main():
         os.path.dirname(__file__),
         "..",
         "packages",
-        "backend",
+        "api",
         "src",
         "scripts",
         "notes.json",
