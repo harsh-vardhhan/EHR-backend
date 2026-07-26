@@ -50,6 +50,20 @@ export function DocumentReviewView({ documentId, onBack }: Props) {
   const handleSelectLabel = (label: Label) => {
     if (!selection || !document) return;
 
+    // FE duplicate check: prevent creating an identical annotation
+    const isDuplicate = annotations.some(
+      (ann) =>
+        ann.startOffset === selection.startOffset &&
+        ann.endOffset === selection.endOffset &&
+        ann.label === label,
+    );
+
+    if (isDuplicate) {
+      setSelection(null);
+      window.getSelection()?.removeAllRanges();
+      return;
+    }
+
     serverCreateAnnotation({
       documentId: document.id,
       text: selection.text,

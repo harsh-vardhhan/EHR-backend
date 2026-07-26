@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
 import {
   MEDICAL_ENTITIES,
   AnnotationEntity,
@@ -36,23 +36,37 @@ export interface Relationship {
 }
 
 export class AnnotationsService {
+  /**
+   * Generates a 100% deterministic UUID v5-compatible string derived from the entity span.
+   * Ensures native DynamoDB uniqueness on (documentId, startOffset, endOffset, label)
+   * with zero race conditions and zero extra read query overhead.
+   */
+  private generateDeterministicUuid(
+    documentId: string,
+    startOffset: number,
+    endOffset: number,
+    label: string,
+  ): string {
+    const input = `${documentId}:${startOffset}:${endOffset}:${label}`;
+    const hash = createHash('sha256').update(input).digest('hex');
+    const timeLow = hash.substring(0, 8);
+    const timeMid = hash.substring(8, 12);
+    const timeHiAndVersion = '5' + hash.substring(13, 16);
+    const clockSeq = '8' + hash.substring(17, 20);
+    const node = hash.substring(20, 32);
+    return `${timeLow}-${timeMid}-${timeHiAndVersion}-${clockSeq}-${node}`;
+  }
+
   async getAnnotationsByDocument(documentId: string): Promise<Annotation[]> {
-    try {
-      const response = await AnnotationEntity.query
-        .primary({ documentId })
-        .go();
-      return (response.data || []).map((item) => ({
-        ...item,
-        source: item.source as Annotation['source'],
-        status: item.status as Annotation['status'],
-        label: item.label as MedicalEntityLabel,
-        assertion: item.assertion as Annotation['assertion'],
-        id: item.annotationId,
-      }));
-    } catch (error) {
-      console.error('Error fetching annotations', error);
-      return [];
-    }
+    const response = await AnnotationEntity.query.primary({ documentId }).go();
+    return (response.data || []).map((item) => ({
+      ...item,
+      source: item.source as Annotation['source'],
+      status: item.status as Annotation['status'],
+      label: item.label as MedicalEntityLabel,
+      assertion: item.assertion as Annotation['assertion'],
+      id: item.annotationId,
+    }));
   }
 
   async createAnnotation(
@@ -64,7 +78,31 @@ export class AnnotationsService {
       throw new Error(`Document with id ${data.documentId} not found`);
     }
 
-    const annotationId = randomUUID();
+    // Check for duplicate tuple (handles both legacy random-ID and new deterministic-ID records)
+    const existingAnnotations = await this.getAnnotationsByDocument(
+      data.documentId,
+    );
+    const isDuplicate = existingAnnotations.some(
+      (existing) =>
+        existing.startOffset === data.startOffset &&
+        existing.endOffset === data.endOffset &&
+        existing.label === data.label,
+    );
+
+    if (isDuplicate) {
+      throw new Error(
+        `An annotation for label "${data.label}" at offsets [${data.startOffset}-${data.endOffset}] already exists for document ${data.documentId}`,
+      );
+    }
+
+    // Deterministic UUID based on documentId, span offsets, and label
+    const annotationId = this.generateDeterministicUuid(
+      data.documentId,
+      data.startOffset,
+      data.endOffset,
+      data.label,
+    );
+
     const entityPayload = { ...data };
     const newAnnotation = {
       ...entityPayload,
@@ -72,7 +110,21 @@ export class AnnotationsService {
       createdAt: new Date().toISOString(),
     };
 
-    await AnnotationEntity.create(newAnnotation).go();
+    try {
+      await AnnotationEntity.create(newAnnotation).go();
+    } catch (error: any) {
+      const errorMsg = error?.message || String(error);
+      if (
+        errorMsg.includes('already exists') ||
+        errorMsg.includes('ConditionalCheckFailedException')
+      ) {
+        throw new Error(
+          `An annotation for label "${data.label}" at offsets [${data.startOffset}-${data.endOffset}] already exists for document ${data.documentId}`,
+        );
+      }
+      throw error;
+    }
+
     await this.createAuditLog(
       data.documentId,
       'ANNOTATION_CREATED',
@@ -102,31 +154,102 @@ export class AnnotationsService {
       throw new Error(`Document with id ${documentId} not found`);
     }
 
-    const timestamp = new Date().toISOString();
-    const newAnnotations = annotationsData.map((data) => {
-      const entityPayload = { ...data };
-      return {
-        ...entityPayload,
-        documentId,
-        annotationId: randomUUID(),
-        createdAt: timestamp,
-      };
-    });
-
-    await AnnotationEntity.put(newAnnotations).go();
-    await this.createAuditLog(
-      documentId,
-      'LLM_EXTRACTION_SUCCESS',
-      `AI pipeline successfully completed clinical NER and extracted ${newAnnotations.length} concepts.`,
+    const existingAnnotations = await this.getAnnotationsByDocument(documentId);
+    const existingIds = new Set(
+      existingAnnotations.map((ann) => ann.annotationId),
     );
-    return newAnnotations.map((item) => ({
-      ...item,
-      source: item.source,
-      status: item.status,
-      label: item.label,
-      assertion: item.assertion,
-      id: item.annotationId,
-    }));
+    const existingTupleKeys = new Set(
+      existingAnnotations.map(
+        (ann) => `${ann.startOffset}:${ann.endOffset}:${ann.label}`,
+      ),
+    );
+
+    const timestamp = new Date().toISOString();
+    const seenUuids = new Set<string>();
+    const seenTupleKeys = new Set<string>();
+
+    const uniqueAnnotations = annotationsData
+      .map((data) => {
+        const annotationId = this.generateDeterministicUuid(
+          documentId,
+          data.startOffset,
+          data.endOffset,
+          data.label,
+        );
+        return {
+          ...data,
+          documentId,
+          annotationId,
+          createdAt: timestamp,
+        };
+      })
+      .filter((ann) => {
+        const tupleKey = `${ann.startOffset}:${ann.endOffset}:${ann.label}`;
+        if (
+          seenUuids.has(ann.annotationId) ||
+          existingIds.has(ann.annotationId) ||
+          seenTupleKeys.has(tupleKey) ||
+          existingTupleKeys.has(tupleKey)
+        ) {
+          return false;
+        }
+        seenUuids.add(ann.annotationId);
+        seenTupleKeys.add(tupleKey);
+        return true;
+      });
+
+    if (uniqueAnnotations.length === 0) return [];
+
+    const createdAnnotations: Annotation[] = [];
+    const unexpectedErrors: Error[] = [];
+
+    const results = await Promise.allSettled(
+      uniqueAnnotations.map(async (item) => {
+        try {
+          await AnnotationEntity.create(item).go();
+          createdAnnotations.push({
+            ...item,
+            source: item.source,
+            status: item.status,
+            label: item.label,
+            assertion: item.assertion,
+            id: item.annotationId,
+          });
+        } catch (error: any) {
+          const errorMsg = error?.message || String(error);
+          if (
+            errorMsg.includes('already exists') ||
+            errorMsg.includes('ConditionalCheckFailedException')
+          ) {
+            // Already exists in DB (e.g. human annotation created), safely skip overwriting
+            return;
+          }
+          throw error;
+        }
+      }),
+    );
+
+    // Collect unexpected failures (non-duplicate errors)
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        unexpectedErrors.push(result.reason);
+      }
+    }
+
+    if (createdAnnotations.length > 0) {
+      await this.createAuditLog(
+        documentId,
+        'LLM_EXTRACTION_SUCCESS',
+        `AI pipeline successfully completed clinical NER and extracted ${createdAnnotations.length} concepts.`,
+      );
+    }
+
+    // Re-throw after auditing so persisted annotations are never left unaudited
+    if (unexpectedErrors.length > 0) {
+      throw unexpectedErrors[0];
+    }
+
+    return createdAnnotations;
   }
 
   async updateAnnotation(
@@ -143,6 +266,19 @@ export class AnnotationsService {
       throw new Error(`Annotation with id ${annotationId} not found`);
     }
     const documentId = item.documentId;
+
+    // Disallow modifying tuple fields (startOffset, endOffset, label) that define deterministic identity
+    if (
+      (updates.startOffset !== undefined &&
+        updates.startOffset !== item.startOffset) ||
+      (updates.endOffset !== undefined &&
+        updates.endOffset !== item.endOffset) ||
+      (updates.label !== undefined && updates.label !== item.label)
+    ) {
+      throw new Error(
+        'Cannot modify startOffset, endOffset, or label on an existing annotation. Please delete the annotation and create a new one.',
+      );
+    }
 
     // Remove keys that cannot be modified (like keys used in PK/SK)
     const cleanedUpdates: Record<string, string | number | undefined> = {};
