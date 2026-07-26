@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
 import {
   MEDICAL_ENTITIES,
   AnnotationEntity,
@@ -36,6 +36,27 @@ export interface Relationship {
 }
 
 export class AnnotationsService {
+  /**
+   * Generates a 100% deterministic UUID v5-compatible string derived from the entity span.
+   * Ensures native DynamoDB uniqueness on (documentId, startOffset, endOffset, label)
+   * with zero race conditions and zero extra read query overhead.
+   */
+  private generateDeterministicUuid(
+    documentId: string,
+    startOffset: number,
+    endOffset: number,
+    label: string,
+  ): string {
+    const input = `${documentId}:${startOffset}:${endOffset}:${label}`;
+    const hash = createHash('sha256').update(input).digest('hex');
+    const timeLow = hash.substring(0, 8);
+    const timeMid = hash.substring(8, 12);
+    const timeHiAndVersion = '5' + hash.substring(13, 16);
+    const clockSeq = '8' + hash.substring(17, 20);
+    const node = hash.substring(20, 32);
+    return `${timeLow}-${timeMid}-${timeHiAndVersion}-${clockSeq}-${node}`;
+  }
+
   async getAnnotationsByDocument(documentId: string): Promise<Annotation[]> {
     try {
       const response = await AnnotationEntity.query
@@ -64,7 +85,14 @@ export class AnnotationsService {
       throw new Error(`Document with id ${data.documentId} not found`);
     }
 
-    const annotationId = randomUUID();
+    // Deterministic UUID based on documentId, span offsets, and label
+    const annotationId = this.generateDeterministicUuid(
+      data.documentId,
+      data.startOffset,
+      data.endOffset,
+      data.label,
+    );
+
     const entityPayload = { ...data };
     const newAnnotation = {
       ...entityPayload,
@@ -72,7 +100,21 @@ export class AnnotationsService {
       createdAt: new Date().toISOString(),
     };
 
-    await AnnotationEntity.create(newAnnotation).go();
+    try {
+      await AnnotationEntity.create(newAnnotation).go();
+    } catch (error: any) {
+      const errorMsg = error?.message || String(error);
+      if (
+        errorMsg.includes('already exists') ||
+        errorMsg.includes('ConditionalCheckFailedException')
+      ) {
+        throw new Error(
+          `An annotation for label "${data.label}" at offsets [${data.startOffset}-${data.endOffset}] already exists for document ${data.documentId}`,
+        );
+      }
+      throw error;
+    }
+
     await this.createAuditLog(
       data.documentId,
       'ANNOTATION_CREATED',
@@ -103,23 +145,40 @@ export class AnnotationsService {
     }
 
     const timestamp = new Date().toISOString();
-    const newAnnotations = annotationsData.map((data) => {
-      const entityPayload = { ...data };
-      return {
-        ...entityPayload,
-        documentId,
-        annotationId: randomUUID(),
-        createdAt: timestamp,
-      };
-    });
+    const seenUuids = new Set<string>();
 
-    await AnnotationEntity.put(newAnnotations).go();
+    const uniqueAnnotations = annotationsData
+      .map((data) => {
+        const annotationId = this.generateDeterministicUuid(
+          documentId,
+          data.startOffset,
+          data.endOffset,
+          data.label,
+        );
+        return {
+          ...data,
+          documentId,
+          annotationId,
+          createdAt: timestamp,
+        };
+      })
+      .filter((ann) => {
+        if (seenUuids.has(ann.annotationId)) {
+          return false;
+        }
+        seenUuids.add(ann.annotationId);
+        return true;
+      });
+
+    if (uniqueAnnotations.length === 0) return [];
+
+    await AnnotationEntity.put(uniqueAnnotations).go();
     await this.createAuditLog(
       documentId,
       'LLM_EXTRACTION_SUCCESS',
-      `AI pipeline successfully completed clinical NER and extracted ${newAnnotations.length} concepts.`,
+      `AI pipeline successfully completed clinical NER and extracted ${uniqueAnnotations.length} concepts.`,
     );
-    return newAnnotations.map((item) => ({
+    return uniqueAnnotations.map((item) => ({
       ...item,
       source: item.source,
       status: item.status,
