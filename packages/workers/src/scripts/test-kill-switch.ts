@@ -4,13 +4,17 @@ async function main() {
   const url = process.argv[2] || process.env.API_URL;
   if (!url) {
     console.error('Error: Please provide your deployed API URL.');
-    console.error('Usage: npm run test:kill-switch <API_URL>');
+    console.error('Usage: bun run src/scripts/test-kill-switch.ts <API_URL>');
     console.error(
-      'Example: npm run test:kill-switch https://xyz.lambda-url.ap-south-1.on.aws',
+      'Example: bun run src/scripts/test-kill-switch.ts https://xyz.lambda-url.ap-south-1.on.aws',
     );
     process.exit(1);
   }
 
+  const targetThreshold = parseInt(
+    process.env.DDOS_REQUEST_THRESHOLD || '2000',
+    10,
+  );
   // Ensure url ends with /
   const targetUrl = url.endsWith('/') ? url : `${url}/`;
   const rootEndpoint = targetUrl; // test root endpoint to avoid DB charges
@@ -19,9 +23,8 @@ async function main() {
   console.log(`   DDoS / DoW Kill Switch Simulation Script      `);
   console.log(`==================================================`);
   console.log(`Target URL: ${rootEndpoint}`);
-  console.log(`Simulating a request spike of 20 requests/second.`);
-  console.log(`We need to reach ~200 requests to trigger the alarm.`);
-  console.log(`This run may take up to 15-30 seconds.`);
+  console.log(`Simulating a request spike of 50 requests/second.`);
+  console.log(`Targeting >${targetThreshold} requests within 1 minute to trigger alarm.`);
   console.log(`Press Ctrl+C to abort at any time.`);
   console.log(`==================================================\n`);
 
@@ -29,13 +32,28 @@ async function main() {
   let lastLogTime = Date.now();
   const statusCounts: Record<number, number> = {};
   let isThrottled = false;
+  const maxRequestsLimit = targetThreshold + 500; // Cap to prevent infinite loop
 
   await new Promise<void>((resolve) => {
     const intervalId = setInterval(() => {
       if (isThrottled) return;
 
-      // Send a batch of 2 requests
-      const batchSize = 2;
+      if (requestCount >= maxRequestsLimit) {
+        clearInterval(intervalId);
+        clearInterval(probeIntervalId);
+        console.log(
+          `\n[⚠️ MAX REQUEST LIMIT REACHED] Sent ${requestCount} requests without triggering 429 throttle.`,
+        );
+        console.log(
+          `Check CloudWatch Alarms or SNS subscription to confirm alarm state.`,
+        );
+        resolve();
+        process.exit(0);
+        return;
+      }
+
+      // Send a batch of 5 requests every 100ms = 50 req/sec
+      const batchSize = 5;
       const promises = Array.from({ length: batchSize }).map(async () => {
         try {
           requestCount++;
@@ -58,16 +76,15 @@ async function main() {
       const now = Date.now();
       if (now - lastLogTime >= 5000) {
         console.log(
-          `[Progress] Sent ${requestCount} requests... Status breakdown:`,
+          `[Progress] Sent ${requestCount}/${targetThreshold} requests... Status breakdown:`,
           JSON.stringify(statusCounts),
         );
-        // Reset periodic log timer
         lastLogTime = now;
       }
-    }, 100); // 10 batches per second of size 2 = 20 req/sec
+    }, 100); // 10 batches per second of size 5 = 50 req/sec
 
-    // Send a slow probe request every 2 seconds. A slow single request should always succeed (200)
-    // if the concurrency limit is 5. If it returns 429, the kill switch has set concurrency to 0.
+    // Send a slow probe request every 2 seconds.
+    // If it returns 429, the kill switch has set concurrency to 0.
     const probeIntervalId = setInterval(() => {
       void (async () => {
         try {
