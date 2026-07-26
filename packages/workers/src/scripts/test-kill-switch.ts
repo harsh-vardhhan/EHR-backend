@@ -24,7 +24,7 @@ async function main() {
   console.log(`==================================================`);
   console.log(`Target URL: ${rootEndpoint}`);
   console.log(`Phase 1: Generating >${targetThreshold} requests at 50 req/sec...`);
-  console.log(`Phase 2: Stopping load & probing isolated request for Concurrency = 0.`);
+  console.log(`Phase 2: Draining load & requiring 3 consecutive isolated probes with Concurrency = 0.`);
   console.log(`Press Ctrl+C to abort at any time.`);
   console.log(`==================================================\n`);
 
@@ -77,19 +77,19 @@ async function main() {
     }, 100);
   });
 
-  // --- Phase 2: Isolated Probing (No Concurrent Traffic Running) ---
+  // --- Phase 2: Isolated Probing with Multi-Probe Verification ---
   console.log(
-    `\n[Phase 2] Waiting for active connections to clear, then polling isolated requests...`,
+    `\n[Phase 2] Waiting 10s for active connections to drain completely...`,
   );
-  console.log(
-    `Polling every 3 seconds for up to 60 seconds to verify Kill Switch concurrency=0...`,
-  );
+  await new Promise((r) => setTimeout(r, 10000));
 
-  // Small delay to clear in-flight requests from Phase 1
-  await new Promise((r) => setTimeout(r, 3000));
+  console.log(
+    `Polling isolated single requests every 2s. Requiring 3 consecutive AWS infrastructure 429s to confirm Concurrency = 0...`,
+  );
 
   const pollStartTime = Date.now();
-  const maxPollDurationMs = 60000; // 60 seconds polling window
+  const maxPollDurationMs = 90000; // 90 seconds polling window for CloudWatch/SNS propagation
+  let consecutiveInfraThrottles = 0;
 
   while (Date.now() - pollStartTime < maxPollDurationMs) {
     try {
@@ -103,35 +103,45 @@ async function main() {
 
       if (res.status === 429) {
         const bodyText = await res.text().catch(() => '');
-        // Confirm 429 is from AWS Lambda Infrastructure (concurrency=0) and not app-level rate-limiter
+        // Differentiate application-level IP rate limit vs AWS Lambda Infrastructure Concurrency=0
         if (bodyText.includes('Rate limit exceeded. Please try again later.')) {
+          consecutiveInfraThrottles = 0;
           console.log(
-            `[Probe] Application rate limit responded. Waiting for AWS Infrastructure Kill Switch...`,
+            `[Probe] Application IP rate limit responded. Waiting for AWS Infrastructure Kill Switch...`,
           );
         } else {
+          consecutiveInfraThrottles++;
           console.log(
-            `\n[🚨 KILL SWITCH VERIFIED] AWS Lambda Infrastructure returned 429 (Reserved Concurrency = 0)!`,
+            `[Probe] AWS Infrastructure returned 429 (${consecutiveInfraThrottles}/3 consecutive checks)...`,
           );
-          console.log(`Total Requests Sent in Phase 1: ${requestCount}`);
-          console.log(
-            `\n🎉 SUCCESS! CloudWatch Alarm fired and Kill Switch set Lambda reserved concurrency to 0!`,
-          );
-          process.exit(0);
+
+          if (consecutiveInfraThrottles >= 3) {
+            console.log(
+              `\n[🚨 KILL SWITCH VERIFIED] 3 consecutive isolated probes returned 429 with zero active traffic!`,
+            );
+            console.log(`Total Requests Sent in Phase 1: ${requestCount}`);
+            console.log(
+              `\n🎉 SUCCESS! CloudWatch Alarm fired and Kill Switch set Lambda reserved concurrency to 0!`,
+            );
+            process.exit(0);
+          }
         }
       } else {
+        consecutiveInfraThrottles = 0;
         console.log(
           `[Probe] Isolated request returned status ${res.status}. Waiting for alarm propagation...`,
         );
       }
     } catch (err) {
+      consecutiveInfraThrottles = 0;
       console.log(`[Probe Error] Network issue during probe:`, err);
     }
 
-    await new Promise((r) => setTimeout(r, 3000));
+    await new Promise((r) => setTimeout(r, 2000));
   }
 
   console.error(
-    `\n[❌ KILL SWITCH NOT ACTIVATED] Isolated requests still succeeded after 60 seconds.`,
+    `\n[❌ KILL SWITCH NOT ACTIVATED] Isolated requests failed to sustain 3 consecutive AWS 429s within 90s.`,
   );
   console.error(
     `Confirm CloudWatch Alarm threshold (>2000 req/1m) and SNS topic subscription.`,
