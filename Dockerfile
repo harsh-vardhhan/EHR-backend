@@ -5,8 +5,11 @@ WORKDIR /usr/src/app
 COPY package.json bun.lock ./
 COPY packages/backend/package.json ./packages/backend/
 COPY packages/frontend/package.json ./packages/frontend/
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/workers/package.json ./packages/workers/
 RUN bun install --frozen-lockfile
 
+COPY packages/shared ./packages/shared
 COPY packages/backend ./packages/backend
 WORKDIR /usr/src/app/packages/backend
 RUN bun build ./src/main.ts --target=bun --outfile=dist/main.js
