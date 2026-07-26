@@ -30,6 +30,9 @@
       ],
       "elysia": [
         "../../node_modules/elysia"
+      ],
+      "shared": [
+        "../shared/src/index.ts"
       ]
     }
   },

@@ -3,7 +3,7 @@ import {
   InvokeEndpointCommand,
 } from '@aws-sdk/client-sagemaker-runtime';
 import { z } from 'zod';
-import { MedicalEntityLabel } from '../constants/labels';
+import type { MedicalEntityLabel } from '../constants/labels';
 import { config } from '../config';
 
 export interface ExtractedEntity {
