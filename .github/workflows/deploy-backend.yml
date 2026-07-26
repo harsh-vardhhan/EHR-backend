@@ -60,4 +60,4 @@ jobs:
               EhrApiKeyVal=${{ secrets.VITE_API_KEY }} \
               OmopHubApiKey=${{ secrets.OMOPHUB_API_KEY }} \
               SageMakerModelDataUrl=s3://${{ secrets.DOCUMENTS_BUCKET_NAME }}/models/gliner-relex/model-base-v1.0.tar.gz \
-              DdosRequestThreshold=2000
+              DdosRequestThreshold=15000
