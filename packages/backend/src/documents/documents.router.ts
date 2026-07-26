@@ -2,7 +2,7 @@ import { Elysia, t } from 'elysia';
 import { documentsService } from './documents.service';
 import { annotationsService } from '../annotations/annotations.service';
 
-import { DocumentSchema, AuditLogSchema } from '../database/schemas';
+import { DocumentSchema, AuditLogSchema } from 'shared';
 
 const idPattern = /^[a-zA-Z0-9_-]+$/;
 

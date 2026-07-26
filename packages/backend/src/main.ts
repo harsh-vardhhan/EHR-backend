@@ -1,5 +1,5 @@
 import { app } from './app';
-import { config } from './config';
+import { config } from 'shared';
 
 const port = config.port;
 

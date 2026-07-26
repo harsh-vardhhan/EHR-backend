@@ -1,12 +1,12 @@
 import { randomUUID } from 'crypto';
-import { MEDICAL_ENTITIES } from '../constants/labels';
-import type { MedicalEntityLabel } from '../constants/labels';
 import {
+  MEDICAL_ENTITIES,
   AnnotationEntity,
   DocumentEntity,
   AuditLogEntity,
   RelationshipEntity,
-} from '../database/entities';
+} from 'shared';
+import type { MedicalEntityLabel } from 'shared';
 
 export interface Annotation {
   id: string;

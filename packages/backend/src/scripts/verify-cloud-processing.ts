@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { DocumentEntity, AnnotationEntity } from '../database/entities';
+import { DocumentEntity, AnnotationEntity } from 'shared';
 
 async function verifyCloudIngestion() {
   console.log('🔍 Starting Cloud Ingestion Verification...');

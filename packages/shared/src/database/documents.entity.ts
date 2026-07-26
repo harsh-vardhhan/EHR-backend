@@ -1,5 +1,5 @@
 import { Entity } from 'electrodb';
-import { client, table } from '../database/client';
+import { client, table } from './client';
 
 export const DocumentEntity = new Entity(
   {

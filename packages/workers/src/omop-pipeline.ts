@@ -1,6 +1,6 @@
 import { DynamoDBStreamEvent } from 'aws-lambda';
 import { FirehoseClient, PutRecordCommand } from '@aws-sdk/client-firehose';
-import { config } from './config';
+import { config } from 'shared';
 
 const firehoseClient = new FirehoseClient({});
 

@@ -94,8 +94,8 @@ Resources:
   EhrAnnotationWorkerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./packages/backend
-      Handler: src/worker.handler
+      CodeUri: .
+      Handler: packages/workers/src/worker.handler
       Runtime: nodejs20.x
       Timeout: 120
       ReservedConcurrentExecutions: 2 # Hard cap on LLM parallel processing
@@ -135,7 +135,7 @@ Resources:
         Target: "node20"
         Sourcemap: true
         EntryPoints:
-          - src/worker.ts
+          - packages/workers/src/worker.ts
         External:
           - "@aws-sdk/*"
 
@@ -292,8 +292,8 @@ Resources:
   EhrLambdaKillSwitchFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./packages/backend
-      Handler: src/kill-switch.handler
+      CodeUri: .
+      Handler: packages/workers/src/kill-switch.handler
       Runtime: nodejs20.x
       Timeout: 30
       MemorySize: 128
@@ -320,7 +320,7 @@ Resources:
         Target: "node20"
         Sourcemap: true
         EntryPoints:
-          - src/kill-switch.ts
+          - packages/workers/src/kill-switch.ts
         External:
           - "@aws-sdk/*"
 
@@ -385,8 +385,8 @@ Resources:
   EhrAuditStreamFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./packages/backend
-      Handler: src/audit-consumer.handler
+      CodeUri: .
+      Handler: packages/workers/src/audit-consumer.handler
       Runtime: nodejs20.x
       Timeout: 30
       MemorySize: 128
@@ -415,7 +415,7 @@ Resources:
         Target: "node20"
         Sourcemap: true
         EntryPoints:
-          - src/audit-consumer.ts
+          - packages/workers/src/audit-consumer.ts
         External:
           - "@aws-sdk/*"
 
@@ -512,8 +512,8 @@ Resources:
   EhrOmopPipelineFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./packages/backend
-      Handler: src/omop-pipeline.handler
+      CodeUri: .
+      Handler: packages/workers/src/omop-pipeline.handler
       Runtime: nodejs20.x
       Timeout: 30
       MemorySize: 128
@@ -542,7 +542,7 @@ Resources:
         Target: "node20"
         Sourcemap: true
         EntryPoints:
-          - src/omop-pipeline.ts
+          - packages/workers/src/omop-pipeline.ts
         External:
           - "@aws-sdk/*"
 

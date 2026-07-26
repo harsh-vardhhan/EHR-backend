@@ -3,7 +3,7 @@ import {
   PutFunctionConcurrencyCommand,
 } from '@aws-sdk/client-lambda';
 import { SNSEvent } from 'aws-lambda';
-import { config } from './config';
+import { config } from 'shared';
 
 const client = new LambdaClient({});
 

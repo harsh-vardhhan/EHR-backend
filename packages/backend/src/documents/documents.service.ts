@@ -5,11 +5,9 @@ import {
   AnnotationEntity,
   AuditLogEntity,
   RelationshipEntity,
-} from '../database/entities';
-
-import { config } from '../config';
-import type { Document } from '../database/schemas';
-import type { MedicalEntityLabel } from '../constants/labels';
+  config,
+} from 'shared';
+import type { Document, MedicalEntityLabel } from 'shared';
 import type { Annotation } from '../annotations/annotations.service';
 
 export class DocumentsService {
