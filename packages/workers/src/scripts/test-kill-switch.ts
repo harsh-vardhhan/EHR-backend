@@ -102,14 +102,22 @@ async function main() {
       });
 
       if (res.status === 429) {
-        console.log(
-          `\n[🚨 KILL SWITCH VERIFIED] Isolated probe returned 429 (Too Many Requests) with zero active traffic!`,
-        );
-        console.log(`Total Requests Sent in Phase 1: ${requestCount}`);
-        console.log(
-          `\n🎉 SUCCESS! CloudWatch Alarm fired and Kill Switch set Lambda reserved concurrency to 0!`,
-        );
-        process.exit(0);
+        const bodyText = await res.text().catch(() => '');
+        // Confirm 429 is from AWS Lambda Infrastructure (concurrency=0) and not app-level rate-limiter
+        if (bodyText.includes('Rate limit exceeded. Please try again later.')) {
+          console.log(
+            `[Probe] Application rate limit responded. Waiting for AWS Infrastructure Kill Switch...`,
+          );
+        } else {
+          console.log(
+            `\n[🚨 KILL SWITCH VERIFIED] AWS Lambda Infrastructure returned 429 (Reserved Concurrency = 0)!`,
+          );
+          console.log(`Total Requests Sent in Phase 1: ${requestCount}`);
+          console.log(
+            `\n🎉 SUCCESS! CloudWatch Alarm fired and Kill Switch set Lambda reserved concurrency to 0!`,
+          );
+          process.exit(0);
+        }
       } else {
         console.log(
           `[Probe] Isolated request returned status ${res.status}. Waiting for alarm propagation...`,
