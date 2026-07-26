@@ -39,9 +39,17 @@ Parameters:
       - "true"
       - "false"
     Description: "Whether to deploy the SageMaker endpoint and model resources"
+  EnableStreamingPipelines:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "Whether to enable DynamoDB Stream triggers for Audit & OMOP pipelines"
 
 Conditions:
   ShouldDeploySageMaker: !Equals [ !Ref DeploySageMaker, "true" ]
+  ShouldEnableStreams: !Equals [ !Ref EnableStreamingPipelines, "true" ]
 
 Resources:
   EhrBackendFunction:
@@ -397,6 +405,7 @@ Resources:
             Stream: !GetAtt EhrTable.StreamArn
             StartingPosition: LATEST
             BatchSize: 100
+            Enabled: !If [ ShouldEnableStreams, true, false ]
       Environment:
         Variables:
           AUDIT_DELIVERY_STREAM_NAME: !Ref EhrAuditDeliveryStream
@@ -524,6 +533,7 @@ Resources:
             Stream: !GetAtt EhrTable.StreamArn
             StartingPosition: LATEST
             BatchSize: 100
+            Enabled: !If [ ShouldEnableStreams, true, false ]
       Environment:
         Variables:
           OMOP_DELIVERY_STREAM_NAME: !Ref EhrOmopDeliveryStream
