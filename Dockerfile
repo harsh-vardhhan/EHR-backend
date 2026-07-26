@@ -3,15 +3,15 @@ FROM oven/bun:canary-alpine AS builder
 WORKDIR /usr/src/app
 
 COPY package.json bun.lock ./
-COPY packages/backend/package.json ./packages/backend/
+COPY packages/api/package.json ./packages/api/
 COPY packages/frontend/package.json ./packages/frontend/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/workers/package.json ./packages/workers/
 RUN bun install --frozen-lockfile
 
 COPY packages/shared ./packages/shared
-COPY packages/backend ./packages/backend
-WORKDIR /usr/src/app/packages/backend
+COPY packages/api ./packages/api
+WORKDIR /usr/src/app/packages/api
 RUN bun build ./src/main.ts --target=bun --outfile=dist/main.js
 
 # --- Stage 2: Minimal Runtime Image ---
@@ -24,9 +24,9 @@ ENV PORT=3000
 ENV NODE_ENV=production
 EXPOSE 3000
 
-COPY --from=builder /usr/src/app/packages/backend/dist/main.js ./packages/backend/dist/main.js
+COPY --from=builder /usr/src/app/packages/api/dist/main.js ./packages/api/dist/main.js
 
 USER bun
 
-WORKDIR /usr/src/app/packages/backend
+WORKDIR /usr/src/app/packages/api
 CMD [ "bun", "run", "dist/main.js" ]

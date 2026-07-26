@@ -4,7 +4,7 @@ import { z } from 'zod';
 import {
   AnnotationsService,
   annotationsService,
-} from '../../../backend/src/annotations/annotations.service';
+} from '../../../api/src/annotations/annotations.service';
 import { PiiScrubberService } from './pii-scrubber.service';
 import { S3Client } from '@aws-sdk/client-s3';
 import {
