@@ -144,6 +144,12 @@ export class AnnotationsService {
       throw new Error(`Document with id ${documentId} not found`);
     }
 
+    const existingAnnotations =
+      await this.getAnnotationsByDocument(documentId);
+    const existingIds = new Set(
+      existingAnnotations.map((ann) => ann.annotationId),
+    );
+
     const timestamp = new Date().toISOString();
     const seenUuids = new Set<string>();
 
@@ -163,7 +169,10 @@ export class AnnotationsService {
         };
       })
       .filter((ann) => {
-        if (seenUuids.has(ann.annotationId)) {
+        if (
+          seenUuids.has(ann.annotationId) ||
+          existingIds.has(ann.annotationId)
+        ) {
           return false;
         }
         seenUuids.add(ann.annotationId);
@@ -202,6 +211,19 @@ export class AnnotationsService {
       throw new Error(`Annotation with id ${annotationId} not found`);
     }
     const documentId = item.documentId;
+
+    // Disallow modifying tuple fields (startOffset, endOffset, label) that define deterministic identity
+    if (
+      (updates.startOffset !== undefined &&
+        updates.startOffset !== item.startOffset) ||
+      (updates.endOffset !== undefined &&
+        updates.endOffset !== item.endOffset) ||
+      (updates.label !== undefined && updates.label !== item.label)
+    ) {
+      throw new Error(
+        'Cannot modify startOffset, endOffset, or label on an existing annotation. Please delete the annotation and create a new one.',
+      );
+    }
 
     // Remove keys that cannot be modified (like keys used in PK/SK)
     const cleanedUpdates: Record<string, string | number | undefined> = {};
