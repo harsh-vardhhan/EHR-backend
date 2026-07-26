@@ -4,9 +4,9 @@ async function main() {
   const url = process.argv[2] || process.env.API_URL;
   if (!url) {
     console.error('Error: Please provide your deployed API URL.');
-    console.error('Usage: bun run src/scripts/test-kill-switch.ts <API_URL>');
+    console.error('Usage: bun run --filter workers test:kill-switch <API_URL>');
     console.error(
-      'Example: bun run src/scripts/test-kill-switch.ts https://xyz.lambda-url.ap-south-1.on.aws',
+      'Example: bun run --filter workers test:kill-switch https://xyz.lambda-url.ap-south-1.on.aws',
     );
     process.exit(1);
   }
@@ -23,32 +23,25 @@ async function main() {
   console.log(`   DDoS / DoW Kill Switch Simulation Script      `);
   console.log(`==================================================`);
   console.log(`Target URL: ${rootEndpoint}`);
-  console.log(`Simulating a request spike of 50 requests/second.`);
-  console.log(`Targeting >${targetThreshold} requests within 1 minute to trigger alarm.`);
+  console.log(`Phase 1: Generating >${targetThreshold} requests at 50 req/sec...`);
+  console.log(`Phase 2: Stopping load & probing isolated request for Concurrency = 0.`);
   console.log(`Press Ctrl+C to abort at any time.`);
   console.log(`==================================================\n`);
 
   let requestCount = 0;
   let lastLogTime = Date.now();
   const statusCounts: Record<number, number> = {};
-  let isThrottled = false;
-  const maxRequestsLimit = targetThreshold + 500; // Cap to prevent infinite loop
 
+  // --- Phase 1: High-Throughput Burst to Breach Alarm Threshold ---
   await new Promise<void>((resolve) => {
     const intervalId = setInterval(() => {
-      if (isThrottled) return;
-
-      if (requestCount >= maxRequestsLimit) {
+      if (requestCount >= targetThreshold + 100) {
         clearInterval(intervalId);
-        clearInterval(probeIntervalId);
         console.log(
-          `\n[⚠️ MAX REQUEST LIMIT REACHED] Sent ${requestCount} requests without triggering 429 throttle.`,
-        );
-        console.log(
-          `Check CloudWatch Alarms or SNS subscription to confirm alarm state.`,
+          `\n[Phase 1 Complete] Sent ${requestCount} requests. Status breakdown:`,
+          JSON.stringify(statusCounts),
         );
         resolve();
-        process.exit(1);
         return;
       }
 
@@ -76,45 +69,66 @@ async function main() {
       const now = Date.now();
       if (now - lastLogTime >= 5000) {
         console.log(
-          `[Progress] Sent ${requestCount}/${targetThreshold} requests... Status breakdown:`,
+          `[Phase 1 Progress] Sent ${requestCount}/${targetThreshold} requests...`,
           JSON.stringify(statusCounts),
         );
         lastLogTime = now;
       }
-    }, 100); // 10 batches per second of size 5 = 50 req/sec
-
-    // Send a slow probe request every 2 seconds.
-    // If it returns 429, the kill switch has set concurrency to 0.
-    const probeIntervalId = setInterval(() => {
-      void (async () => {
-        try {
-          const res = await fetch(rootEndpoint, {
-            method: 'GET',
-            headers: {
-              'x-api-key': process.env.VITE_API_KEY || 'dummy-key',
-            },
-          });
-          if (res.status === 429) {
-            isThrottled = true;
-            clearInterval(intervalId);
-            clearInterval(probeIntervalId);
-            console.log(
-              `\n[🚨 KILL SWITCH ACTIVE] Probe request returned 429 Too Many Requests!`,
-            );
-            console.log(`Total Requests Sent: ${requestCount}`);
-            console.log(`Response breakdown:`, statusCounts);
-            console.log(
-              `\n🎉 SUCCESS! The CloudWatch Traffic Alarm fired and the Kill Switch throttled the Lambda reserved concurrency to 0!`,
-            );
-            resolve();
-            process.exit(0);
-          }
-        } catch {
-          // Ignore network errors on probe
-        }
-      })();
-    }, 2000);
+    }, 100);
   });
+
+  // --- Phase 2: Isolated Probing (No Concurrent Traffic Running) ---
+  console.log(
+    `\n[Phase 2] Waiting for active connections to clear, then polling isolated requests...`,
+  );
+  console.log(
+    `Polling every 3 seconds for up to 60 seconds to verify Kill Switch concurrency=0...`,
+  );
+
+  // Small delay to clear in-flight requests from Phase 1
+  await new Promise((r) => setTimeout(r, 3000));
+
+  const pollStartTime = Date.now();
+  const maxPollDurationMs = 60000; // 60 seconds polling window
+
+  while (Date.now() - pollStartTime < maxPollDurationMs) {
+    try {
+      // Send a single, isolated probe request with ZERO background traffic
+      const res = await fetch(rootEndpoint, {
+        method: 'GET',
+        headers: {
+          'x-api-key': process.env.VITE_API_KEY || 'dummy-key',
+        },
+      });
+
+      if (res.status === 429) {
+        console.log(
+          `\n[🚨 KILL SWITCH VERIFIED] Isolated probe returned 429 (Too Many Requests) with zero active traffic!`,
+        );
+        console.log(`Total Requests Sent in Phase 1: ${requestCount}`);
+        console.log(
+          `\n🎉 SUCCESS! CloudWatch Alarm fired and Kill Switch set Lambda reserved concurrency to 0!`,
+        );
+        process.exit(0);
+      } else {
+        console.log(
+          `[Probe] Isolated request returned status ${res.status}. Waiting for alarm propagation...`,
+        );
+      }
+    } catch (err) {
+      console.log(`[Probe Error] Network issue during probe:`, err);
+    }
+
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+
+  console.error(
+    `\n[❌ KILL SWITCH NOT ACTIVATED] Isolated requests still succeeded after 60 seconds.`,
+  );
+  console.error(
+    `Confirm CloudWatch Alarm threshold (>2000 req/1m) and SNS topic subscription.`,
+  );
+  process.exit(1);
 }
 
 main().catch((err) => {
