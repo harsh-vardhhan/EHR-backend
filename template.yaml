@@ -21,7 +21,7 @@ Parameters:
     Description: Email address to receive DDoS alert notifications
   DdosRequestThreshold:
     Type: Number
-    Default: 15000
+    Default: 2000
     Description: Number of Lambda requests in 1 minute to trigger the kill switch
   EhrApiKeyVal:
     Type: String
@@ -57,7 +57,7 @@ Resources:
     Properties:
       PackageType: Image
       Timeout: 30
-      ReservedConcurrentExecutions: 50 # Prevent run-away compute costs
+      ReservedConcurrentExecutions: 2 # Prevent run-away compute costs
       FunctionUrlConfig:
         AuthType: NONE
         Cors:
