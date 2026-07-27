@@ -17,6 +17,7 @@
 
 ## AWS CLI, SAM & Data Inspection
 * **Mandatory AWS Profile:** EVERY AWS CLI command MUST explicitly specify `--profile ehr-dev` (e.g., `aws sso login --profile ehr-dev`, `aws s3 ls --profile ehr-dev`, `aws dynamodb describe-table --profile ehr-dev`). NEVER execute AWS commands against default profiles to prevent accidental usage of host/company AWS accounts.
+* **IAM Policy Scoping:** The `ehr-dev` profile is strictly governed by permissions defined in [developer-policy.json](file:///Users/harshvardhan/Documents/GitHub/EHR-backend/developer-policy.json) (Data-Plane Read/Write & CloudWatch Log inspection; strictly denies infrastructure mutations, stack changes, and table creation/deletion).
 * **SSO Authentication & Token Expiry:** If an AWS CLI command fails due to expired SSO tokens or an unauthenticated session, instruct/perform an SSO login via `aws sso login --profile ehr-dev` to refresh credentials before retrying.
 * **SSO Token Scope & Data Inspection:** Understand that the AWS token obtained via AWS SSO is strictly for the **data plane** (not control plane). Use the AWS CLI to inspect and verify data resources in AWS Infrastructure (e.g., S3, DynamoDB).
 * **SAM Emulation:** Refer to `template.yaml` for AWS resource definitions and use `sam build` / `sam local` when testing Lambda infrastructure locally.
