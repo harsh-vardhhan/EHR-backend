@@ -1,8 +1,10 @@
 import { Elysia, t } from 'elysia';
-import { documentsService } from './documents.service';
-import { annotationsService } from '../annotations/annotations.service';
-
-import { DocumentSchema, AuditLogSchema } from 'shared';
+import { 
+  DocumentSchema,
+  AuditLogSchema,
+  documentsService,
+  annotationsService
+} from 'shared';
 
 const idPattern = /^[a-zA-Z0-9_-]+$/;
 

@@ -28,7 +28,8 @@
     "dotenv": "^17.4.2",
     "electrodb": "^3.9.1",
     "elysia": "^1.1.20",
-    "elysia-rate-limit": "4.1.0"
+    "elysia-rate-limit": "4.1.0",
+    "shared": "workspace:*"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",

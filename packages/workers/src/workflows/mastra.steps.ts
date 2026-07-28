@@ -1,7 +1,7 @@
 import { createStep } from '@mastra/core/workflows';
 import { z } from 'zod';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { AnnotationsService, Annotation, Relationship } from '../../../api/src/annotations/annotations.service';
+import { AnnotationsService, Annotation, Relationship } from 'shared';
 import { PiiScrubberService } from './pii-scrubber.service';
 import { extractClinicalEntities, config } from 'shared';
 

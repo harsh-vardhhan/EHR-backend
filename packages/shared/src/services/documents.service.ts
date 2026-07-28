@@ -1,14 +1,16 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
-import {
-  DocumentEntity,
-  AnnotationEntity,
-  AuditLogEntity,
-  RelationshipEntity,
-  config,
-} from 'shared';
-import type { Document, MedicalEntityLabel } from 'shared';
-import type { Annotation } from '../annotations/annotations.service';
+
+import { 
+  DocumentEntity, 
+  AnnotationEntity, 
+  AuditLogEntity, 
+  RelationshipEntity 
+} from '../database/entities';
+import { config } from '../config';
+import { type MedicalEntityLabel } from '../constants/labels';
+import { type Annotation } from './annotations.service';
+import { type Document } from '../database/schemas';
 
 export class DocumentsService {
   private s3Client: S3Client;

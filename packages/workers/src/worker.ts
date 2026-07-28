@@ -6,7 +6,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 dotenv.config();
 
 import { SQSEvent, SQSBatchResponse } from 'aws-lambda';
-import { documentsService } from '../../api/src/documents/documents.service';
+import { documentsService } from 'shared';
 import { mastraService } from './workflows/mastra.service';
 
 /**
