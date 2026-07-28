@@ -1,14 +1,4 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import { randomUUID } from 'crypto';
-import {
-  DocumentEntity,
-  AnnotationEntity,
-  AuditLogEntity,
-  RelationshipEntity,
-  config,
-} from 'shared';
-
-
 import { randomUUID, createHash } from 'crypto';
 import { config } from '../config';
 import { AnnotationEntity, AuditLogEntity, RelationshipEntity } from '../database/annotations.entity';
