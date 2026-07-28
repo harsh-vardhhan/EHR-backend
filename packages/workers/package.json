@@ -15,7 +15,7 @@
     "aws-lambda": "^1.0.7",
     "dotenv": "^17.4.2",
     "zod": "^3.25.76",
-    "shared": "workspace:*"
+    "shared": "*"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.161",
