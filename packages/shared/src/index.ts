@@ -4,3 +4,4 @@ export * from './database/entities';
 export * from './database/schemas';
 export * from './clients/extractor.client';
 export * from './services/annotations.service';
+export * from './services/documents.service';
