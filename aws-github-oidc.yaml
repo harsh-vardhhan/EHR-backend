@@ -258,6 +258,7 @@ Resources:
                   - ecr:SetRepositoryPolicy
                   - ecr:GetAuthorizationToken
                   - ecr-public:GetAuthorizationToken
+                  - sts:GetServiceBearerToken
                   - ecr:BatchCheckLayerAvailability
                   - ecr:GetDownloadUrlForLayer
                   - ecr:BatchGetImage
