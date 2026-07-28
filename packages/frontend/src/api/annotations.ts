@@ -1,6 +1,7 @@
 import { treaty } from '@elysiajs/eden';
 import type { App } from '../../../api/src/app';
 import type { Document, Annotation, Relationship, AuditLog } from '../types';
+import type { MedicalEntityLabel } from '../constants/labels';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const API_KEY = import.meta.env.VITE_API_KEY || '';
@@ -131,11 +132,7 @@ export const api = {
   }): Promise<Annotation[]> => {
     const query: {
       assertion?: 'positive' | 'negated' | 'possible';
-      label?:
-        | 'Clinical Condition'
-        | 'Medication Statement'
-        | 'Clinical Finding'
-        | 'Medical Procedure';
+      label?: MedicalEntityLabel;
       conceptCode?: string;
     } = {};
 
@@ -146,11 +143,7 @@ export const api = {
         | 'possible';
     }
     if (filters.label && filters.label !== 'all') {
-      query.label = filters.label as
-        | 'Clinical Condition'
-        | 'Medication Statement'
-        | 'Clinical Finding'
-        | 'Medical Procedure';
+      query.label = filters.label as MedicalEntityLabel;
     }
     if (filters.conceptCode && filters.conceptCode.trim() !== '') {
       query.conceptCode = filters.conceptCode;

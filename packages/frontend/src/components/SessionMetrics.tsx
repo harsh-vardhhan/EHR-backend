@@ -88,9 +88,9 @@ export function SessionMetrics({ annotations }: Props) {
       <div>
         <LabelDistributionHeader>LABEL DISTRIBUTION</LabelDistributionHeader>
         <div className="flex flex-col gap-3 w-full">
-          {['Clinical Condition', 'Medication Statement', 'Clinical Finding', 'Medical Procedure'].map(label => {
+          {labelList.map(label => {
             const count = getLabelCount(label);
-            const maxCount = Math.max(...['Clinical Condition', 'Medication Statement', 'Clinical Finding', 'Medical Procedure'].map(l => getLabelCount(l)), 1);
+            const maxCount = Math.max(...labelList.map(l => getLabelCount(l)), 1);
             const percentage = (count / maxCount) * 100;
             const labelConfig = MEDICAL_LABELS[label as keyof typeof MEDICAL_LABELS];
             const barColor = theme.colorPrimary;

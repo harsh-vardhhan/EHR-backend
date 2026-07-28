@@ -1,6 +1,5 @@
 import { Elysia, t } from 'elysia';
-import { annotationsService } from 'shared';
-import { MEDICAL_ENTITIES } from 'shared';
+import { annotationsService, LabelSchema } from 'shared';
 
 const documentIdQuerySchema = t.Object({
   documentId: t.String({
@@ -19,18 +18,6 @@ const uuidParamSchema = t.Object({
   }),
 });
 
-const labelSchema = t.Union(
-  [
-    t.Literal(MEDICAL_ENTITIES.CONDITION),
-    t.Literal(MEDICAL_ENTITIES.MEDICATION),
-    t.Literal(MEDICAL_ENTITIES.FINDING),
-    t.Literal(MEDICAL_ENTITIES.PROCEDURE),
-  ],
-  {
-    error: 'Invalid label type',
-  },
-);
-
 const createAnnotationSchema = t.Object({
   documentId: t.String({ minLength: 1, error: 'documentId is required' }),
   text: t.String({
@@ -38,7 +25,7 @@ const createAnnotationSchema = t.Object({
     maxLength: 500,
     error: 'text must be 500 characters or less',
   }),
-  label: labelSchema,
+  label: LabelSchema,
   startOffset: t.Numeric({
     minimum: 0,
     error: 'startOffset must be a non-negative integer',
@@ -79,7 +66,7 @@ const searchQuerySchema = t.Object({
       t.Literal('possible'),
     ]),
   ),
-  label: t.Optional(labelSchema),
+  label: t.Optional(LabelSchema),
   conceptCode: t.Optional(t.String()),
 });
 

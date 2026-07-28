@@ -55,10 +55,6 @@ export class DocumentsService {
 
     const annotations = (annotationsRes.data || []).map((item) => ({
       ...item,
-      source: item.source as Annotation['source'],
-      status: item.status as Annotation['status'],
-      label: item.label as MedicalEntityLabel,
-      assertion: item.assertion as Annotation['assertion'],
       id: item.annotationId,
     }));
 

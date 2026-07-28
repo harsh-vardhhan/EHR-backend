@@ -1,39 +1,22 @@
 import { createStep } from '@mastra/core/workflows';
 import { z } from 'zod';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { AnnotationsService, Annotation, Relationship } from 'shared';
+import {
+  AnnotationsService,
+  Annotation,
+  Relationship,
+  extractedEntitySchema,
+  extractedRelationSchema,
+  extractClinicalEntities,
+  config,
+} from 'shared';
 import { PiiScrubberService } from './pii-scrubber.service';
-import { extractClinicalEntities, config } from 'shared';
 
 const piiDetectionSchema = z.object({
   text: z.string(),
   type: z.enum(['NAME', 'DATE', 'PHONE', 'SSN', 'MRN', 'EMAIL']),
   start: z.number(),
   end: z.number(),
-});
-
-const extractedEntitySchema = z.object({
-  text: z.string(),
-  label: z.union([
-    z.literal('Clinical Condition'),
-    z.literal('Medication Statement'),
-    z.literal('Clinical Finding'),
-    z.literal('Medical Procedure'),
-  ]),
-  confidence: z.number(),
-  assertion: z.enum(['positive', 'negated', 'possible']),
-  conceptCode: z.string(),
-  startOffset: z.number(),
-  endOffset: z.number(),
-});
-
-const extractedRelationSchema = z.object({
-  sourceStart: z.number(),
-  sourceEnd: z.number(),
-  targetStart: z.number(),
-  targetEnd: z.number(),
-  relation: z.string(),
-  confidence: z.number(),
 });
 
 export function createCheckDuplicateStep(
