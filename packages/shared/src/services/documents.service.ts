@@ -14,8 +14,7 @@ import { config } from '../config';
 import { AnnotationEntity, AuditLogEntity, RelationshipEntity } from '../database/annotations.entity';
 import { DocumentEntity } from '../database/documents.entity';
 import { type MedicalEntityLabel } from '../constants/labels';
-import { type Document } from '../database/schemas';
-import type { Annotation } from 'annotations/annotations.service';
+import type { Document, Annotation } from '../database/schemas';
 
 export class DocumentsService {
   private s3Client: S3Client;
