@@ -1,8 +1,13 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID, createHash } from 'crypto';
+
+import { 
+  DocumentEntity, 
+  AnnotationEntity, 
+  AuditLogEntity, 
+  RelationshipEntity 
+} from '../database/entities';
 import { config } from '../config';
-import { AnnotationEntity, AuditLogEntity, RelationshipEntity } from '../database/annotations.entity';
-import { DocumentEntity } from '../database/documents.entity';
 import { type MedicalEntityLabel } from '../constants/labels';
 import { type Annotation } from './annotations.service';
 import { type Document } from '../database/schemas';
