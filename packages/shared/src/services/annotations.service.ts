@@ -1,7 +1,7 @@
 import { randomUUID, createHash } from 'crypto';
 import { MEDICAL_ENTITIES, type MedicalEntityLabel } from '../constants/labels';
-import { AnnotationEntity, AuditLogEntity, RelationshipEntity } from '../database/annotation.entity';
-import { DocumentEntity } from '../database/document.entity';
+import { AnnotationEntity, AuditLogEntity, RelationshipEntity } from './database/annotation.entity';
+import { DocumentEntity } from './database/document.entity';
 
 
 export interface Annotation {
