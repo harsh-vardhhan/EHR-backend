@@ -248,6 +248,28 @@
                 "arn:aws:sagemaker:ap-south-1:<AWS_ACCOUNT_ID>:endpoint-config/SageMakerEndpointConfig-*",
                 "arn:aws:sagemaker:ap-south-1:<AWS_ACCOUNT_ID>:endpoint/gliner-relex-endpoint"
             ]
+        },
+        {
+            "Sid": "ECRManagement",
+            "Effect": "Allow",
+            "Action": [
+                "ecr:CreateRepository",
+                "ecr:DeleteRepository",
+                "ecr:DescribeRepositories",
+                "ecr:GetRepositoryPolicy",
+                "ecr:SetRepositoryPolicy",
+                "ecr:GetAuthorizationToken",
+                "ecr-public:GetAuthorizationToken",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:BatchGetImage",
+                "ecr:InitiateLayerUpload",
+                "ecr:UploadLayerPart",
+                "ecr:CompleteLayerUpload",
+                "ecr:PutImage",
+                "ecr:TagResource"
+            ],
+            "Resource": "*"
         }
     ]
 }
