@@ -14,7 +14,12 @@ export const AnnotationEntity = new Entity(
       documentId: { type: 'string', required: true },
       text: { type: 'string', required: true },
       label: {
-        type: Object.values(MEDICAL_ENTITIES) as [string, ...string[]],
+        type: [
+          MEDICAL_ENTITIES.CONDITION,
+          MEDICAL_ENTITIES.MEDICATION,
+          MEDICAL_ENTITIES.FINDING,
+          MEDICAL_ENTITIES.PROCEDURE,
+        ] as const,
         required: true,
       },
       startOffset: { type: 'number', required: true },

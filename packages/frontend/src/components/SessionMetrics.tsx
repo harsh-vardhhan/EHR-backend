@@ -1,7 +1,7 @@
 import type { Annotation } from '../types';
 import { BarChart3, Target } from 'lucide-react';
 import styled, { useTheme } from 'styled-components';
-import { MEDICAL_LABELS } from '../constants/labels';
+import { MEDICAL_LABELS, MEDICAL_ENTITIES, type MedicalEntityLabel } from '../constants/labels';
 
 import { useSessionMetrics } from '../hooks/useSessionMetrics';
 
@@ -88,9 +88,12 @@ export function SessionMetrics({ annotations }: Props) {
       <div>
         <LabelDistributionHeader>LABEL DISTRIBUTION</LabelDistributionHeader>
         <div className="flex flex-col gap-3 w-full">
-          {labelList.map(label => {
+          {(Object.values(MEDICAL_ENTITIES) as MedicalEntityLabel[]).map((label) => {
             const count = getLabelCount(label);
-            const maxCount = Math.max(...labelList.map(l => getLabelCount(l)), 1);
+            const maxCount = Math.max(
+              ...(Object.values(MEDICAL_ENTITIES) as MedicalEntityLabel[]).map((l) => getLabelCount(l)),
+              1,
+            );
             const percentage = (count / maxCount) * 100;
             const labelConfig = MEDICAL_LABELS[label as keyof typeof MEDICAL_LABELS];
             const barColor = theme.colorPrimary;

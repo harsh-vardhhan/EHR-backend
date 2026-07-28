@@ -8,8 +8,6 @@ import {
   RelationshipEntity 
 } from '../database/entities';
 import { config } from '../config';
-import { type MedicalEntityLabel } from '../constants/labels';
-import { type Annotation } from './annotations.service';
 import { type Document } from '../database/schemas';
 
 export class DocumentsService {
