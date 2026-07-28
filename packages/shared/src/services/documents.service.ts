@@ -1,5 +1,5 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import { randomUUID, createHash } from 'crypto';
+import { randomUUID } from 'crypto';
 
 import { 
   DocumentEntity, 
