@@ -1,9 +1,9 @@
 import { Elysia, t } from 'elysia';
-import { 
+import {
   DocumentSchema,
   AuditLogSchema,
   documentsService,
-  annotationsService
+  annotationsService,
 } from 'shared';
 
 const idPattern = /^[a-zA-Z0-9_-]+$/;
