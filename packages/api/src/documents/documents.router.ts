@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia';
 import { documentsService } from './documents.service';
-import { annotationsService } from '../annotations/annotations.service';
+import { annotationsService } from 'shared';
 
 import { DocumentSchema, AuditLogSchema } from 'shared';
 

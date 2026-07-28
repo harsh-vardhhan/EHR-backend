@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia';
-import { annotationsService } from './annotations.service';
+import { annotationsService } from 'shared';
 import { MEDICAL_ENTITIES } from 'shared';
 
 const documentIdQuerySchema = t.Object({
