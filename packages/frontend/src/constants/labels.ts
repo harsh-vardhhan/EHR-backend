@@ -1,22 +1,8 @@
 import { Stethoscope, FlaskConical, Lightbulb, ClipboardCheck } from 'lucide-react';
 import React from 'react';
+import { MEDICAL_ENTITIES, type MedicalEntityLabel } from 'shared/constants/labels';
 
-/**
- * Centralized configuration for medical entity labels.
- * This is the Single Source of Truth for colors, labels, and icons.
- *
- * NOTE: This configuration is duplicated in the Backend repository at:
- * backend/src/constants/labels.ts
- *
- * Because frontend and backend are hosted in separate Git repositories,
- * any changes made here MUST be manually duplicated in the backend constants folder.
- */
-export const MEDICAL_ENTITIES = {
-  CONDITION: 'Clinical Condition',
-  MEDICATION: 'Medication Statement',
-  FINDING: 'Clinical Finding',
-  PROCEDURE: 'Medical Procedure',
-} as const;
+export { MEDICAL_ENTITIES, type MedicalEntityLabel };
 
 export const MEDICAL_LABELS = {
   [MEDICAL_ENTITIES.CONDITION]: {

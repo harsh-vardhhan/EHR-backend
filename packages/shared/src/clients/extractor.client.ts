@@ -3,27 +3,35 @@ import {
   InvokeEndpointCommand,
 } from '@aws-sdk/client-sagemaker-runtime';
 import { z } from 'zod';
-import type { MedicalEntityLabel } from '../constants/labels';
+import { MEDICAL_ENTITIES, type MedicalEntityLabel } from '../constants/labels';
 import { config } from '../config';
 
-export interface ExtractedEntity {
-  text: string;
-  label: MedicalEntityLabel;
-  confidence: number;
-  assertion: 'positive' | 'negated' | 'possible';
-  conceptCode: string;
-  startOffset: number;
-  endOffset: number;
-}
+export const extractedEntitySchema = z.object({
+  text: z.string(),
+  label: z.enum(
+    Object.values(MEDICAL_ENTITIES) as [
+      MedicalEntityLabel,
+      ...MedicalEntityLabel[],
+    ],
+  ),
+  confidence: z.number(),
+  assertion: z.enum(['positive', 'negated', 'possible']),
+  conceptCode: z.string(),
+  startOffset: z.number(),
+  endOffset: z.number(),
+});
 
-export interface ExtractedRelation {
-  sourceStart: number;
-  sourceEnd: number;
-  targetStart: number;
-  targetEnd: number;
-  relation: string;
-  confidence: number;
-}
+export const extractedRelationSchema = z.object({
+  sourceStart: z.number(),
+  sourceEnd: z.number(),
+  targetStart: z.number(),
+  targetEnd: z.number(),
+  relation: z.string(),
+  confidence: z.number(),
+});
+
+export type ExtractedEntity = z.infer<typeof extractedEntitySchema>;
+export type ExtractedRelation = z.infer<typeof extractedRelationSchema>;
 
 export interface ExtractionResult {
   entities: ExtractedEntity[];

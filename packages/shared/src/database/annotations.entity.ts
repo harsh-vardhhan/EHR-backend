@@ -1,5 +1,6 @@
 import { Entity } from 'electrodb';
 import { client, table } from './client';
+import { MEDICAL_ENTITIES } from '../constants/labels';
 
 export const AnnotationEntity = new Entity(
   {
@@ -12,14 +13,24 @@ export const AnnotationEntity = new Entity(
       annotationId: { type: 'string', required: true },
       documentId: { type: 'string', required: true },
       text: { type: 'string', required: true },
-      label: { type: 'string', required: true }, // MedicalEntityLabel
+      label: {
+        type: [
+          MEDICAL_ENTITIES.CONDITION,
+          MEDICAL_ENTITIES.MEDICATION,
+          MEDICAL_ENTITIES.FINDING,
+          MEDICAL_ENTITIES.PROCEDURE,
+        ] as const,
+        required: true,
+      },
       startOffset: { type: 'number', required: true },
       endOffset: { type: 'number', required: true },
       createdAt: { type: 'string', required: true },
-      source: { type: 'string', required: true }, // 'human' | 'llm'
-      status: { type: 'string' },
+      source: { type: ['human', 'llm'] as const, required: true },
+      status: {
+        type: ['suggested', 'accepted', 'rejected', 'corrected'] as const,
+      },
       confidence: { type: 'number' },
-      assertion: { type: 'string' }, // 'positive' | 'negated' | 'possible'
+      assertion: { type: ['positive', 'negated', 'possible'] as const },
       conceptCode: { type: 'string' },
     },
     indexes: {

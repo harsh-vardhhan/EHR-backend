@@ -2,34 +2,9 @@ import { randomUUID, createHash } from 'crypto';
 import { MEDICAL_ENTITIES, type MedicalEntityLabel } from '../constants/labels';
 import { AnnotationEntity, AuditLogEntity, RelationshipEntity } from '../database/annotations.entity';
 import { DocumentEntity } from '../database/documents.entity';
+import type { Annotation, Relationship } from '../database/schemas';
 
-
-export interface Annotation {
-  id: string;
-  annotationId: string;
-  documentId: string;
-  text: string;
-  label: MedicalEntityLabel;
-  startOffset: number;
-  endOffset: number;
-  createdAt: string;
-  source: 'human' | 'llm';
-  status?: 'suggested' | 'accepted' | 'rejected' | 'corrected';
-  confidence?: number;
-  assertion?: 'positive' | 'negated' | 'possible';
-  conceptCode?: string;
-}
-
-export interface Relationship {
-  id: string;
-  relationshipId: string;
-  documentId: string;
-  sourceAnnotationId: string;
-  targetAnnotationId: string;
-  relationType: string;
-  confidence?: number;
-  createdAt: string;
-}
+export type { Annotation, Relationship };
 
 export class AnnotationsService {
   /**
@@ -57,10 +32,6 @@ export class AnnotationsService {
     const response = await AnnotationEntity.query.primary({ documentId }).go();
     return (response.data || []).map((item) => ({
       ...item,
-      source: item.source as Annotation['source'],
-      status: item.status as Annotation['status'],
-      label: item.label as MedicalEntityLabel,
-      assertion: item.assertion as Annotation['assertion'],
       id: item.annotationId,
     }));
   }
@@ -292,10 +263,6 @@ export class AnnotationsService {
     if (Object.keys(cleanedUpdates).length === 0) {
       return {
         ...item,
-        source: item.source as Annotation['source'],
-        status: item.status as Annotation['status'],
-        label: item.label as MedicalEntityLabel,
-        assertion: item.assertion as Annotation['assertion'],
         id: item.annotationId,
       };
     }
@@ -330,10 +297,6 @@ export class AnnotationsService {
 
       return {
         ...response.data,
-        source: response.data.source as Annotation['source'],
-        status: response.data.status as Annotation['status'],
-        label: response.data.label as MedicalEntityLabel,
-        assertion: response.data.assertion as Annotation['assertion'],
         id: response.data.annotationId,
       };
     } catch (error) {
@@ -352,10 +315,6 @@ export class AnnotationsService {
         (item) =>
           ({
             ...item,
-            source: item.source as Annotation['source'],
-            status: item.status as Annotation['status'],
-            label: item.label as MedicalEntityLabel,
-            assertion: item.assertion as Annotation['assertion'],
             id: (item.annotationId || item.id) as string,
           }) as Annotation,
       );

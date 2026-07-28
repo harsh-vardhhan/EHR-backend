@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Annotation, Document } from '../types';
 import { api } from '../api/annotations';
+import { MEDICAL_LABELS } from '../constants/labels';
 import { Button } from './ui/button';
 import { toast } from './ui/toast';
 import {
@@ -77,10 +78,11 @@ export function CohortQueryTab({ documents, onNavigateToDocument, onExportFhir }
             }
           >
             <option value="all">All Categories</option>
-            <option value="Clinical Condition">Clinical Condition (ICD-10)</option>
-            <option value="Medication Statement">Medication (RxNorm)</option>
-            <option value="Clinical Finding">Clinical Finding (SNOMED)</option>
-            <option value="Medical Procedure">Procedure (CPT)</option>
+            {Object.values(MEDICAL_LABELS).map((cfg) => (
+              <option key={cfg.id} value={cfg.id}>
+                {cfg.id} ({cfg.description})
+              </option>
+            ))}
           </FilterSelect>
         </SelectWrapper>
 

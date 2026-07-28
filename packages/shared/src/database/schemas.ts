@@ -1,10 +1,11 @@
 import { t, type Static } from 'elysia';
+import { MEDICAL_ENTITIES } from '../constants/labels';
 
 export const LabelSchema = t.Union([
-  t.Literal('Clinical Condition'),
-  t.Literal('Medication Statement'),
-  t.Literal('Clinical Finding'),
-  t.Literal('Medical Procedure'),
+  t.Literal(MEDICAL_ENTITIES.CONDITION),
+  t.Literal(MEDICAL_ENTITIES.MEDICATION),
+  t.Literal(MEDICAL_ENTITIES.FINDING),
+  t.Literal(MEDICAL_ENTITIES.PROCEDURE),
 ]);
 
 export const AnnotationSchema = t.Object({

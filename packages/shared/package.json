@@ -4,6 +4,11 @@
   "private": true,
   "main": "./src/index.ts",
   "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./constants/labels": "./src/constants/labels.ts",
+    "./*": "./src/*"
+  },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1045.0",
     "@aws-sdk/client-firehose": "^3.1045.0",
