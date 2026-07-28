@@ -39,6 +39,11 @@ jobs:
           role-to-assume: arn:aws:iam::479650866443:role/github-actions-deploy-role
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Log in to Amazon ECR Public
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
+
       - name: Install esbuild globally
         run: npm install -g esbuild
 
