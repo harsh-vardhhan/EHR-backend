@@ -1,6 +1,6 @@
 import { Stethoscope, FlaskConical, Lightbulb, ClipboardCheck } from 'lucide-react';
 import React from 'react';
-import { MEDICAL_ENTITIES, type MedicalEntityLabel } from 'shared';
+import { MEDICAL_ENTITIES, type MedicalEntityLabel } from 'shared/constants/labels';
 
 export { MEDICAL_ENTITIES, type MedicalEntityLabel };
 
