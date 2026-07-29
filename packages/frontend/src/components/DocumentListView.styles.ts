@@ -97,15 +97,16 @@ export const ContentWrapper = styled.div`
 
 export const ViewTabs = styled.div`
   display: flex;
-  gap: 16px;
-  border-bottom: 1px solid ${(props) => props.theme.colorBorderSecondary};
-  margin-bottom: 20px;
+  gap: 8px;
+  height: 100%;
+  align-items: center;
 `;
 
 export const TabButton = styled.button<{ $active: boolean }>`
   background: transparent;
   border: none;
-  padding: 10px 16px;
+  height: 100%;
+  padding: 0 16px;
   font-size: 14px;
   font-weight: 600;
   color: ${(props) =>
@@ -121,7 +122,6 @@ export const TabButton = styled.button<{ $active: boolean }>`
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: -1px;
 
   &:hover {
     color: ${(props) => props.theme.colorPrimary};
