@@ -39,9 +39,11 @@ jobs:
           role-to-assume: arn:aws:iam::479650866443:role/github-actions-deploy-role
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Log in to Amazon Public ECR
+      - name: Pre-pull Lambda Adapter with retry
         run: |
-          aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+          for i in 1 2 3 4 5; do
+            docker pull public.ecr.aws/awsguru/aws-lambda-adapter:0.8.3 && break || sleep 5
+          done
 
       - name: Install esbuild globally
         run: npm install -g esbuild
