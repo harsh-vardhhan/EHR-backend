@@ -39,6 +39,10 @@ jobs:
           role-to-assume: arn:aws:iam::479650866443:role/github-actions-deploy-role
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Log in to Amazon Public ECR
+        run: |
+          aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+
       - name: Install esbuild globally
         run: npm install -g esbuild
 
