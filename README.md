@@ -269,7 +269,8 @@ This backend incorporates a robust, multi-layered security architecture designed
 ## 🛠 Local Development
 
 ### Prerequisites
-- Bun (v1.1+ recommended)
+- Bun (v1.4+ recommended)
+- Python 3.10+ with `uv` (for local ML server in `ml/`)
 - AWS CLI (configured via AWS IAM Identity Center/SSO profile e.g., `ehr-dev`)
 - SAM CLI (optional, for local Lambda emulation)
 
@@ -279,12 +280,14 @@ This backend incorporates a robust, multi-layered security architecture designed
 $ bun install
 ```
 
-2. Create a `.env` file in the root of the `packages/api` directory containing your API keys and configuration parameters:
+2. Create a `.env` file in the repository root containing your configuration parameters:
 ```env
 EHR_TABLE_NAME=ehr-table
-DOCUMENTS_BUCKET_NAME=your_s3_bucket_name
-AWS_REGION=your_aws_region
+DOCUMENTS_BUCKET_NAME=ehr-demo-docs-bucket
+AWS_REGION=ap-south-1
 OMOPHUB_API_KEY=your_omophub_api_key
+LOCAL_ML_URL=http://localhost:5000/invocations
+MOCK_SAGEMAKER=false
 ```
 
 ### Running Locally
@@ -293,13 +296,43 @@ Run the monorepo workspaces concurrently:
 $ bun run dev
 ```
 
+### 🧪 Local ML & Data Seeding Workflow
+To populate S3 and DynamoDB with sample clinical notes, extracted entities, and OMOP mappings locally without deploying an expensive AWS SageMaker endpoint:
+
+1. **Start the Local Python ML Server:**
+   ```bash
+   cd ml
+   uv run server.py
+   ```
+   *Loads the local GLiNER-ReLex, SapBERT, and Assertion models, listening on `http://localhost:5000/invocations`.*
+
+2. **Clean Stale Records:**
+   In your host terminal (root directory):
+   ```bash
+   bun run cleanup
+   ```
+   *Purges DynamoDB table records and clears the `documents/` and `scrubbed/` prefixes in S3.*
+
+3. **Seed Raw Documents to S3:**
+   ```bash
+   bun run seed
+   ```
+   *Uploads sample clinical notes from `notes.json` to `s3://<BUCKET_NAME>/documents/`.*
+
+4. **Execute Local Worker Pipeline:**
+   ```bash
+   bun run test:local-worker
+   ```
+   *Simulates the SQS worker locally: runs the Mastra workflow, queries the local ML server on port 5000 for entity extraction & PII de-identification, maps concepts via OMOPHub, writes de-identified text to `s3://<BUCKET_NAME>/scrubbed/`, and populates DynamoDB `ehr-table`.*
+
 ## 📜 Key Scripts
 Run these scripts from the monorepo root:
 - `bun run build`: Compiles all workspace packages.
 - `bun run lint`: Lints the monorepo.
 - `bun run test`: Executes the test suites.
-- `bun --filter api run cleanup`: Wipes all DynamoDB table items and S3 objects to reset the database.
-- `bun --filter api run seed`: Seeds the S3 bucket with sample document notes.
+- `bun run cleanup`: Wipes DynamoDB table items and S3 objects to reset the database (`bun --filter api cleanup`).
+- `bun run seed`: Seeds the S3 bucket with sample document notes (`bun --filter api seed`).
+- `bun run test:local-worker`: Runs the local SQS worker simulation using the local ML server (`bun --filter workers test:local-worker`).
 - `bun --filter workers test:kill-switch`: Tests CloudWatch DDoS alarm triggering and Lambda kill-switch concurrency throttling.
 - `bun --filter workers test:dlq`: Tests SQS Dead-Letter Queue failure handling.
 - `bun --filter workers verify:sagemaker`: Verifies SageMaker PyTorch endpoint connectivity and inference payloads.
