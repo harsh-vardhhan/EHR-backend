@@ -16,7 +16,9 @@ async function runLocalWorkerTest() {
   console.log('🏁 Starting Local SQS Worker simulation...');
   console.log(`🪣 Target Bucket: ${BUCKET_NAME}`);
 
-  const notesPath = path.join(__dirname, 'notes.json');
+  const notesPath = fs.existsSync(path.join(__dirname, 'notes.json'))
+    ? path.join(__dirname, 'notes.json')
+    : path.resolve(__dirname, '../../../api/src/scripts/notes.json');
   const notes = JSON.parse(fs.readFileSync(notesPath, 'utf8'));
 
   // Construct mock SQS event containing all 10 documents

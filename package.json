@@ -16,7 +16,10 @@
     "dev": "bun --filter \"*\" dev",
     "build": "bun --filter \"*\" build",
     "lint": "bun --filter \"*\" lint",
-    "test": "bun --filter \"*\" test"
+    "test": "bun --filter \"*\" test",
+    "cleanup": "bun --filter api cleanup",
+    "seed": "bun --filter api seed",
+    "test:local-worker": "bun --filter workers test:local-worker"
   },
   "devDependencies": {
     "elysia": "^1.1.20",
