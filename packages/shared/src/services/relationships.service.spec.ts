@@ -102,7 +102,7 @@ describe('RelationshipsService', () => {
 
     try {
       const service = new RelationshipsService(mockAudit);
-      expect(
+      await expect(
         service.createRelationship({
           documentId: 'missing-doc',
           sourceAnnotationId: 'src-1',
