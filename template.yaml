@@ -402,6 +402,8 @@ Resources:
             Stream: !GetAtt EhrTable.StreamArn
             StartingPosition: LATEST
             BatchSize: 100
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
             Enabled: !If [ ShouldEnableStreams, true, false ]
       Environment:
         Variables:
