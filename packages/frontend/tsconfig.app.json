@@ -28,6 +28,9 @@
       "@/*": [
         "./src/*"
       ],
+      "api": [
+        "../api/src/app.ts"
+      ],
       "elysia": [
         "../../node_modules/elysia"
       ],

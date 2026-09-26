@@ -1,5 +1,5 @@
 import { treaty } from '@elysiajs/eden';
-import type { App } from '../../../api/src/app';
+import type { App } from 'api';
 import type { Document, Annotation, Relationship, AuditLog } from '../types';
 import type { MedicalEntityLabel } from '../constants/labels';
 

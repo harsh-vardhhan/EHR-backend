@@ -1,11 +1,12 @@
 import { DynamoDBStreamEvent } from 'aws-lambda';
-import { FirehoseClient, PutRecordCommand } from '@aws-sdk/client-firehose';
+import { FirehoseClient, PutRecordBatchCommand, type _Record as FirehoseRecord } from '@aws-sdk/client-firehose';
 import { config } from 'shared';
 
 const firehoseClient = new FirehoseClient({});
+const MAX_FIREHOSE_BATCH_SIZE = 500;
 
 export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
-  console.log('Audit Consumer received event:', JSON.stringify(event, null, 2));
+  console.log('Audit Consumer received event with', event.Records.length, 'records');
 
   const deliveryStreamName = config.auditDeliveryStreamName;
   if (!deliveryStreamName) {
@@ -14,6 +15,8 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
     );
     return;
   }
+
+  const firehoseRecords: FirehoseRecord[] = [];
 
   for (const record of event.Records) {
     // Only capture new audit records (inserts)
@@ -36,39 +39,47 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
       continue;
     }
 
+    const auditRecord = {
+      logId: newImage.logId?.S,
+      documentId: newImage.documentId?.S,
+      actionType: newImage.actionType?.S,
+      description: newImage.description?.S,
+      createdAt: newImage.createdAt?.S,
+    };
+
+    // Append newline to support JSON Lines (NDJSON) format in S3
+    const recordData = JSON.stringify(auditRecord) + '\n';
+    firehoseRecords.push({
+      Data: new TextEncoder().encode(recordData),
+    });
+  }
+
+  if (firehoseRecords.length === 0) {
+    return;
+  }
+
+  // Chunk records into batches of up to 500 (Kinesis Firehose batch limit)
+  for (let i = 0; i < firehoseRecords.length; i += MAX_FIREHOSE_BATCH_SIZE) {
+    const chunk = firehoseRecords.slice(i, i + MAX_FIREHOSE_BATCH_SIZE);
     try {
-      // Unmarshall DynamoDB image to a plain javascript object
-      const auditRecord = {
-        logId: newImage.logId?.S,
-        documentId: newImage.documentId?.S,
-        actionType: newImage.actionType?.S,
-        description: newImage.description?.S,
-        createdAt: newImage.createdAt?.S,
-      };
-
-      console.log(
-        `Forwarding audit log ${auditRecord.logId} to Kinesis Firehose...`,
-      );
-
-      // Append newline to support JSON Lines (NDJSON) format in S3
-      const recordData = JSON.stringify(auditRecord) + '\n';
-
-      const command = new PutRecordCommand({
+      const command = new PutRecordBatchCommand({
         DeliveryStreamName: deliveryStreamName,
-        Record: {
-          Data: new TextEncoder().encode(recordData),
-        },
+        Records: chunk,
       });
 
-      await firehoseClient.send(command);
-      console.log(
-        `Successfully streamed log ${auditRecord.logId} to Firehose.`,
-      );
+      const response = await firehoseClient.send(command);
+      if (response.FailedPutCount && response.FailedPutCount > 0) {
+        console.warn(
+          `Firehose batch put had ${response.FailedPutCount} failed records out of ${chunk.length}`,
+        );
+      } else {
+        console.log(
+          `Successfully streamed batch of ${chunk.length} audit logs to Firehose.`,
+        );
+      }
     } catch (error) {
-      console.error(
-        `Failed to process stream record: ${JSON.stringify(record)}`,
-        error,
-      );
+      console.error('Failed to stream batch of audit logs to Firehose', error);
+      throw error;
     }
   }
 };

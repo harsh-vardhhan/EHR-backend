@@ -1,18 +1,31 @@
-import { randomUUID, createHash } from 'crypto';
+import { createHash } from 'crypto';
 import { MEDICAL_ENTITIES, type MedicalEntityLabel } from '../constants/labels';
-import { AnnotationEntity, AuditLogEntity, RelationshipEntity } from '../database/annotations.entity';
+import { AnnotationEntity } from '../database/annotations.entity';
 import { DocumentEntity } from '../database/documents.entity';
-import type { Annotation, Relationship } from '../database/schemas';
+import type { Annotation, Relationship, AuditLog } from '../database/schemas';
+import { auditService, type AuditService } from './audit.service';
+import { relationshipsService, type RelationshipsService } from './relationships.service';
 
-export type { Annotation, Relationship };
+export type { Annotation, Relationship, AuditLog };
 
 export class AnnotationsService {
+  private audit: AuditService;
+  private relationships: RelationshipsService;
+
+  constructor(
+    audit: AuditService = auditService,
+    relationships: RelationshipsService = relationshipsService,
+  ) {
+    this.audit = audit;
+    this.relationships = relationships;
+  }
+
   /**
    * Generates a 100% deterministic UUID v5-compatible string derived from the entity span.
    * Ensures native DynamoDB uniqueness on (documentId, startOffset, endOffset, label)
    * with zero race conditions and zero extra read query overhead.
    */
-  private generateDeterministicUuid(
+  public generateDeterministicUuid(
     documentId: string,
     startOffset: number,
     endOffset: number,
@@ -92,7 +105,7 @@ export class AnnotationsService {
       throw error;
     }
 
-    await this.createAuditLog(
+    await this.audit.createAuditLog(
       data.documentId,
       'ANNOTATION_CREATED',
       `Clinician manually created ${data.label} annotation: "${data.text}"`,
@@ -204,7 +217,7 @@ export class AnnotationsService {
     }
 
     if (createdAnnotations.length > 0) {
-      await this.createAuditLog(
+      await this.audit.createAuditLog(
         documentId,
         'LLM_EXTRACTION_SUCCESS',
         `AI pipeline successfully completed clinical NER and extracted ${createdAnnotations.length} concepts.`,
@@ -287,13 +300,13 @@ export class AnnotationsService {
       } else if (updates.status === 'rejected') {
         actionType = 'ANNOTATION_REJECTED';
         desc = `Clinician rejected suggested ${response.data.label}: "${response.data.text}"`;
-        await this.deleteRelationshipsByAnnotation(documentId, annotationId);
+        await this.relationships.deleteRelationshipsByAnnotation(documentId, annotationId);
       } else if (updates.status === 'corrected') {
         actionType = 'ANNOTATION_CORRECTED';
         desc = `Clinician corrected suggested ${response.data.label}: "${response.data.text}"`;
       }
 
-      await this.createAuditLog(documentId, actionType, desc);
+      await this.audit.createAuditLog(documentId, actionType, desc);
 
       return {
         ...response.data,
@@ -407,201 +420,6 @@ export class AnnotationsService {
     }
   }
 
-  async getAuditLogs(documentId: string) {
-    try {
-      const response = await AuditLogEntity.query.primary({ documentId }).go();
-      return (response.data || []).sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      );
-    } catch (error) {
-      console.error('Error fetching audit logs', error);
-      return [];
-    }
-  }
-
-  async createAuditLog(
-    documentId: string,
-    actionType: string,
-    description: string,
-  ) {
-    try {
-      const logId = randomUUID();
-      const log = {
-        logId,
-        documentId,
-        actionType,
-        description,
-        createdAt: new Date().toISOString(),
-      };
-      await AuditLogEntity.create(log).go();
-      return log;
-    } catch (error) {
-      console.error('Error creating audit log in DynamoDB', error);
-    }
-  }
-
-  async getRelationshipsByDocument(
-    documentId: string,
-  ): Promise<Relationship[]> {
-    try {
-      const response = await RelationshipEntity.query
-        .primary({ documentId })
-        .go();
-      return (response.data || []).map((item) => ({
-        ...item,
-        id: item.relationshipId,
-        relationshipId: item.relationshipId,
-      }));
-    } catch (error) {
-      console.error('Error fetching relationships', error);
-      return [];
-    }
-  }
-
-  async createRelationship(
-    data: Omit<Relationship, 'relationshipId' | 'createdAt' | 'id'>,
-  ): Promise<Relationship> {
-    const docRes = await DocumentEntity.get({ id: data.documentId }).go();
-    if (!docRes.data) {
-      throw new Error(`Document with id ${data.documentId} not found`);
-    }
-
-    // Verify source annotation exists and belongs to the document
-    const sourceAnn = await AnnotationEntity.get({
-      documentId: data.documentId,
-      annotationId: data.sourceAnnotationId,
-    }).go();
-    if (!sourceAnn.data) {
-      throw new Error(
-        `Source annotation with ID ${data.sourceAnnotationId} not found in document ${data.documentId}`,
-      );
-    }
-
-    // Verify target annotation exists and belongs to the document
-    const targetAnn = await AnnotationEntity.get({
-      documentId: data.documentId,
-      annotationId: data.targetAnnotationId,
-    }).go();
-    if (!targetAnn.data) {
-      throw new Error(
-        `Target annotation with ID ${data.targetAnnotationId} not found in document ${data.documentId}`,
-      );
-    }
-
-    const relationshipId = randomUUID();
-    const entityPayload = {
-      ...data,
-      relationshipId,
-      createdAt: new Date().toISOString(),
-    };
-
-    await RelationshipEntity.create(entityPayload).go();
-    await this.createAuditLog(
-      data.documentId,
-      'RELATIONSHIP_CREATED',
-      `Clinician manually linked annotation ${data.sourceAnnotationId} to ${data.targetAnnotationId} as ${data.relationType}`,
-    );
-    return {
-      ...entityPayload,
-      id: relationshipId,
-    };
-  }
-
-  async createRelationships(
-    documentId: string,
-    relationshipsData: Omit<
-      Relationship,
-      'relationshipId' | 'createdAt' | 'documentId' | 'id'
-    >[],
-  ): Promise<Relationship[]> {
-    if (relationshipsData.length === 0) return [];
-
-    const docRes = await DocumentEntity.get({ id: documentId }).go();
-    if (!docRes.data) {
-      throw new Error(`Document with id ${documentId} not found`);
-    }
-
-    const timestamp = new Date().toISOString();
-    const newRelationships = relationshipsData.map((data) => {
-      const relationshipId = randomUUID();
-      return {
-        ...data,
-        documentId,
-        relationshipId,
-        createdAt: timestamp,
-      };
-    });
-
-    await RelationshipEntity.put(newRelationships).go();
-    await this.createAuditLog(
-      documentId,
-      'LLM_RELATIONS_EXTRACTED',
-      `AI pipeline successfully extracted and saved ${newRelationships.length} relationships.`,
-    );
-    return newRelationships.map((item) => ({
-      ...item,
-      id: item.relationshipId,
-    }));
-  }
-
-  async deleteRelationship(
-    documentId: string,
-    relationshipId: string,
-  ): Promise<void> {
-    const existing = await RelationshipEntity.get({
-      documentId,
-      relationshipId,
-    }).go();
-    if (!existing.data) {
-      throw new Error(
-        `Relationship with ID ${relationshipId} not found in document ${documentId}`,
-      );
-    }
-    await RelationshipEntity.delete({ documentId, relationshipId }).go();
-    await this.createAuditLog(
-      documentId,
-      'RELATIONSHIP_DELETED',
-      `Relationship ${relationshipId} was deleted.`,
-    );
-  }
-
-  async deleteRelationshipsByAnnotation(
-    documentId: string,
-    annotationId: string,
-  ): Promise<number> {
-    try {
-      const relationships = await this.getRelationshipsByDocument(documentId);
-      const toDelete = relationships.filter(
-        (rel) =>
-          rel.sourceAnnotationId === annotationId ||
-          rel.targetAnnotationId === annotationId,
-      );
-
-      if (toDelete.length === 0) return 0;
-
-      for (const rel of toDelete) {
-        await RelationshipEntity.delete({
-          documentId,
-          relationshipId: rel.relationshipId,
-        }).go();
-      }
-
-      await this.createAuditLog(
-        documentId,
-        'CASCADING_RELATIONSHIPS_DELETED',
-        `Cleaned up ${toDelete.length} linked relationships due to annotation ${annotationId} deletion.`,
-      );
-      return toDelete.length;
-    } catch (error) {
-      console.error(
-        'Failed to run cascading deletion for relationships',
-        error,
-      );
-      return 0;
-    }
-  }
-
   async deleteAnnotation(annotationId: string): Promise<void> {
     const findResponse = await AnnotationEntity.query
       .bySk({ annotationId })
@@ -613,18 +431,65 @@ export class AnnotationsService {
     }
     const documentId = item.documentId;
 
-    // Delete cascading relationships first
-    await this.deleteRelationshipsByAnnotation(documentId, annotationId);
+    // Delete cascading relationships first via RelationshipsService
+    await this.relationships.deleteRelationshipsByAnnotation(documentId, annotationId);
 
     // Delete the annotation
     await AnnotationEntity.delete({ documentId, annotationId }).go();
 
-    // Log audit trail
-    await this.createAuditLog(
+    // Log audit trail via AuditService
+    await this.audit.createAuditLog(
       documentId,
       'ANNOTATION_DELETED',
       `Clinician deleted annotation: "${item.text}"`,
     );
+  }
+
+  // Backward-compatible delegates
+  async getAuditLogs(documentId: string): Promise<AuditLog[]> {
+    return this.audit.getAuditLogs(documentId);
+  }
+
+  async createAuditLog(
+    documentId: string,
+    actionType: string,
+    description: string,
+  ): Promise<AuditLog | undefined> {
+    return this.audit.createAuditLog(documentId, actionType, description);
+  }
+
+  async getRelationshipsByDocument(documentId: string): Promise<Relationship[]> {
+    return this.relationships.getRelationshipsByDocument(documentId);
+  }
+
+  async createRelationship(
+    data: Omit<Relationship, 'relationshipId' | 'createdAt' | 'id'>,
+  ): Promise<Relationship> {
+    return this.relationships.createRelationship(data);
+  }
+
+  async createRelationships(
+    documentId: string,
+    relationshipsData: Omit<
+      Relationship,
+      'relationshipId' | 'createdAt' | 'documentId' | 'id'
+    >[],
+  ): Promise<Relationship[]> {
+    return this.relationships.createRelationships(documentId, relationshipsData);
+  }
+
+  async deleteRelationship(
+    documentId: string,
+    relationshipId: string,
+  ): Promise<void> {
+    return this.relationships.deleteRelationship(documentId, relationshipId);
+  }
+
+  async deleteRelationshipsByAnnotation(
+    documentId: string,
+    annotationId: string,
+  ): Promise<number> {
+    return this.relationships.deleteRelationshipsByAnnotation(documentId, annotationId);
   }
 }
 
