@@ -9,6 +9,9 @@
     "./constants/labels": "./src/constants/labels.ts",
     "./*": "./src/*"
   },
+  "scripts": {
+    "test": "bun test"
+  },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1045.0",
     "@aws-sdk/client-firehose": "^3.1045.0",

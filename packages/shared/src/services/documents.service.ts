@@ -1,20 +1,21 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import { randomUUID } from 'crypto';
 
 import { 
   DocumentEntity, 
   AnnotationEntity, 
-  AuditLogEntity, 
   RelationshipEntity 
 } from '../database/entities';
 import { config } from '../config';
 import { type Document } from '../database/schemas';
+import { auditService, type AuditService } from './audit.service';
 
 export class DocumentsService {
   private s3Client: S3Client;
+  private audit: AuditService;
 
-  constructor() {
+  constructor(audit: AuditService = auditService) {
     this.s3Client = new S3Client({});
+    this.audit = audit;
   }
 
   async getDocuments(): Promise<Document[]> {
@@ -135,13 +136,11 @@ export class DocumentsService {
 
         // Log INGESTION_COMPLETED audit event
         try {
-          await AuditLogEntity.create({
-            logId: randomUUID(),
-            documentId: id,
-            actionType: 'INGESTION_COMPLETED',
-            description: `Document "${newDoc.title}" ingested from S3. PII Scrubbing execution complete.`,
-            createdAt: new Date().toISOString(),
-          }).go();
+          await this.audit.createAuditLog(
+            id,
+            'INGESTION_COMPLETED',
+            `Document "${newDoc.title}" ingested from S3. PII Scrubbing execution complete.`,
+          );
         } catch (auditError) {
           console.error('Failed to log ingestion audit event', auditError);
         }

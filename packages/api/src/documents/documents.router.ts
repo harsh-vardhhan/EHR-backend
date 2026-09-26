@@ -3,7 +3,7 @@ import {
   DocumentSchema,
   AuditLogSchema,
   documentsService,
-  annotationsService,
+  auditService,
 } from 'shared';
 
 const idPattern = /^[a-zA-Z0-9_-]+$/;
@@ -58,7 +58,7 @@ export const documentsApp = new Elysia({ prefix: '/documents' })
   .get(
     '/:id/audit',
     async ({ params: { id } }) => {
-      const auditLogs = await annotationsService.getAuditLogs(id);
+      const auditLogs = await auditService.getAuditLogs(id);
       return auditLogs;
     },
     {

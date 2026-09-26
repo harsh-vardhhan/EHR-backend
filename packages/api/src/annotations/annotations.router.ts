@@ -1,5 +1,11 @@
 import { Elysia, t } from 'elysia';
-import { annotationsService, LabelSchema } from 'shared';
+import {
+  annotationsService,
+  relationshipsService,
+  AnnotationSchema,
+  LabelSchema,
+  RelationshipSchema,
+} from 'shared';
 
 const documentIdQuerySchema = t.Object({
   documentId: t.String({
@@ -83,8 +89,6 @@ const createRelationshipSchema = t.Object({
   relationType: t.String({ minLength: 1, error: 'relationType is required' }),
   confidence: t.Optional(t.Numeric({ minimum: 0, maximum: 1 })),
 });
-
-import { AnnotationSchema, RelationshipSchema } from 'shared';
 
 export const annotationsApp = new Elysia({ prefix: '/annotations' })
   .onError(({ error, set }) => {
@@ -176,7 +180,7 @@ export const annotationsApp = new Elysia({ prefix: '/annotations' })
     '/relationships',
     async ({ query: { documentId } }) => {
       const relationships =
-        await annotationsService.getRelationshipsByDocument(documentId);
+        await relationshipsService.getRelationshipsByDocument(documentId);
       return relationships;
     },
     {
@@ -187,7 +191,7 @@ export const annotationsApp = new Elysia({ prefix: '/annotations' })
   .post(
     '/relationships',
     async ({ body }) => {
-      const newRel = await annotationsService.createRelationship(body);
+      const newRel = await relationshipsService.createRelationship(body);
       return newRel;
     },
     {
@@ -205,7 +209,7 @@ export const annotationsApp = new Elysia({ prefix: '/annotations' })
           message: 'documentId query parameter is required',
         };
       }
-      await annotationsService.deleteRelationship(documentId, relationshipId);
+      await relationshipsService.deleteRelationship(documentId, relationshipId);
       return { success: true };
     },
     {
