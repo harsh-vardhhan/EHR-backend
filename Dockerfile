@@ -1,5 +1,5 @@
 # --- Stage 1: Build & Bundle ---
-FROM oven/bun:canary-alpine AS builder
+FROM oven/bun:1.4.2-alpine AS builder
 WORKDIR /usr/src/app
 
 COPY package.json bun.lock ./
@@ -15,7 +15,7 @@ WORKDIR /usr/src/app/packages/api
 RUN bun build ./src/main.ts --target=bun --outfile=dist/main.js
 
 # --- Stage 2: Minimal Runtime Image ---
-FROM oven/bun:canary-alpine AS runner
+FROM oven/bun:1.4.2-alpine AS runner
 WORKDIR /usr/src/app
 
 COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.8.3 /lambda-adapter /opt/extensions/lambda-adapter
