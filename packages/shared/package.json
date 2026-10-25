@@ -21,7 +21,7 @@
     "@aws-sdk/client-sqs": "^3.1052.0",
     "@aws-sdk/lib-dynamodb": "^3.1045.0",
     "@sinclair/typebox": "^0.34.52",
-    "@syncploy/sdk": "*",
+    "@syncploy/sdk": "link:@syncploy/sdk",
     "dotenv": "^17.4.2",
     "electrodb": "^3.9.1",
     "elysia": "^1.1.20",
