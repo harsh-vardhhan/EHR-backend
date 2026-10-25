@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@elysiajs/eden": "^1.1.3",
-    "@syncploy/sdk": "^0.1.3",
+    "@syncploy/sdk": "^0.1.4",
     "elysia": "^1.1.20",
     "esbuild": "^0.28.0",
     "typescript": "^5.7.3"
