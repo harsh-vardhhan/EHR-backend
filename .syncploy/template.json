@@ -376,8 +376,21 @@
             "ehr-kill-switch": {
               "Ref": "Topicehrkillswitch"
             },
-            "API_KEY": "",
-            "OMOPHUB_API_KEY": ""
+            "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "FUNCTION_EHRBACKENDFUNCTION_NAME": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "EHRBACKENDFUNCTION_FUNCTION_NAME": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "ehrBackendFunction": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "BACKEND_FUNCTION_NAME": {
+              "Ref": "FunctionehrBackendFunction"
+            }
           }
         },
         "ReservedConcurrentExecutions": 2
@@ -491,7 +504,21 @@
             "ehr-kill-switch": {
               "Ref": "Topicehrkillswitch"
             },
-            "OMOPHUB_API_KEY": "",
+            "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "FUNCTION_EHRBACKENDFUNCTION_NAME": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "EHRBACKENDFUNCTION_FUNCTION_NAME": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "ehrBackendFunction": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "BACKEND_FUNCTION_NAME": {
+              "Ref": "FunctionehrBackendFunction"
+            },
             "SAGEMAKER_ENDPOINT_NAME": "gliner-relex-endpoint"
           }
         },
@@ -591,6 +618,21 @@
             "ehr-kill-switch": {
               "Ref": "Topicehrkillswitch"
             },
+            "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "FUNCTION_EHRBACKENDFUNCTION_NAME": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "EHRBACKENDFUNCTION_FUNCTION_NAME": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "ehrBackendFunction": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "BACKEND_FUNCTION_NAME": {
+              "Ref": "FunctionehrBackendFunction"
+            },
             "AUDIT_DELIVERY_STREAM_NAME": ""
           }
         }
@@ -682,6 +724,21 @@
             },
             "ehr-kill-switch": {
               "Ref": "Topicehrkillswitch"
+            },
+            "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "FUNCTION_EHRBACKENDFUNCTION_NAME": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "EHRBACKENDFUNCTION_FUNCTION_NAME": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "ehrBackendFunction": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "BACKEND_FUNCTION_NAME": {
+              "Ref": "FunctionehrBackendFunction"
             },
             "OMOP_DELIVERY_STREAM_NAME": ""
           }
@@ -775,7 +832,21 @@
             "ehr-kill-switch": {
               "Ref": "Topicehrkillswitch"
             },
-            "BACKEND_FUNCTION_NAME": ""
+            "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "FUNCTION_EHRBACKENDFUNCTION_NAME": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "EHRBACKENDFUNCTION_FUNCTION_NAME": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "ehrBackendFunction": {
+              "Ref": "FunctionehrBackendFunction"
+            },
+            "BACKEND_FUNCTION_NAME": {
+              "Ref": "FunctionehrBackendFunction"
+            }
           }
         }
       }
@@ -818,6 +889,18 @@
         "AlarmActions": [
           {
             "Ref": "Topicehrkillswitch"
+          }
+        ],
+        "MetricName": "Invocations",
+        "Namespace": "AWS/Lambda",
+        "Period": 60,
+        "Statistic": "Sum",
+        "Dimensions": [
+          {
+            "Name": "FunctionName",
+            "Value": {
+              "Ref": "FunctionehrBackendFunction"
+            }
           }
         ]
       }

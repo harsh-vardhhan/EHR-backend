@@ -20,13 +20,14 @@ export const ehrAnnotationWorkerFunction = ehrAnnotationQueue.consumer(
       },
     ],
     environment: {
-      OMOPHUB_API_KEY: process.env.OMOPHUB_API_KEY || "",
+      ...(process.env.OMOPHUB_API_KEY ? { OMOPHUB_API_KEY: process.env.OMOPHUB_API_KEY } : {}),
       SAGEMAKER_ENDPOINT_NAME:
         process.env.SAGEMAKER_ENDPOINT_NAME || "gliner-relex-endpoint",
     },
   },
   async (_body, ctx) => {
-    await workerHandler(ctx.event);
+    // Process single record and return failure result to preserve retry semantics
+    return await workerHandler({ Records: [ctx.record] });
   }
 );
 
@@ -34,6 +35,7 @@ export const ehrAnnotationWorkerFunction = ehrAnnotationQueue.consumer(
  * Syncploy DDoS Kill Switch Circuit Breaker.
  * Triggered by SNS topic notifications when Lambda traffic exceeds threshold.
  * Throttles backend concurrency to 0.
+ * BACKEND_FUNCTION_NAME is automatically injected by Syncploy compiler.
  */
 export const ehrKillSwitchFunction = ehrKillSwitchTopic.subscribe(
   {
@@ -48,9 +50,6 @@ export const ehrKillSwitchFunction = ehrKillSwitchTopic.subscribe(
         resources: ["*"],
       },
     ],
-    environment: {
-      BACKEND_FUNCTION_NAME: process.env.BACKEND_FUNCTION_NAME || "",
-    },
   },
   async (_message, ctx) => {
     await killSwitchHandler(ctx.event);

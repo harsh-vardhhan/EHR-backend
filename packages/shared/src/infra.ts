@@ -56,5 +56,8 @@ export const ehrLambdaTrafficAlarm = new Alarm("EhrLambdaTrafficAlarm", {
     namespace: "AWS/Lambda",
     period: 60,
     stat: "Sum",
+    dimensions: {
+      FunctionName: "ehrBackendFunction",
+    },
   },
 });
