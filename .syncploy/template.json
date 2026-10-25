@@ -232,6 +232,8 @@
     },
     "EhrTable": {
       "Type": "AWS::DynamoDB::Table",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
       "Properties": {
         "TableName": {
           "Fn::Sub": "${AWS::StackName}-ehr"
@@ -306,6 +308,8 @@
     },
     "DocumentsBucket": {
       "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
       "Properties": {
         "BucketName": {
           "Fn::Sub": "${AWS::StackName}-documents"
@@ -325,6 +329,8 @@
     },
     "EhrAuditLogsBucket": {
       "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
       "Properties": {
         "BucketName": {
           "Fn::Sub": "${AWS::StackName}-audit-logs-${AWS::AccountId}"
@@ -498,7 +504,7 @@
         },
         "Code": {
           "ImageUri": {
-            "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AWS::StackName}-ehrBackendFunction:latest"
+            "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AWS::StackName}-ehrbackendfunction:latest"
           }
         },
         "Timeout": 30,
@@ -600,7 +606,8 @@
             },
             "OmopDeliveryStream": {
               "Ref": "EhrOmopDeliveryStream"
-            }
+            },
+            "API_KEY": "development-api-key"
           }
         },
         "ReservedConcurrentExecutions": 2,
