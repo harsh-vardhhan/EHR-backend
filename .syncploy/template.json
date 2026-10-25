@@ -91,6 +91,25 @@
                           }
                         }
                       ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "Bucketauditlogs",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::Sub": [
+                        "${BucketArn}/*",
+                        {
+                          "BucketArn": {
+                            "Fn::GetAtt": [
+                              "Bucketauditlogs",
+                              "Arn"
+                            ]
+                          }
+                        }
+                      ]
                     }
                   ]
                 },
@@ -142,6 +161,27 @@
                   "Resource": [
                     {
                       "Ref": "Topicehrkillswitch"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "firehose:PutRecord",
+                    "firehose:PutRecordBatch"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "DeliveryStreamAuditDeliveryStream",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "DeliveryStreamOmopDeliveryStream",
+                        "Arn"
+                      ]
                     }
                   ]
                 },
@@ -283,6 +323,30 @@
         }
       }
     },
+    "Bucketauditlogs": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {
+          "Fn::Sub": "${AWS::StackName}-audit-logs"
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "ObjectLockEnabled": true,
+        "ObjectLockConfiguration": {
+          "ObjectLockEnabled": "Enabled",
+          "Rule": {
+            "DefaultRetention": {
+              "Mode": "COMPLIANCE",
+              "Days": 1
+            }
+          }
+        }
+      }
+    },
     "QueueehrannotationDLQ": {
       "Type": "AWS::SQS::Queue",
       "Properties": {
@@ -352,6 +416,18 @@
             "documents": {
               "Ref": "Bucketdocuments"
             },
+            "SYNCPLOY_BUCKET_AUDIT_LOGS": {
+              "Ref": "Bucketauditlogs"
+            },
+            "BUCKET_AUDIT_LOGS_NAME": {
+              "Ref": "Bucketauditlogs"
+            },
+            "AUDIT_LOGS_BUCKET_NAME": {
+              "Ref": "Bucketauditlogs"
+            },
+            "audit-logs": {
+              "Ref": "Bucketauditlogs"
+            },
             "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
               "Ref": "Queueehrannotation"
             },
@@ -375,6 +451,36 @@
             },
             "ehr-kill-switch": {
               "Ref": "Topicehrkillswitch"
+            },
+            "SYNCPLOY_DELIVERY_STREAM_AUDITDELIVERYSTREAM": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "DELIVERY_STREAM_AUDITDELIVERYSTREAM_NAME": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "AUDITDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "AUDIT_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "AuditDeliveryStream": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "SYNCPLOY_DELIVERY_STREAM_OMOPDELIVERYSTREAM": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "DELIVERY_STREAM_OMOPDELIVERYSTREAM_NAME": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "OMOPDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "OMOP_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "OmopDeliveryStream": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
             },
             "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
               "Ref": "FunctionehrBackendFunction"
@@ -480,6 +586,18 @@
             "documents": {
               "Ref": "Bucketdocuments"
             },
+            "SYNCPLOY_BUCKET_AUDIT_LOGS": {
+              "Ref": "Bucketauditlogs"
+            },
+            "BUCKET_AUDIT_LOGS_NAME": {
+              "Ref": "Bucketauditlogs"
+            },
+            "AUDIT_LOGS_BUCKET_NAME": {
+              "Ref": "Bucketauditlogs"
+            },
+            "audit-logs": {
+              "Ref": "Bucketauditlogs"
+            },
             "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
               "Ref": "Queueehrannotation"
             },
@@ -503,6 +621,36 @@
             },
             "ehr-kill-switch": {
               "Ref": "Topicehrkillswitch"
+            },
+            "SYNCPLOY_DELIVERY_STREAM_AUDITDELIVERYSTREAM": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "DELIVERY_STREAM_AUDITDELIVERYSTREAM_NAME": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "AUDITDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "AUDIT_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "AuditDeliveryStream": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "SYNCPLOY_DELIVERY_STREAM_OMOPDELIVERYSTREAM": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "DELIVERY_STREAM_OMOPDELIVERYSTREAM_NAME": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "OMOPDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "OMOP_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "OmopDeliveryStream": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
             },
             "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
               "Ref": "FunctionehrBackendFunction"
@@ -594,6 +742,18 @@
             "documents": {
               "Ref": "Bucketdocuments"
             },
+            "SYNCPLOY_BUCKET_AUDIT_LOGS": {
+              "Ref": "Bucketauditlogs"
+            },
+            "BUCKET_AUDIT_LOGS_NAME": {
+              "Ref": "Bucketauditlogs"
+            },
+            "AUDIT_LOGS_BUCKET_NAME": {
+              "Ref": "Bucketauditlogs"
+            },
+            "audit-logs": {
+              "Ref": "Bucketauditlogs"
+            },
             "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
               "Ref": "Queueehrannotation"
             },
@@ -618,6 +778,36 @@
             "ehr-kill-switch": {
               "Ref": "Topicehrkillswitch"
             },
+            "SYNCPLOY_DELIVERY_STREAM_AUDITDELIVERYSTREAM": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "DELIVERY_STREAM_AUDITDELIVERYSTREAM_NAME": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "AUDITDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "AUDIT_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "AuditDeliveryStream": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "SYNCPLOY_DELIVERY_STREAM_OMOPDELIVERYSTREAM": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "DELIVERY_STREAM_OMOPDELIVERYSTREAM_NAME": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "OMOPDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "OMOP_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "OmopDeliveryStream": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
             "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
               "Ref": "FunctionehrBackendFunction"
             },
@@ -632,8 +822,7 @@
             },
             "BACKEND_FUNCTION_NAME": {
               "Ref": "FunctionehrBackendFunction"
-            },
-            "AUDIT_DELIVERY_STREAM_NAME": ""
+            }
           }
         }
       }
@@ -701,6 +890,18 @@
             "documents": {
               "Ref": "Bucketdocuments"
             },
+            "SYNCPLOY_BUCKET_AUDIT_LOGS": {
+              "Ref": "Bucketauditlogs"
+            },
+            "BUCKET_AUDIT_LOGS_NAME": {
+              "Ref": "Bucketauditlogs"
+            },
+            "AUDIT_LOGS_BUCKET_NAME": {
+              "Ref": "Bucketauditlogs"
+            },
+            "audit-logs": {
+              "Ref": "Bucketauditlogs"
+            },
             "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
               "Ref": "Queueehrannotation"
             },
@@ -725,6 +926,36 @@
             "ehr-kill-switch": {
               "Ref": "Topicehrkillswitch"
             },
+            "SYNCPLOY_DELIVERY_STREAM_AUDITDELIVERYSTREAM": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "DELIVERY_STREAM_AUDITDELIVERYSTREAM_NAME": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "AUDITDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "AUDIT_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "AuditDeliveryStream": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "SYNCPLOY_DELIVERY_STREAM_OMOPDELIVERYSTREAM": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "DELIVERY_STREAM_OMOPDELIVERYSTREAM_NAME": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "OMOPDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "OMOP_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "OmopDeliveryStream": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
             "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
               "Ref": "FunctionehrBackendFunction"
             },
@@ -739,8 +970,7 @@
             },
             "BACKEND_FUNCTION_NAME": {
               "Ref": "FunctionehrBackendFunction"
-            },
-            "OMOP_DELIVERY_STREAM_NAME": ""
+            }
           }
         }
       }
@@ -808,6 +1038,18 @@
             "documents": {
               "Ref": "Bucketdocuments"
             },
+            "SYNCPLOY_BUCKET_AUDIT_LOGS": {
+              "Ref": "Bucketauditlogs"
+            },
+            "BUCKET_AUDIT_LOGS_NAME": {
+              "Ref": "Bucketauditlogs"
+            },
+            "AUDIT_LOGS_BUCKET_NAME": {
+              "Ref": "Bucketauditlogs"
+            },
+            "audit-logs": {
+              "Ref": "Bucketauditlogs"
+            },
             "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
               "Ref": "Queueehrannotation"
             },
@@ -831,6 +1073,36 @@
             },
             "ehr-kill-switch": {
               "Ref": "Topicehrkillswitch"
+            },
+            "SYNCPLOY_DELIVERY_STREAM_AUDITDELIVERYSTREAM": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "DELIVERY_STREAM_AUDITDELIVERYSTREAM_NAME": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "AUDITDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "AUDIT_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "AuditDeliveryStream": {
+              "Ref": "DeliveryStreamAuditDeliveryStream"
+            },
+            "SYNCPLOY_DELIVERY_STREAM_OMOPDELIVERYSTREAM": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "DELIVERY_STREAM_OMOPDELIVERYSTREAM_NAME": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "OMOPDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "OMOP_DELIVERY_STREAM_NAME": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
+            },
+            "OmopDeliveryStream": {
+              "Ref": "DeliveryStreamOmopDeliveryStream"
             },
             "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
               "Ref": "FunctionehrBackendFunction"
@@ -984,6 +1256,182 @@
           ]
         }
       }
+    },
+    "FirehoseRoleAuditDeliveryStream": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "firehose.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "FirehoseWriteS3",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:AbortMultipartUpload",
+                    "s3:GetBucketLocation",
+                    "s3:GetObject",
+                    "s3:ListBucket",
+                    "s3:ListBucketMultipartUploads",
+                    "s3:PutObject"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Bucketauditlogs",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::Sub": [
+                        "${BucketArn}/*",
+                        {
+                          "BucketArn": {
+                            "Fn::GetAtt": [
+                              "Bucketauditlogs",
+                              "Arn"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "DeliveryStreamAuditDeliveryStream": {
+      "Type": "AWS::KinesisFirehose::DeliveryStream",
+      "Properties": {
+        "DeliveryStreamName": {
+          "Fn::Sub": "${AWS::StackName}-AuditDeliveryStream"
+        },
+        "DeliveryStreamType": "DirectPut",
+        "ExtendedS3DestinationConfiguration": {
+          "BucketARN": {
+            "Fn::GetAtt": [
+              "Bucketauditlogs",
+              "Arn"
+            ]
+          },
+          "RoleARN": {
+            "Fn::GetAtt": [
+              "FirehoseRoleAuditDeliveryStream",
+              "Arn"
+            ]
+          },
+          "CompressionFormat": "GZIP",
+          "BufferingHints": {
+            "IntervalInSeconds": 900,
+            "SizeInMBs": 5
+          }
+        }
+      }
+    },
+    "FirehoseRoleOmopDeliveryStream": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "firehose.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "FirehoseWriteS3",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:AbortMultipartUpload",
+                    "s3:GetBucketLocation",
+                    "s3:GetObject",
+                    "s3:ListBucket",
+                    "s3:ListBucketMultipartUploads",
+                    "s3:PutObject"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Bucketdocuments",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::Sub": [
+                        "${BucketArn}/*",
+                        {
+                          "BucketArn": {
+                            "Fn::GetAtt": [
+                              "Bucketdocuments",
+                              "Arn"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "DeliveryStreamOmopDeliveryStream": {
+      "Type": "AWS::KinesisFirehose::DeliveryStream",
+      "Properties": {
+        "DeliveryStreamName": {
+          "Fn::Sub": "${AWS::StackName}-OmopDeliveryStream"
+        },
+        "DeliveryStreamType": "DirectPut",
+        "ExtendedS3DestinationConfiguration": {
+          "BucketARN": {
+            "Fn::GetAtt": [
+              "Bucketdocuments",
+              "Arn"
+            ]
+          },
+          "RoleARN": {
+            "Fn::GetAtt": [
+              "FirehoseRoleOmopDeliveryStream",
+              "Arn"
+            ]
+          },
+          "CompressionFormat": "GZIP",
+          "BufferingHints": {
+            "IntervalInSeconds": 900,
+            "SizeInMBs": 5
+          },
+          "Prefix": "omop/",
+          "ErrorOutputPrefix": "omop-failures/"
+        }
+      }
     }
   },
   "Outputs": {
@@ -1000,6 +1448,18 @@
       "Description": "ARN of SNS Topic ehr-kill-switch",
       "Value": {
         "Ref": "Topicehrkillswitch"
+      }
+    },
+    "AuditDeliveryStreamDeliveryStreamName": {
+      "Description": "Name of the AuditDeliveryStream Kinesis Firehose Delivery Stream",
+      "Value": {
+        "Ref": "DeliveryStreamAuditDeliveryStream"
+      }
+    },
+    "OmopDeliveryStreamDeliveryStreamName": {
+      "Description": "Name of the OmopDeliveryStream Kinesis Firehose Delivery Stream",
+      "Value": {
+        "Ref": "DeliveryStreamOmopDeliveryStream"
       }
     }
   }

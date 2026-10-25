@@ -74,9 +74,6 @@ export const ehrAuditStreamFunction = ehrTable.stream(
         resources: ["*"],
       },
     ],
-    environment: {
-      AUDIT_DELIVERY_STREAM_NAME: process.env.AUDIT_DELIVERY_STREAM_NAME || "",
-    },
   },
   async (_record, ctx) => {
     return await auditConsumerHandler(ctx.event);
@@ -101,9 +98,6 @@ export const ehrOmopPipelineFunction = ehrTable.stream(
         resources: ["*"],
       },
     ],
-    environment: {
-      OMOP_DELIVERY_STREAM_NAME: process.env.OMOP_DELIVERY_STREAM_NAME || "",
-    },
   },
   async (_record, ctx) => {
     await omopPipelineHandler(ctx.event);
