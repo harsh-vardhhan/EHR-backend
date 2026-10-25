@@ -114,7 +114,71 @@
                 {
                   "Effect": "Allow",
                   "Action": [
+                    "dynamodb:GetRecords",
+                    "dynamodb:GetShardIterator",
+                    "dynamodb:DescribeStream",
+                    "dynamodb:ListStreams"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Tableehr",
+                        "StreamArn"
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "Tableehr",
+                        "StreamArn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sns:Publish"
+                  ],
+                  "Resource": [
+                    {
+                      "Ref": "Topicehrkillswitch"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
                     "sagemaker:InvokeEndpoint"
+                  ],
+                  "Resource": [
+                    "*"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "firehose:PutRecord",
+                    "firehose:PutRecordBatch"
+                  ],
+                  "Resource": [
+                    "*"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "firehose:PutRecord",
+                    "firehose:PutRecordBatch"
+                  ],
+                  "Resource": [
+                    "*"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "lambda:PutFunctionConcurrency",
+                    "lambda:DeleteFunctionConcurrency"
                   ],
                   "Resource": [
                     "*"
@@ -300,8 +364,20 @@
             "ehr-annotation": {
               "Ref": "Queueehrannotation"
             },
+            "SYNCPLOY_TOPIC_EHR_KILL_SWITCH": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "TOPIC_EHR_KILL_SWITCH_ARN": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "EHR_KILL_SWITCH_TOPIC_ARN": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "ehr-kill-switch": {
+              "Ref": "Topicehrkillswitch"
+            },
             "API_KEY": "",
-            "OMOPHUB_API_KEY": "oh_e4cb7f363bf50d166db0656e4acf48836a5b2d0df68b11c5da738d5d825e5f40"
+            "OMOPHUB_API_KEY": ""
           }
         },
         "ReservedConcurrentExecutions": 2
@@ -403,7 +479,19 @@
             "ehr-annotation": {
               "Ref": "Queueehrannotation"
             },
-            "OMOPHUB_API_KEY": "oh_e4cb7f363bf50d166db0656e4acf48836a5b2d0df68b11c5da738d5d825e5f40",
+            "SYNCPLOY_TOPIC_EHR_KILL_SWITCH": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "TOPIC_EHR_KILL_SWITCH_ARN": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "EHR_KILL_SWITCH_TOPIC_ARN": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "ehr-kill-switch": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "OMOPHUB_API_KEY": "",
             "SAGEMAKER_ENDPOINT_NAME": "gliner-relex-endpoint"
           }
         },
@@ -425,6 +513,312 @@
         "BatchSize": 5,
         "FunctionResponseTypes": [
           "ReportBatchItemFailures"
+        ]
+      }
+    },
+    "Topicehrkillswitch": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": {
+          "Fn::Sub": "${AWS::StackName}-ehr-kill-switch"
+        }
+      }
+    },
+    "FunctionehrAuditStreamFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "${AWS::StackName}-ehrAuditStreamFunction"
+        },
+        "Runtime": "nodejs20.x",
+        "Handler": "index.handler",
+        "Code": ".syncploy/build/ehrAuditStreamFunction",
+        "Timeout": 30,
+        "MemorySize": 128,
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Environment": {
+          "Variables": {
+            "SYNCPLOY_TABLE_EHR": {
+              "Ref": "Tableehr"
+            },
+            "TABLE_EHR_NAME": {
+              "Ref": "Tableehr"
+            },
+            "EHR_TABLE_NAME": {
+              "Ref": "Tableehr"
+            },
+            "ehr": {
+              "Ref": "Tableehr"
+            },
+            "SYNCPLOY_BUCKET_DOCUMENTS": {
+              "Ref": "Bucketdocuments"
+            },
+            "BUCKET_DOCUMENTS_NAME": {
+              "Ref": "Bucketdocuments"
+            },
+            "DOCUMENTS_BUCKET_NAME": {
+              "Ref": "Bucketdocuments"
+            },
+            "documents": {
+              "Ref": "Bucketdocuments"
+            },
+            "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
+              "Ref": "Queueehrannotation"
+            },
+            "QUEUE_EHR_ANNOTATION_URL": {
+              "Ref": "Queueehrannotation"
+            },
+            "EHR_ANNOTATION_QUEUE_URL": {
+              "Ref": "Queueehrannotation"
+            },
+            "ehr-annotation": {
+              "Ref": "Queueehrannotation"
+            },
+            "SYNCPLOY_TOPIC_EHR_KILL_SWITCH": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "TOPIC_EHR_KILL_SWITCH_ARN": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "EHR_KILL_SWITCH_TOPIC_ARN": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "ehr-kill-switch": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "AUDIT_DELIVERY_STREAM_NAME": ""
+          }
+        }
+      }
+    },
+    "EventSourceMappingehrAuditStreamFunction": {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "Properties": {
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "Tableehr",
+            "StreamArn"
+          ]
+        },
+        "FunctionName": {
+          "Ref": "FunctionehrAuditStreamFunction"
+        },
+        "StartingPosition": "LATEST",
+        "BatchSize": 100,
+        "FunctionResponseTypes": [
+          "ReportBatchItemFailures"
+        ],
+        "Enabled": false
+      }
+    },
+    "FunctionehrOmopPipelineFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "${AWS::StackName}-ehrOmopPipelineFunction"
+        },
+        "Runtime": "nodejs20.x",
+        "Handler": "index.handler",
+        "Code": ".syncploy/build/ehrOmopPipelineFunction",
+        "Timeout": 30,
+        "MemorySize": 128,
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Environment": {
+          "Variables": {
+            "SYNCPLOY_TABLE_EHR": {
+              "Ref": "Tableehr"
+            },
+            "TABLE_EHR_NAME": {
+              "Ref": "Tableehr"
+            },
+            "EHR_TABLE_NAME": {
+              "Ref": "Tableehr"
+            },
+            "ehr": {
+              "Ref": "Tableehr"
+            },
+            "SYNCPLOY_BUCKET_DOCUMENTS": {
+              "Ref": "Bucketdocuments"
+            },
+            "BUCKET_DOCUMENTS_NAME": {
+              "Ref": "Bucketdocuments"
+            },
+            "DOCUMENTS_BUCKET_NAME": {
+              "Ref": "Bucketdocuments"
+            },
+            "documents": {
+              "Ref": "Bucketdocuments"
+            },
+            "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
+              "Ref": "Queueehrannotation"
+            },
+            "QUEUE_EHR_ANNOTATION_URL": {
+              "Ref": "Queueehrannotation"
+            },
+            "EHR_ANNOTATION_QUEUE_URL": {
+              "Ref": "Queueehrannotation"
+            },
+            "ehr-annotation": {
+              "Ref": "Queueehrannotation"
+            },
+            "SYNCPLOY_TOPIC_EHR_KILL_SWITCH": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "TOPIC_EHR_KILL_SWITCH_ARN": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "EHR_KILL_SWITCH_TOPIC_ARN": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "ehr-kill-switch": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "OMOP_DELIVERY_STREAM_NAME": ""
+          }
+        }
+      }
+    },
+    "EventSourceMappingehrOmopPipelineFunction": {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "Properties": {
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "Tableehr",
+            "StreamArn"
+          ]
+        },
+        "FunctionName": {
+          "Ref": "FunctionehrOmopPipelineFunction"
+        },
+        "StartingPosition": "LATEST",
+        "BatchSize": 100,
+        "FunctionResponseTypes": [
+          "ReportBatchItemFailures"
+        ],
+        "Enabled": false
+      }
+    },
+    "FunctionehrKillSwitchFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "${AWS::StackName}-ehrKillSwitchFunction"
+        },
+        "Runtime": "nodejs20.x",
+        "Handler": "index.handler",
+        "Code": ".syncploy/build/ehrKillSwitchFunction",
+        "Timeout": 30,
+        "MemorySize": 128,
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Environment": {
+          "Variables": {
+            "SYNCPLOY_TABLE_EHR": {
+              "Ref": "Tableehr"
+            },
+            "TABLE_EHR_NAME": {
+              "Ref": "Tableehr"
+            },
+            "EHR_TABLE_NAME": {
+              "Ref": "Tableehr"
+            },
+            "ehr": {
+              "Ref": "Tableehr"
+            },
+            "SYNCPLOY_BUCKET_DOCUMENTS": {
+              "Ref": "Bucketdocuments"
+            },
+            "BUCKET_DOCUMENTS_NAME": {
+              "Ref": "Bucketdocuments"
+            },
+            "DOCUMENTS_BUCKET_NAME": {
+              "Ref": "Bucketdocuments"
+            },
+            "documents": {
+              "Ref": "Bucketdocuments"
+            },
+            "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
+              "Ref": "Queueehrannotation"
+            },
+            "QUEUE_EHR_ANNOTATION_URL": {
+              "Ref": "Queueehrannotation"
+            },
+            "EHR_ANNOTATION_QUEUE_URL": {
+              "Ref": "Queueehrannotation"
+            },
+            "ehr-annotation": {
+              "Ref": "Queueehrannotation"
+            },
+            "SYNCPLOY_TOPIC_EHR_KILL_SWITCH": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "TOPIC_EHR_KILL_SWITCH_ARN": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "EHR_KILL_SWITCH_TOPIC_ARN": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "ehr-kill-switch": {
+              "Ref": "Topicehrkillswitch"
+            },
+            "BACKEND_FUNCTION_NAME": ""
+          }
+        }
+      }
+    },
+    "PermissionehrKillSwitchFunctionSns": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "FunctionehrKillSwitchFunction"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "sns.amazonaws.com",
+        "SourceArn": {
+          "Ref": "Topicehrkillswitch"
+        }
+      }
+    },
+    "SubscriptionehrKillSwitchFunction": {
+      "Type": "AWS::SNS::Subscription",
+      "Properties": {
+        "TopicArn": {
+          "Ref": "Topicehrkillswitch"
+        },
+        "Protocol": "lambda",
+        "Endpoint": {
+          "Fn::GetAtt": [
+            "FunctionehrKillSwitchFunction",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "AlarmEhrLambdaTrafficAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "Triggers kill switch if Lambda invocations exceed DDoS threshold",
+        "EvaluationPeriods": 1,
+        "Threshold": 2000,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "AlarmActions": [
+          {
+            "Ref": "Topicehrkillswitch"
+          }
         ]
       }
     },
@@ -517,6 +911,12 @@
           "FunctionUrlehrBackendFunction",
           "FunctionUrl"
         ]
+      }
+    },
+    "ehrkillswitchTopicArn": {
+      "Description": "ARN of SNS Topic ehr-kill-switch",
+      "Value": {
+        "Ref": "Topicehrkillswitch"
       }
     }
   }

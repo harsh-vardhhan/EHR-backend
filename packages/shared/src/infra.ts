@@ -1,4 +1,4 @@
-import { Table, Bucket, Queue } from "@syncploy/sdk";
+import { Table, Bucket, Queue, Topic, Alarm } from "@syncploy/sdk";
 
 // Single-table DynamoDB for all EHR data
 export const ehrTable = new Table("ehr", {
@@ -37,4 +37,24 @@ export const ehrAnnotationQueue = new Queue("ehr-annotation", {
 // EventBridge routing rule: S3 ObjectCreated events under 'documents/' to SQS
 documentsBucket.on("objectCreated", ehrAnnotationQueue, {
   prefix: "documents/",
+});
+
+// SNS Topic for DDoS Kill Switch alerts
+export const ehrKillSwitchTopic = new Topic("ehr-kill-switch", {
+  fifo: false,
+});
+
+// CloudWatch Alarm monitoring Lambda invocations to trigger the Kill Switch circuit breaker
+export const ehrLambdaTrafficAlarm = new Alarm("EhrLambdaTrafficAlarm", {
+  threshold: 2000,
+  evaluationPeriods: 1,
+  comparison: "GreaterThanOrEqualToThreshold",
+  description: "Triggers kill switch if Lambda invocations exceed DDoS threshold",
+  actions: [ehrKillSwitchTopic],
+  metric: {
+    metricName: "Invocations",
+    namespace: "AWS/Lambda",
+    period: 60,
+    stat: "Sum",
+  },
 });
