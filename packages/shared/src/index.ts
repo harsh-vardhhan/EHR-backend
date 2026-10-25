@@ -1,4 +1,5 @@
 export * from './config';
+export * from './infra';
 export * from './constants/labels';
 export * from './database/entities';
 export * from './database/schemas';

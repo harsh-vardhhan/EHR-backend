@@ -13,6 +13,8 @@ __pycache__/
 # Builds
 dist/
 .aws-sam/
+.syncploy/entrypoints/
+.syncploy/build/
 packages/api/dist/
 packages/frontend/dist/
 
@@ -27,4 +29,6 @@ ml/model.tar.gz
 *.ntvs*
 *.njsproj
 *.sw?
-*.sln
+
+# Brainstorming / Notes
+idea.md

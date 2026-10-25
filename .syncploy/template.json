@@ -1,0 +1,523 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Synthesized by Syncploy",
+  "Resources": {
+    "LambdaExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "SyncployExecutionPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:*:*:*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:PutItem",
+                    "dynamodb:UpdateItem",
+                    "dynamodb:DeleteItem",
+                    "dynamodb:Query",
+                    "dynamodb:Scan"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Tableehr",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::Sub": [
+                        "${TableArn}/index/*",
+                        {
+                          "TableArn": {
+                            "Fn::GetAtt": [
+                              "Tableehr",
+                              "Arn"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:DeleteObject",
+                    "s3:ListBucket"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Bucketdocuments",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::Sub": [
+                        "${BucketArn}/*",
+                        {
+                          "BucketArn": {
+                            "Fn::GetAtt": [
+                              "Bucketdocuments",
+                              "Arn"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sqs:SendMessage",
+                    "sqs:ReceiveMessage",
+                    "sqs:DeleteMessage",
+                    "sqs:GetQueueAttributes"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Queueehrannotation",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sagemaker:InvokeEndpoint"
+                  ],
+                  "Resource": [
+                    "*"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "Tableehr": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "TableName": {
+          "Fn::Sub": "${AWS::StackName}-ehr"
+        },
+        "BillingMode": "PAY_PER_REQUEST",
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "PK",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "SK",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "GSI1PK",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "GSI1SK",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "PK",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "SK",
+            "KeyType": "RANGE"
+          }
+        ],
+        "GlobalSecondaryIndexes": [
+          {
+            "IndexName": "SKIndex",
+            "KeySchema": [
+              {
+                "AttributeName": "SK",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "PK",
+                "KeyType": "RANGE"
+              }
+            ],
+            "Projection": {
+              "ProjectionType": "ALL"
+            }
+          },
+          {
+            "IndexName": "GSI1Index",
+            "KeySchema": [
+              {
+                "AttributeName": "GSI1PK",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "GSI1SK",
+                "KeyType": "RANGE"
+              }
+            ],
+            "Projection": {
+              "ProjectionType": "ALL"
+            }
+          }
+        ],
+        "StreamSpecification": {
+          "StreamViewType": "NEW_IMAGE"
+        }
+      }
+    },
+    "Bucketdocuments": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {
+          "Fn::Sub": "${AWS::StackName}-documents"
+        },
+        "NotificationConfiguration": {
+          "EventBridgeConfiguration": {
+            "EventBridgeEnabled": true
+          }
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        }
+      }
+    },
+    "QueueehrannotationDLQ": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": {
+          "Fn::Sub": "${AWS::StackName}-ehr-annotation-dlq"
+        }
+      }
+    },
+    "Queueehrannotation": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": {
+          "Fn::Sub": "${AWS::StackName}-ehr-annotation"
+        },
+        "VisibilityTimeout": 180,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {
+            "Fn::GetAtt": [
+              "QueueehrannotationDLQ",
+              "Arn"
+            ]
+          },
+          "maxReceiveCount": 3
+        }
+      }
+    },
+    "FunctionehrBackendFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "${AWS::StackName}-ehrBackendFunction"
+        },
+        "Runtime": "nodejs20.x",
+        "Handler": "index.handler",
+        "Code": ".syncploy/build/ehrBackendFunction",
+        "Timeout": 30,
+        "MemorySize": 256,
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Environment": {
+          "Variables": {
+            "SYNCPLOY_TABLE_EHR": {
+              "Ref": "Tableehr"
+            },
+            "TABLE_EHR_NAME": {
+              "Ref": "Tableehr"
+            },
+            "EHR_TABLE_NAME": {
+              "Ref": "Tableehr"
+            },
+            "ehr": {
+              "Ref": "Tableehr"
+            },
+            "SYNCPLOY_BUCKET_DOCUMENTS": {
+              "Ref": "Bucketdocuments"
+            },
+            "BUCKET_DOCUMENTS_NAME": {
+              "Ref": "Bucketdocuments"
+            },
+            "DOCUMENTS_BUCKET_NAME": {
+              "Ref": "Bucketdocuments"
+            },
+            "documents": {
+              "Ref": "Bucketdocuments"
+            },
+            "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
+              "Ref": "Queueehrannotation"
+            },
+            "QUEUE_EHR_ANNOTATION_URL": {
+              "Ref": "Queueehrannotation"
+            },
+            "EHR_ANNOTATION_QUEUE_URL": {
+              "Ref": "Queueehrannotation"
+            },
+            "ehr-annotation": {
+              "Ref": "Queueehrannotation"
+            },
+            "API_KEY": "",
+            "OMOPHUB_API_KEY": "oh_e4cb7f363bf50d166db0656e4acf48836a5b2d0df68b11c5da738d5d825e5f40"
+          }
+        },
+        "ReservedConcurrentExecutions": 2
+      }
+    },
+    "FunctionUrlehrBackendFunction": {
+      "Type": "AWS::Lambda::Url",
+      "Properties": {
+        "TargetFunctionArn": {
+          "Fn::GetAtt": [
+            "FunctionehrBackendFunction",
+            "Arn"
+          ]
+        },
+        "AuthType": "NONE",
+        "Cors": {
+          "AllowOrigins": [
+            "https://ehr-backend-frontend.vercel.app",
+            "http://localhost:5173",
+            "http://localhost:3000"
+          ],
+          "AllowMethods": [
+            "*"
+          ],
+          "AllowHeaders": [
+            "Content-Type",
+            "Authorization",
+            "X-Amz-Date",
+            "X-Api-Key",
+            "X-Origin-Verify",
+            "X-Amz-Security-Token"
+          ]
+        }
+      }
+    },
+    "PermissionehrBackendFunctionUrl": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "FunctionehrBackendFunction"
+        },
+        "Action": "lambda:InvokeFunctionUrl",
+        "Principal": "*",
+        "FunctionUrlAuthType": "NONE"
+      }
+    },
+    "FunctionehrAnnotationWorkerFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "${AWS::StackName}-ehrAnnotationWorkerFunction"
+        },
+        "Runtime": "nodejs20.x",
+        "Handler": "index.handler",
+        "Code": ".syncploy/build/ehrAnnotationWorkerFunction",
+        "Timeout": 120,
+        "MemorySize": 256,
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "Environment": {
+          "Variables": {
+            "SYNCPLOY_TABLE_EHR": {
+              "Ref": "Tableehr"
+            },
+            "TABLE_EHR_NAME": {
+              "Ref": "Tableehr"
+            },
+            "EHR_TABLE_NAME": {
+              "Ref": "Tableehr"
+            },
+            "ehr": {
+              "Ref": "Tableehr"
+            },
+            "SYNCPLOY_BUCKET_DOCUMENTS": {
+              "Ref": "Bucketdocuments"
+            },
+            "BUCKET_DOCUMENTS_NAME": {
+              "Ref": "Bucketdocuments"
+            },
+            "DOCUMENTS_BUCKET_NAME": {
+              "Ref": "Bucketdocuments"
+            },
+            "documents": {
+              "Ref": "Bucketdocuments"
+            },
+            "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
+              "Ref": "Queueehrannotation"
+            },
+            "QUEUE_EHR_ANNOTATION_URL": {
+              "Ref": "Queueehrannotation"
+            },
+            "EHR_ANNOTATION_QUEUE_URL": {
+              "Ref": "Queueehrannotation"
+            },
+            "ehr-annotation": {
+              "Ref": "Queueehrannotation"
+            },
+            "OMOPHUB_API_KEY": "oh_e4cb7f363bf50d166db0656e4acf48836a5b2d0df68b11c5da738d5d825e5f40",
+            "SAGEMAKER_ENDPOINT_NAME": "gliner-relex-endpoint"
+          }
+        },
+        "ReservedConcurrentExecutions": 2
+      }
+    },
+    "EventSourceMappingehrAnnotationWorkerFunction": {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "Properties": {
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "Queueehrannotation",
+            "Arn"
+          ]
+        },
+        "FunctionName": {
+          "Ref": "FunctionehrAnnotationWorkerFunction"
+        },
+        "BatchSize": 5,
+        "FunctionResponseTypes": [
+          "ReportBatchItemFailures"
+        ]
+      }
+    },
+    "EventRuledocumentsToehrannotation": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "Description": "Routes S3 events from documents to ehr-annotation",
+        "State": "ENABLED",
+        "EventPattern": {
+          "source": [
+            "aws.s3"
+          ],
+          "detail-type": [
+            "Object Created"
+          ],
+          "detail": {
+            "bucket": {
+              "name": [
+                {
+                  "Ref": "Bucketdocuments"
+                }
+              ]
+            },
+            "object": {
+              "key": [
+                {
+                  "prefix": "documents/"
+                }
+              ]
+            }
+          }
+        },
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "Queueehrannotation",
+                "Arn"
+              ]
+            },
+            "Id": "ehrannotationTarget"
+          }
+        ]
+      }
+    },
+    "QueuePolicyehrannotationEventBridge": {
+      "Type": "AWS::SQS::QueuePolicy",
+      "Properties": {
+        "Queues": [
+          {
+            "Ref": "Queueehrannotation"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com"
+              },
+              "Action": "sqs:SendMessage",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "Queueehrannotation",
+                  "Arn"
+                ]
+              },
+              "Condition": {
+                "ArnEquals": {
+                  "aws:SourceArn": {
+                    "Fn::GetAtt": [
+                      "EventRuledocumentsToehrannotation",
+                      "Arn"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ehrBackendFunctionUrl": {
+      "Description": "Direct Lambda Function URL for ehrBackendFunction",
+      "Value": {
+        "Fn::GetAtt": [
+          "FunctionUrlehrBackendFunction",
+          "FunctionUrl"
+        ]
+      }
+    }
+  }
+}
