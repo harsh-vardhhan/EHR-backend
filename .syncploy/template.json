@@ -45,7 +45,7 @@
                   "Resource": [
                     {
                       "Fn::GetAtt": [
-                        "Tableehr",
+                        "EhrTable",
                         "Arn"
                       ]
                     },
@@ -55,7 +55,7 @@
                         {
                           "TableArn": {
                             "Fn::GetAtt": [
-                              "Tableehr",
+                              "EhrTable",
                               "Arn"
                             ]
                           }
@@ -75,7 +75,7 @@
                   "Resource": [
                     {
                       "Fn::GetAtt": [
-                        "Bucketdocuments",
+                        "DocumentsBucket",
                         "Arn"
                       ]
                     },
@@ -85,7 +85,7 @@
                         {
                           "BucketArn": {
                             "Fn::GetAtt": [
-                              "Bucketdocuments",
+                              "DocumentsBucket",
                               "Arn"
                             ]
                           }
@@ -94,7 +94,7 @@
                     },
                     {
                       "Fn::GetAtt": [
-                        "Bucketauditlogs",
+                        "EhrAuditLogsBucket",
                         "Arn"
                       ]
                     },
@@ -104,7 +104,7 @@
                         {
                           "BucketArn": {
                             "Fn::GetAtt": [
-                              "Bucketauditlogs",
+                              "EhrAuditLogsBucket",
                               "Arn"
                             ]
                           }
@@ -124,7 +124,7 @@
                   "Resource": [
                     {
                       "Fn::GetAtt": [
-                        "Queueehrannotation",
+                        "EhrAnnotationQueue",
                         "Arn"
                       ]
                     }
@@ -141,13 +141,13 @@
                   "Resource": [
                     {
                       "Fn::GetAtt": [
-                        "Tableehr",
+                        "EhrTable",
                         "StreamArn"
                       ]
                     },
                     {
                       "Fn::GetAtt": [
-                        "Tableehr",
+                        "EhrTable",
                         "StreamArn"
                       ]
                     }
@@ -160,7 +160,7 @@
                   ],
                   "Resource": [
                     {
-                      "Ref": "Topicehrkillswitch"
+                      "Ref": "EhrKillSwitchTopic"
                     }
                   ]
                 },
@@ -173,13 +173,13 @@
                   "Resource": [
                     {
                       "Fn::GetAtt": [
-                        "DeliveryStreamAuditDeliveryStream",
+                        "EhrAuditDeliveryStream",
                         "Arn"
                       ]
                     },
                     {
                       "Fn::GetAtt": [
-                        "DeliveryStreamOmopDeliveryStream",
+                        "EhrOmopDeliveryStream",
                         "Arn"
                       ]
                     }
@@ -230,7 +230,7 @@
         ]
       }
     },
-    "Tableehr": {
+    "EhrTable": {
       "Type": "AWS::DynamoDB::Table",
       "Properties": {
         "TableName": {
@@ -304,7 +304,7 @@
         }
       }
     },
-    "Bucketdocuments": {
+    "DocumentsBucket": {
       "Type": "AWS::S3::Bucket",
       "Properties": {
         "BucketName": {
@@ -323,7 +323,7 @@
         }
       }
     },
-    "Bucketauditlogs": {
+    "EhrAuditLogsBucket": {
       "Type": "AWS::S3::Bucket",
       "Properties": {
         "BucketName": {
@@ -347,7 +347,7 @@
         }
       }
     },
-    "QueueehrannotationDLQ": {
+    "EhrAnnotationDLQ": {
       "Type": "AWS::SQS::Queue",
       "Properties": {
         "QueueName": {
@@ -355,7 +355,7 @@
         }
       }
     },
-    "Queueehrannotation": {
+    "EhrAnnotationQueue": {
       "Type": "AWS::SQS::Queue",
       "Properties": {
         "QueueName": {
@@ -365,7 +365,7 @@
         "RedrivePolicy": {
           "deadLetterTargetArn": {
             "Fn::GetAtt": [
-              "QueueehrannotationDLQ",
+              "EhrAnnotationDLQ",
               "Arn"
             ]
           },
@@ -373,7 +373,7 @@
         }
       }
     },
-    "RoleehrBackendFunction": {
+    "RoleEhrBackendFunction": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -390,7 +390,7 @@
         },
         "Policies": [
           {
-            "PolicyName": "ehrBackendFunctionExecutionPolicy",
+            "PolicyName": "EhrBackendFunctionExecutionPolicy",
             "PolicyDocument": {
               "Version": "2012-10-17",
               "Statement": [
@@ -416,7 +416,7 @@
                   "Resource": [
                     {
                       "Fn::GetAtt": [
-                        "Tableehr",
+                        "EhrTable",
                         "Arn"
                       ]
                     },
@@ -426,7 +426,7 @@
                         {
                           "TableArn": {
                             "Fn::GetAtt": [
-                              "Tableehr",
+                              "EhrTable",
                               "Arn"
                             ]
                           }
@@ -446,7 +446,7 @@
                   "Resource": [
                     {
                       "Fn::GetAtt": [
-                        "Bucketdocuments",
+                        "DocumentsBucket",
                         "Arn"
                       ]
                     },
@@ -456,7 +456,7 @@
                         {
                           "BucketArn": {
                             "Fn::GetAtt": [
-                              "Bucketdocuments",
+                              "DocumentsBucket",
                               "Arn"
                             ]
                           }
@@ -465,7 +465,7 @@
                     },
                     {
                       "Fn::GetAtt": [
-                        "Bucketauditlogs",
+                        "EhrAuditLogsBucket",
                         "Arn"
                       ]
                     },
@@ -475,7 +475,7 @@
                         {
                           "BucketArn": {
                             "Fn::GetAtt": [
-                              "Bucketauditlogs",
+                              "EhrAuditLogsBucket",
                               "Arn"
                             ]
                           }
@@ -490,7 +490,7 @@
         ]
       }
     },
-    "FunctionehrBackendFunction": {
+    "EhrBackendFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "FunctionName": {
@@ -505,101 +505,101 @@
         "MemorySize": 256,
         "Role": {
           "Fn::GetAtt": [
-            "RoleehrBackendFunction",
+            "RoleEhrBackendFunction",
             "Arn"
           ]
         },
         "Environment": {
           "Variables": {
             "SYNCPLOY_TABLE_EHR": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "TABLE_EHR_NAME": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "EHR_TABLE_NAME": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "ehr": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "SYNCPLOY_BUCKET_DOCUMENTS": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "BUCKET_DOCUMENTS_NAME": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "DOCUMENTS_BUCKET_NAME": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "documents": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "SYNCPLOY_BUCKET_AUDIT_LOGS": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "BUCKET_AUDIT_LOGS_NAME": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "AUDIT_LOGS_BUCKET_NAME": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "audit-logs": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "QUEUE_EHR_ANNOTATION_URL": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "EHR_ANNOTATION_QUEUE_URL": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "ehr-annotation": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "SYNCPLOY_TOPIC_EHR_KILL_SWITCH": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "TOPIC_EHR_KILL_SWITCH_ARN": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "EHR_KILL_SWITCH_TOPIC_ARN": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "ehr-kill-switch": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "SYNCPLOY_DELIVERY_STREAM_AUDITDELIVERYSTREAM": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "DELIVERY_STREAM_AUDITDELIVERYSTREAM_NAME": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "AUDITDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "AUDIT_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "AuditDeliveryStream": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "SYNCPLOY_DELIVERY_STREAM_OMOPDELIVERYSTREAM": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "DELIVERY_STREAM_OMOPDELIVERYSTREAM_NAME": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "OMOPDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "OMOP_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "OmopDeliveryStream": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             }
           }
         },
@@ -612,12 +612,12 @@
         "DockerTag": "latest"
       }
     },
-    "FunctionUrlehrBackendFunction": {
+    "EhrBackendFunctionUrl": {
       "Type": "AWS::Lambda::Url",
       "Properties": {
         "TargetFunctionArn": {
           "Fn::GetAtt": [
-            "FunctionehrBackendFunction",
+            "EhrBackendFunction",
             "Arn"
           ]
         },
@@ -642,18 +642,18 @@
         }
       }
     },
-    "PermissionehrBackendFunctionUrl": {
+    "PermissionEhrBackendFunctionUrl": {
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "FunctionName": {
-          "Ref": "FunctionehrBackendFunction"
+          "Ref": "EhrBackendFunction"
         },
         "Action": "lambda:InvokeFunctionUrl",
         "Principal": "*",
         "FunctionUrlAuthType": "NONE"
       }
     },
-    "RoleehrAnnotationWorkerFunction": {
+    "RoleEhrAnnotationWorkerFunction": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -670,7 +670,7 @@
         },
         "Policies": [
           {
-            "PolicyName": "ehrAnnotationWorkerFunctionExecutionPolicy",
+            "PolicyName": "EhrAnnotationWorkerFunctionExecutionPolicy",
             "PolicyDocument": {
               "Version": "2012-10-17",
               "Statement": [
@@ -696,7 +696,7 @@
                   "Resource": [
                     {
                       "Fn::GetAtt": [
-                        "Tableehr",
+                        "EhrTable",
                         "Arn"
                       ]
                     },
@@ -706,7 +706,7 @@
                         {
                           "TableArn": {
                             "Fn::GetAtt": [
-                              "Tableehr",
+                              "EhrTable",
                               "Arn"
                             ]
                           }
@@ -726,7 +726,7 @@
                   "Resource": [
                     {
                       "Fn::GetAtt": [
-                        "Bucketdocuments",
+                        "DocumentsBucket",
                         "Arn"
                       ]
                     },
@@ -736,7 +736,7 @@
                         {
                           "BucketArn": {
                             "Fn::GetAtt": [
-                              "Bucketdocuments",
+                              "DocumentsBucket",
                               "Arn"
                             ]
                           }
@@ -745,7 +745,7 @@
                     },
                     {
                       "Fn::GetAtt": [
-                        "Bucketauditlogs",
+                        "EhrAuditLogsBucket",
                         "Arn"
                       ]
                     },
@@ -755,7 +755,7 @@
                         {
                           "BucketArn": {
                             "Fn::GetAtt": [
-                              "Bucketauditlogs",
+                              "EhrAuditLogsBucket",
                               "Arn"
                             ]
                           }
@@ -774,7 +774,7 @@
                   "Resource": [
                     {
                       "Fn::GetAtt": [
-                        "Queueehrannotation",
+                        "EhrAnnotationQueue",
                         "Arn"
                       ]
                     }
@@ -795,7 +795,7 @@
         ]
       }
     },
-    "FunctionehrAnnotationWorkerFunction": {
+    "EhrAnnotationWorkerFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "FunctionName": {
@@ -808,116 +808,116 @@
         "MemorySize": 256,
         "Role": {
           "Fn::GetAtt": [
-            "RoleehrAnnotationWorkerFunction",
+            "RoleEhrAnnotationWorkerFunction",
             "Arn"
           ]
         },
         "Environment": {
           "Variables": {
             "SYNCPLOY_TABLE_EHR": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "TABLE_EHR_NAME": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "EHR_TABLE_NAME": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "ehr": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "SYNCPLOY_BUCKET_DOCUMENTS": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "BUCKET_DOCUMENTS_NAME": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "DOCUMENTS_BUCKET_NAME": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "documents": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "SYNCPLOY_BUCKET_AUDIT_LOGS": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "BUCKET_AUDIT_LOGS_NAME": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "AUDIT_LOGS_BUCKET_NAME": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "audit-logs": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "QUEUE_EHR_ANNOTATION_URL": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "EHR_ANNOTATION_QUEUE_URL": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "ehr-annotation": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "SYNCPLOY_TOPIC_EHR_KILL_SWITCH": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "TOPIC_EHR_KILL_SWITCH_ARN": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "EHR_KILL_SWITCH_TOPIC_ARN": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "ehr-kill-switch": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "SYNCPLOY_DELIVERY_STREAM_AUDITDELIVERYSTREAM": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "DELIVERY_STREAM_AUDITDELIVERYSTREAM_NAME": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "AUDITDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "AUDIT_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "AuditDeliveryStream": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "SYNCPLOY_DELIVERY_STREAM_OMOPDELIVERYSTREAM": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "DELIVERY_STREAM_OMOPDELIVERYSTREAM_NAME": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "OMOPDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "OMOP_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "OmopDeliveryStream": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             },
             "FUNCTION_EHRBACKENDFUNCTION_NAME": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             },
             "EHRBACKENDFUNCTION_FUNCTION_NAME": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             },
             "ehrBackendFunction": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             },
             "BACKEND_FUNCTION_NAME": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             },
             "SAGEMAKER_ENDPOINT_NAME": "gliner-relex-endpoint"
           }
@@ -925,17 +925,17 @@
         "ReservedConcurrentExecutions": 2
       }
     },
-    "EventSourceMappingehrAnnotationWorkerFunction": {
+    "EventSourceMappingEhrAnnotationWorkerFunction": {
       "Type": "AWS::Lambda::EventSourceMapping",
       "Properties": {
         "EventSourceArn": {
           "Fn::GetAtt": [
-            "Queueehrannotation",
+            "EhrAnnotationQueue",
             "Arn"
           ]
         },
         "FunctionName": {
-          "Ref": "FunctionehrAnnotationWorkerFunction"
+          "Ref": "EhrAnnotationWorkerFunction"
         },
         "BatchSize": 5,
         "FunctionResponseTypes": [
@@ -943,7 +943,7 @@
         ]
       }
     },
-    "Topicehrkillswitch": {
+    "EhrKillSwitchTopic": {
       "Type": "AWS::SNS::Topic",
       "Properties": {
         "TopicName": {
@@ -957,7 +957,7 @@
         ]
       }
     },
-    "RoleehrAuditStreamFunction": {
+    "RoleEhrAuditStreamFunction": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -974,7 +974,7 @@
         },
         "Policies": [
           {
-            "PolicyName": "ehrAuditStreamFunctionExecutionPolicy",
+            "PolicyName": "EhrAuditStreamFunctionExecutionPolicy",
             "PolicyDocument": {
               "Version": "2012-10-17",
               "Statement": [
@@ -998,7 +998,7 @@
                   "Resource": [
                     {
                       "Fn::GetAtt": [
-                        "Tableehr",
+                        "EhrTable",
                         "StreamArn"
                       ]
                     }
@@ -1013,13 +1013,13 @@
                   "Resource": [
                     {
                       "Fn::GetAtt": [
-                        "DeliveryStreamAuditDeliveryStream",
+                        "EhrAuditDeliveryStream",
                         "Arn"
                       ]
                     },
                     {
                       "Fn::GetAtt": [
-                        "DeliveryStreamOmopDeliveryStream",
+                        "EhrOmopDeliveryStream",
                         "Arn"
                       ]
                     }
@@ -1041,7 +1041,7 @@
         ]
       }
     },
-    "FunctionehrAuditStreamFunction": {
+    "EhrAuditStreamFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "FunctionName": {
@@ -1054,132 +1054,132 @@
         "MemorySize": 128,
         "Role": {
           "Fn::GetAtt": [
-            "RoleehrAuditStreamFunction",
+            "RoleEhrAuditStreamFunction",
             "Arn"
           ]
         },
         "Environment": {
           "Variables": {
             "SYNCPLOY_TABLE_EHR": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "TABLE_EHR_NAME": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "EHR_TABLE_NAME": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "ehr": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "SYNCPLOY_BUCKET_DOCUMENTS": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "BUCKET_DOCUMENTS_NAME": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "DOCUMENTS_BUCKET_NAME": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "documents": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "SYNCPLOY_BUCKET_AUDIT_LOGS": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "BUCKET_AUDIT_LOGS_NAME": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "AUDIT_LOGS_BUCKET_NAME": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "audit-logs": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "QUEUE_EHR_ANNOTATION_URL": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "EHR_ANNOTATION_QUEUE_URL": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "ehr-annotation": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "SYNCPLOY_TOPIC_EHR_KILL_SWITCH": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "TOPIC_EHR_KILL_SWITCH_ARN": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "EHR_KILL_SWITCH_TOPIC_ARN": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "ehr-kill-switch": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "SYNCPLOY_DELIVERY_STREAM_AUDITDELIVERYSTREAM": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "DELIVERY_STREAM_AUDITDELIVERYSTREAM_NAME": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "AUDITDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "AUDIT_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "AuditDeliveryStream": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "SYNCPLOY_DELIVERY_STREAM_OMOPDELIVERYSTREAM": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "DELIVERY_STREAM_OMOPDELIVERYSTREAM_NAME": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "OMOPDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "OMOP_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "OmopDeliveryStream": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             },
             "FUNCTION_EHRBACKENDFUNCTION_NAME": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             },
             "EHRBACKENDFUNCTION_FUNCTION_NAME": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             },
             "ehrBackendFunction": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             },
             "BACKEND_FUNCTION_NAME": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             }
           }
         }
       }
     },
-    "EventSourceMappingehrAuditStreamFunction": {
+    "EventSourceMappingEhrAuditStreamFunction": {
       "Type": "AWS::Lambda::EventSourceMapping",
       "Properties": {
         "EventSourceArn": {
           "Fn::GetAtt": [
-            "Tableehr",
+            "EhrTable",
             "StreamArn"
           ]
         },
         "FunctionName": {
-          "Ref": "FunctionehrAuditStreamFunction"
+          "Ref": "EhrAuditStreamFunction"
         },
         "StartingPosition": "LATEST",
         "BatchSize": 100,
@@ -1189,7 +1189,7 @@
         "Enabled": false
       }
     },
-    "RoleehrOmopPipelineFunction": {
+    "RoleEhrOmopPipelineFunction": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -1206,7 +1206,7 @@
         },
         "Policies": [
           {
-            "PolicyName": "ehrOmopPipelineFunctionExecutionPolicy",
+            "PolicyName": "EhrOmopPipelineFunctionExecutionPolicy",
             "PolicyDocument": {
               "Version": "2012-10-17",
               "Statement": [
@@ -1230,7 +1230,7 @@
                   "Resource": [
                     {
                       "Fn::GetAtt": [
-                        "Tableehr",
+                        "EhrTable",
                         "StreamArn"
                       ]
                     }
@@ -1245,13 +1245,13 @@
                   "Resource": [
                     {
                       "Fn::GetAtt": [
-                        "DeliveryStreamAuditDeliveryStream",
+                        "EhrAuditDeliveryStream",
                         "Arn"
                       ]
                     },
                     {
                       "Fn::GetAtt": [
-                        "DeliveryStreamOmopDeliveryStream",
+                        "EhrOmopDeliveryStream",
                         "Arn"
                       ]
                     }
@@ -1273,7 +1273,7 @@
         ]
       }
     },
-    "FunctionehrOmopPipelineFunction": {
+    "EhrOmopPipelineFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "FunctionName": {
@@ -1286,132 +1286,132 @@
         "MemorySize": 128,
         "Role": {
           "Fn::GetAtt": [
-            "RoleehrOmopPipelineFunction",
+            "RoleEhrOmopPipelineFunction",
             "Arn"
           ]
         },
         "Environment": {
           "Variables": {
             "SYNCPLOY_TABLE_EHR": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "TABLE_EHR_NAME": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "EHR_TABLE_NAME": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "ehr": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "SYNCPLOY_BUCKET_DOCUMENTS": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "BUCKET_DOCUMENTS_NAME": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "DOCUMENTS_BUCKET_NAME": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "documents": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "SYNCPLOY_BUCKET_AUDIT_LOGS": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "BUCKET_AUDIT_LOGS_NAME": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "AUDIT_LOGS_BUCKET_NAME": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "audit-logs": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "QUEUE_EHR_ANNOTATION_URL": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "EHR_ANNOTATION_QUEUE_URL": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "ehr-annotation": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "SYNCPLOY_TOPIC_EHR_KILL_SWITCH": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "TOPIC_EHR_KILL_SWITCH_ARN": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "EHR_KILL_SWITCH_TOPIC_ARN": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "ehr-kill-switch": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "SYNCPLOY_DELIVERY_STREAM_AUDITDELIVERYSTREAM": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "DELIVERY_STREAM_AUDITDELIVERYSTREAM_NAME": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "AUDITDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "AUDIT_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "AuditDeliveryStream": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "SYNCPLOY_DELIVERY_STREAM_OMOPDELIVERYSTREAM": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "DELIVERY_STREAM_OMOPDELIVERYSTREAM_NAME": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "OMOPDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "OMOP_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "OmopDeliveryStream": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             },
             "FUNCTION_EHRBACKENDFUNCTION_NAME": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             },
             "EHRBACKENDFUNCTION_FUNCTION_NAME": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             },
             "ehrBackendFunction": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             },
             "BACKEND_FUNCTION_NAME": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             }
           }
         }
       }
     },
-    "EventSourceMappingehrOmopPipelineFunction": {
+    "EventSourceMappingEhrOmopPipelineFunction": {
       "Type": "AWS::Lambda::EventSourceMapping",
       "Properties": {
         "EventSourceArn": {
           "Fn::GetAtt": [
-            "Tableehr",
+            "EhrTable",
             "StreamArn"
           ]
         },
         "FunctionName": {
-          "Ref": "FunctionehrOmopPipelineFunction"
+          "Ref": "EhrOmopPipelineFunction"
         },
         "StartingPosition": "LATEST",
         "BatchSize": 100,
@@ -1421,7 +1421,7 @@
         "Enabled": false
       }
     },
-    "RoleehrKillSwitchFunction": {
+    "RoleEhrLambdaKillSwitchFunction": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -1438,7 +1438,7 @@
         },
         "Policies": [
           {
-            "PolicyName": "ehrKillSwitchFunctionExecutionPolicy",
+            "PolicyName": "EhrLambdaKillSwitchFunctionExecutionPolicy",
             "PolicyDocument": {
               "Version": "2012-10-17",
               "Statement": [
@@ -1467,7 +1467,7 @@
         ]
       }
     },
-    "FunctionehrKillSwitchFunction": {
+    "EhrLambdaKillSwitchFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "FunctionName": {
@@ -1480,150 +1480,150 @@
         "MemorySize": 128,
         "Role": {
           "Fn::GetAtt": [
-            "RoleehrKillSwitchFunction",
+            "RoleEhrLambdaKillSwitchFunction",
             "Arn"
           ]
         },
         "Environment": {
           "Variables": {
             "SYNCPLOY_TABLE_EHR": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "TABLE_EHR_NAME": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "EHR_TABLE_NAME": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "ehr": {
-              "Ref": "Tableehr"
+              "Ref": "EhrTable"
             },
             "SYNCPLOY_BUCKET_DOCUMENTS": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "BUCKET_DOCUMENTS_NAME": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "DOCUMENTS_BUCKET_NAME": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "documents": {
-              "Ref": "Bucketdocuments"
+              "Ref": "DocumentsBucket"
             },
             "SYNCPLOY_BUCKET_AUDIT_LOGS": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "BUCKET_AUDIT_LOGS_NAME": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "AUDIT_LOGS_BUCKET_NAME": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "audit-logs": {
-              "Ref": "Bucketauditlogs"
+              "Ref": "EhrAuditLogsBucket"
             },
             "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "QUEUE_EHR_ANNOTATION_URL": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "EHR_ANNOTATION_QUEUE_URL": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "ehr-annotation": {
-              "Ref": "Queueehrannotation"
+              "Ref": "EhrAnnotationQueue"
             },
             "SYNCPLOY_TOPIC_EHR_KILL_SWITCH": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "TOPIC_EHR_KILL_SWITCH_ARN": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "EHR_KILL_SWITCH_TOPIC_ARN": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "ehr-kill-switch": {
-              "Ref": "Topicehrkillswitch"
+              "Ref": "EhrKillSwitchTopic"
             },
             "SYNCPLOY_DELIVERY_STREAM_AUDITDELIVERYSTREAM": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "DELIVERY_STREAM_AUDITDELIVERYSTREAM_NAME": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "AUDITDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "AUDIT_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "AuditDeliveryStream": {
-              "Ref": "DeliveryStreamAuditDeliveryStream"
+              "Ref": "EhrAuditDeliveryStream"
             },
             "SYNCPLOY_DELIVERY_STREAM_OMOPDELIVERYSTREAM": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "DELIVERY_STREAM_OMOPDELIVERYSTREAM_NAME": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "OMOPDELIVERYSTREAM_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "OMOP_DELIVERY_STREAM_NAME": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "OmopDeliveryStream": {
-              "Ref": "DeliveryStreamOmopDeliveryStream"
+              "Ref": "EhrOmopDeliveryStream"
             },
             "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             },
             "FUNCTION_EHRBACKENDFUNCTION_NAME": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             },
             "EHRBACKENDFUNCTION_FUNCTION_NAME": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             },
             "ehrBackendFunction": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             },
             "BACKEND_FUNCTION_NAME": {
-              "Ref": "FunctionehrBackendFunction"
+              "Ref": "EhrBackendFunction"
             }
           }
         }
       }
     },
-    "PermissionehrKillSwitchFunctionSns": {
+    "PermissionEhrLambdaKillSwitchFunctionSns": {
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "FunctionName": {
-          "Ref": "FunctionehrKillSwitchFunction"
+          "Ref": "EhrLambdaKillSwitchFunction"
         },
         "Action": "lambda:InvokeFunction",
         "Principal": "sns.amazonaws.com",
         "SourceArn": {
-          "Ref": "Topicehrkillswitch"
+          "Ref": "EhrKillSwitchTopic"
         }
       }
     },
-    "SubscriptionehrKillSwitchFunction": {
+    "SubscriptionEhrLambdaKillSwitchFunction": {
       "Type": "AWS::SNS::Subscription",
       "Properties": {
         "TopicArn": {
-          "Ref": "Topicehrkillswitch"
+          "Ref": "EhrKillSwitchTopic"
         },
         "Protocol": "lambda",
         "Endpoint": {
           "Fn::GetAtt": [
-            "FunctionehrKillSwitchFunction",
+            "EhrLambdaKillSwitchFunction",
             "Arn"
           ]
         }
       }
     },
-    "AlarmEhrLambdaTrafficAlarm": {
+    "EhrLambdaTrafficAlarm": {
       "Type": "AWS::CloudWatch::Alarm",
       "Properties": {
         "AlarmDescription": "Triggered if backend Lambda requests (Invocations + Throttles) exceed 2000 in 1 minute. Triggers Kill Switch.",
@@ -1632,7 +1632,7 @@
         "ComparisonOperator": "GreaterThanOrEqualToThreshold",
         "AlarmActions": [
           {
-            "Ref": "Topicehrkillswitch"
+            "Ref": "EhrKillSwitchTopic"
           }
         ],
         "TreatMissingData": "notBreaching",
@@ -1654,7 +1654,7 @@
                   {
                     "Name": "FunctionName",
                     "Value": {
-                      "Ref": "FunctionehrBackendFunction"
+                      "Ref": "EhrBackendFunction"
                     }
                   }
                 ]
@@ -1674,7 +1674,7 @@
                   {
                     "Name": "FunctionName",
                     "Value": {
-                      "Ref": "FunctionehrBackendFunction"
+                      "Ref": "EhrBackendFunction"
                     }
                   }
                 ]
@@ -1702,7 +1702,7 @@
             "bucket": {
               "name": [
                 {
-                  "Ref": "Bucketdocuments"
+                  "Ref": "DocumentsBucket"
                 }
               ]
             },
@@ -1719,11 +1719,11 @@
           {
             "Arn": {
               "Fn::GetAtt": [
-                "Queueehrannotation",
+                "EhrAnnotationQueue",
                 "Arn"
               ]
             },
-            "Id": "ehrannotationTarget"
+            "Id": "EhrAnnotationQueueTarget"
           }
         ]
       }
@@ -1733,7 +1733,7 @@
       "Properties": {
         "Queues": [
           {
-            "Ref": "Queueehrannotation"
+            "Ref": "EhrAnnotationQueue"
           }
         ],
         "PolicyDocument": {
@@ -1747,7 +1747,7 @@
               "Action": "sqs:SendMessage",
               "Resource": {
                 "Fn::GetAtt": [
-                  "Queueehrannotation",
+                  "EhrAnnotationQueue",
                   "Arn"
                 ]
               },
@@ -1766,7 +1766,7 @@
         }
       }
     },
-    "FirehoseRoleAuditDeliveryStream": {
+    "FirehoseRoleEhrAuditDeliveryStream": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -1800,7 +1800,7 @@
                   "Resource": [
                     {
                       "Fn::GetAtt": [
-                        "Bucketauditlogs",
+                        "EhrAuditLogsBucket",
                         "Arn"
                       ]
                     },
@@ -1810,7 +1810,7 @@
                         {
                           "BucketArn": {
                             "Fn::GetAtt": [
-                              "Bucketauditlogs",
+                              "EhrAuditLogsBucket",
                               "Arn"
                             ]
                           }
@@ -1825,7 +1825,7 @@
         ]
       }
     },
-    "DeliveryStreamAuditDeliveryStream": {
+    "EhrAuditDeliveryStream": {
       "Type": "AWS::KinesisFirehose::DeliveryStream",
       "Properties": {
         "DeliveryStreamName": {
@@ -1835,13 +1835,13 @@
         "ExtendedS3DestinationConfiguration": {
           "BucketARN": {
             "Fn::GetAtt": [
-              "Bucketauditlogs",
+              "EhrAuditLogsBucket",
               "Arn"
             ]
           },
           "RoleARN": {
             "Fn::GetAtt": [
-              "FirehoseRoleAuditDeliveryStream",
+              "FirehoseRoleEhrAuditDeliveryStream",
               "Arn"
             ]
           },
@@ -1853,7 +1853,7 @@
         }
       }
     },
-    "FirehoseRoleOmopDeliveryStream": {
+    "FirehoseRoleEhrOmopDeliveryStream": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -1887,7 +1887,7 @@
                   "Resource": [
                     {
                       "Fn::GetAtt": [
-                        "Bucketdocuments",
+                        "DocumentsBucket",
                         "Arn"
                       ]
                     },
@@ -1897,7 +1897,7 @@
                         {
                           "BucketArn": {
                             "Fn::GetAtt": [
-                              "Bucketdocuments",
+                              "DocumentsBucket",
                               "Arn"
                             ]
                           }
@@ -1912,7 +1912,7 @@
         ]
       }
     },
-    "DeliveryStreamOmopDeliveryStream": {
+    "EhrOmopDeliveryStream": {
       "Type": "AWS::KinesisFirehose::DeliveryStream",
       "Properties": {
         "DeliveryStreamName": {
@@ -1922,13 +1922,13 @@
         "ExtendedS3DestinationConfiguration": {
           "BucketARN": {
             "Fn::GetAtt": [
-              "Bucketdocuments",
+              "DocumentsBucket",
               "Arn"
             ]
           },
           "RoleARN": {
             "Fn::GetAtt": [
-              "FirehoseRoleOmopDeliveryStream",
+              "FirehoseRoleEhrOmopDeliveryStream",
               "Arn"
             ]
           },
@@ -1944,31 +1944,40 @@
     }
   },
   "Outputs": {
-    "ehrBackendFunctionUrl": {
+    "EhrBackendFunctionUrl": {
       "Description": "Direct Lambda Function URL for ehrBackendFunction",
       "Value": {
         "Fn::GetAtt": [
-          "FunctionUrlehrBackendFunction",
+          "EhrBackendFunctionUrl",
           "FunctionUrl"
         ]
       }
     },
-    "ehrkillswitchTopicArn": {
+    "ApiEndpoint": {
+      "Description": "Lambda Function URL",
+      "Value": {
+        "Fn::GetAtt": [
+          "EhrBackendFunctionUrl",
+          "FunctionUrl"
+        ]
+      }
+    },
+    "EhrKillSwitchTopicTopicArn": {
       "Description": "ARN of SNS Topic ehr-kill-switch",
       "Value": {
-        "Ref": "Topicehrkillswitch"
+        "Ref": "EhrKillSwitchTopic"
       }
     },
     "AuditDeliveryStreamDeliveryStreamName": {
       "Description": "Name of the AuditDeliveryStream Kinesis Firehose Delivery Stream",
       "Value": {
-        "Ref": "DeliveryStreamAuditDeliveryStream"
+        "Ref": "EhrAuditDeliveryStream"
       }
     },
     "OmopDeliveryStreamDeliveryStreamName": {
       "Description": "Name of the OmopDeliveryStream Kinesis Firehose Delivery Stream",
       "Value": {
-        "Ref": "DeliveryStreamOmopDeliveryStream"
+        "Ref": "EhrOmopDeliveryStream"
       }
     }
   }

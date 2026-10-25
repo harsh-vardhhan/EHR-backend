@@ -7,6 +7,7 @@ import { app } from './app';
  */
 export const ehrBackendFunction = api(
   {
+    logicalId: 'EhrBackendFunction',
     path: '/',
     ingress: 'function-url',
     container: {

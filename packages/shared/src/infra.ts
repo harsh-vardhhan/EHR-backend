@@ -2,6 +2,7 @@ import { Table, Bucket, Queue, Topic, Alarm, DeliveryStream } from "@syncploy/sd
 
 // Single-table DynamoDB for all EHR data
 export const ehrTable = new Table("ehr", {
+  logicalId: "EhrTable",
   partitionKey: { name: "PK", type: "string" },
   sortKey: { name: "SK", type: "string" },
   billingMode: "PAY_PER_REQUEST",
@@ -22,12 +23,14 @@ export const ehrTable = new Table("ehr", {
 
 // S3 Bucket for medical documents with EventBridge notification enabled
 export const documentsBucket = new Bucket("documents", {
+  logicalId: "DocumentsBucket",
   eventBridge: true,
   publicAccessBlock: true,
 });
 
 // S3 Object-Locked Bucket for HIPAA compliance audit trail (account-scoped for global uniqueness)
 export const ehrAuditLogsBucket = new Bucket("audit-logs", {
+  logicalId: "EhrAuditLogsBucket",
   objectLock: {
     mode: "COMPLIANCE",
     days: 1,
@@ -38,6 +41,7 @@ export const ehrAuditLogsBucket = new Bucket("audit-logs", {
 
 // Kinesis Firehose Delivery Stream for audit log streaming to compliance S3 bucket
 export const ehrAuditDeliveryStream = new DeliveryStream("AuditDeliveryStream", {
+  logicalId: "EhrAuditDeliveryStream",
   destination: ehrAuditLogsBucket,
   bufferingInterval: "900s",
   bufferingSize: "5MB",
@@ -46,6 +50,7 @@ export const ehrAuditDeliveryStream = new DeliveryStream("AuditDeliveryStream", 
 
 // Kinesis Firehose Delivery Stream for OMOP CDM clinical data lake
 export const ehrOmopDeliveryStream = new DeliveryStream("OmopDeliveryStream", {
+  logicalId: "EhrOmopDeliveryStream",
   destination: documentsBucket,
   prefix: "omop/",
   errorPrefix: "omop-failures/",
@@ -56,9 +61,11 @@ export const ehrOmopDeliveryStream = new DeliveryStream("OmopDeliveryStream", {
 
 // SQS Annotation Queue with Dead Letter Queue
 export const ehrAnnotationQueue = new Queue("ehr-annotation", {
+  logicalId: "EhrAnnotationQueue",
   visibilityTimeout: "180s",
   deadLetterQueue: {
     maxReceiveCount: 3,
+    logicalId: "EhrAnnotationDLQ",
   },
 });
 
@@ -69,6 +76,7 @@ documentsBucket.on("objectCreated", ehrAnnotationQueue, {
 
 // SNS Topic for DDoS Kill Switch alerts with email notification
 export const ehrKillSwitchTopic = new Topic("ehr-kill-switch", {
+  logicalId: "EhrKillSwitchTopic",
   fifo: false,
   subscriptions: [
     {
@@ -80,6 +88,7 @@ export const ehrKillSwitchTopic = new Topic("ehr-kill-switch", {
 
 // CloudWatch Alarm monitoring total Lambda traffic (Invocations + Throttles) via Metric Math
 export const ehrLambdaTrafficAlarm = new Alarm("EhrLambdaTrafficAlarm", {
+  logicalId: "EhrLambdaTrafficAlarm",
   threshold: 2000,
   evaluationPeriods: 1,
   comparison: "GreaterThanOrEqualToThreshold",
