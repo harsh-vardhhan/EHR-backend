@@ -15,6 +15,7 @@ dist/
 .aws-sam/
 .syncploy/entrypoints/
 .syncploy/build/
+.syncploy-sdk-repo/
 packages/api/dist/
 packages/frontend/dist/
 

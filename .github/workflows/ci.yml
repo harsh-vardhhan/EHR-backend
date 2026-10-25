@@ -26,6 +26,17 @@ jobs:
       uses: oven-sh/setup-bun@v2
       with:
         bun-version: latest
+
+    - name: Checkout Syncploy SDK
+      uses: actions/checkout@v4
+      with:
+        repository: harsh-vardhhan/syncploy
+        path: .syncploy-sdk-repo
+
+    - name: Link @syncploy/sdk
+      run: |
+        cd .syncploy-sdk-repo/packages/sdk && bun link
+        bun link @syncploy/sdk
         
     - name: Install dependencies
       run: bun install
