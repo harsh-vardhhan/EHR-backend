@@ -26,13 +26,14 @@ export const documentsBucket = new Bucket("documents", {
   publicAccessBlock: true,
 });
 
-// S3 Object-Locked Bucket for HIPAA compliance audit trail
+// S3 Object-Locked Bucket for HIPAA compliance audit trail (account-scoped for global uniqueness)
 export const ehrAuditLogsBucket = new Bucket("audit-logs", {
   objectLock: {
     mode: "COMPLIANCE",
     days: 1,
   },
   publicAccessBlock: true,
+  accountScoped: true,
 });
 
 // Kinesis Firehose Delivery Stream for audit log streaming to compliance S3 bucket
@@ -66,25 +67,62 @@ documentsBucket.on("objectCreated", ehrAnnotationQueue, {
   prefix: "documents/",
 });
 
-// SNS Topic for DDoS Kill Switch alerts
+// SNS Topic for DDoS Kill Switch alerts with email notification
 export const ehrKillSwitchTopic = new Topic("ehr-kill-switch", {
   fifo: false,
+  subscriptions: [
+    {
+      protocol: "email",
+      endpoint: process.env.NOTIFICATION_EMAIL || "alert-notifications@example.com",
+    },
+  ],
 });
 
-// CloudWatch Alarm monitoring Lambda invocations to trigger the Kill Switch circuit breaker
+// CloudWatch Alarm monitoring total Lambda traffic (Invocations + Throttles) via Metric Math
 export const ehrLambdaTrafficAlarm = new Alarm("EhrLambdaTrafficAlarm", {
   threshold: 2000,
   evaluationPeriods: 1,
   comparison: "GreaterThanOrEqualToThreshold",
-  description: "Triggers kill switch if Lambda invocations exceed DDoS threshold",
+  description:
+    "Triggered if backend Lambda requests (Invocations + Throttles) exceed 2000 in 1 minute. Triggers Kill Switch.",
+  treatMissingData: "notBreaching",
   actions: [ehrKillSwitchTopic],
-  metric: {
-    metricName: "Invocations",
-    namespace: "AWS/Lambda",
-    period: 60,
-    stat: "Sum",
-    dimensions: {
-      FunctionName: "ehrBackendFunction",
+  metrics: [
+    {
+      id: "e1",
+      expression: "m1 + m2",
+      label: "TotalRequests",
+      returnData: true,
     },
-  },
+    {
+      id: "m1",
+      returnData: false,
+      metricStat: {
+        metric: {
+          namespace: "AWS/Lambda",
+          metricName: "Invocations",
+          dimensions: {
+            FunctionName: "ehrBackendFunction",
+          },
+        },
+        period: "60s",
+        stat: "Sum",
+      },
+    },
+    {
+      id: "m2",
+      returnData: false,
+      metricStat: {
+        metric: {
+          namespace: "AWS/Lambda",
+          metricName: "Throttles",
+          dimensions: {
+            FunctionName: "ehrBackendFunction",
+          },
+        },
+        period: "60s",
+        stat: "Sum",
+      },
+    },
+  ],
 });

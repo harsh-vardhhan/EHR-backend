@@ -327,7 +327,7 @@
       "Type": "AWS::S3::Bucket",
       "Properties": {
         "BucketName": {
-          "Fn::Sub": "${AWS::StackName}-audit-logs"
+          "Fn::Sub": "${AWS::StackName}-audit-logs-${AWS::AccountId}"
         },
         "PublicAccessBlockConfiguration": {
           "BlockPublicAcls": true,
@@ -373,6 +373,123 @@
         }
       }
     },
+    "RoleehrBackendFunction": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ehrBackendFunctionExecutionPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:*:*:*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:PutItem",
+                    "dynamodb:UpdateItem",
+                    "dynamodb:DeleteItem",
+                    "dynamodb:Query",
+                    "dynamodb:Scan"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Tableehr",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::Sub": [
+                        "${TableArn}/index/*",
+                        {
+                          "TableArn": {
+                            "Fn::GetAtt": [
+                              "Tableehr",
+                              "Arn"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:DeleteObject",
+                    "s3:ListBucket"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Bucketdocuments",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::Sub": [
+                        "${BucketArn}/*",
+                        {
+                          "BucketArn": {
+                            "Fn::GetAtt": [
+                              "Bucketdocuments",
+                              "Arn"
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "Bucketauditlogs",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::Sub": [
+                        "${BucketArn}/*",
+                        {
+                          "BucketArn": {
+                            "Fn::GetAtt": [
+                              "Bucketauditlogs",
+                              "Arn"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
     "FunctionehrBackendFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
@@ -386,7 +503,7 @@
         "MemorySize": 256,
         "Role": {
           "Fn::GetAtt": [
-            "LambdaExecutionRole",
+            "RoleehrBackendFunction",
             "Arn"
           ]
         },
@@ -528,6 +645,148 @@
         "FunctionUrlAuthType": "NONE"
       }
     },
+    "RoleehrAnnotationWorkerFunction": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ehrAnnotationWorkerFunctionExecutionPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:*:*:*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:PutItem",
+                    "dynamodb:UpdateItem",
+                    "dynamodb:DeleteItem",
+                    "dynamodb:Query",
+                    "dynamodb:Scan"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Tableehr",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::Sub": [
+                        "${TableArn}/index/*",
+                        {
+                          "TableArn": {
+                            "Fn::GetAtt": [
+                              "Tableehr",
+                              "Arn"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:DeleteObject",
+                    "s3:ListBucket"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Bucketdocuments",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::Sub": [
+                        "${BucketArn}/*",
+                        {
+                          "BucketArn": {
+                            "Fn::GetAtt": [
+                              "Bucketdocuments",
+                              "Arn"
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "Bucketauditlogs",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::Sub": [
+                        "${BucketArn}/*",
+                        {
+                          "BucketArn": {
+                            "Fn::GetAtt": [
+                              "Bucketauditlogs",
+                              "Arn"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sqs:ReceiveMessage",
+                    "sqs:DeleteMessage",
+                    "sqs:GetQueueAttributes"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Queueehrannotation",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sagemaker:InvokeEndpoint"
+                  ],
+                  "Resource": [
+                    "*"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
     "FunctionehrAnnotationWorkerFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
@@ -541,7 +800,7 @@
         "MemorySize": 256,
         "Role": {
           "Fn::GetAtt": [
-            "LambdaExecutionRole",
+            "RoleehrAnnotationWorkerFunction",
             "Arn"
           ]
         },
@@ -681,7 +940,97 @@
       "Properties": {
         "TopicName": {
           "Fn::Sub": "${AWS::StackName}-ehr-kill-switch"
-        }
+        },
+        "Subscription": [
+          {
+            "Protocol": "email",
+            "Endpoint": "alert-notifications@example.com"
+          }
+        ]
+      }
+    },
+    "RoleehrAuditStreamFunction": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ehrAuditStreamFunctionExecutionPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:*:*:*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:GetRecords",
+                    "dynamodb:GetShardIterator",
+                    "dynamodb:DescribeStream",
+                    "dynamodb:ListStreams"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Tableehr",
+                        "StreamArn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "firehose:PutRecord",
+                    "firehose:PutRecordBatch"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "DeliveryStreamAuditDeliveryStream",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "DeliveryStreamOmopDeliveryStream",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "firehose:PutRecord",
+                    "firehose:PutRecordBatch"
+                  ],
+                  "Resource": [
+                    "*"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
       }
     },
     "FunctionehrAuditStreamFunction": {
@@ -697,7 +1046,7 @@
         "MemorySize": 128,
         "Role": {
           "Fn::GetAtt": [
-            "LambdaExecutionRole",
+            "RoleehrAuditStreamFunction",
             "Arn"
           ]
         },
@@ -832,6 +1181,90 @@
         "Enabled": false
       }
     },
+    "RoleehrOmopPipelineFunction": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ehrOmopPipelineFunctionExecutionPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:*:*:*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:GetRecords",
+                    "dynamodb:GetShardIterator",
+                    "dynamodb:DescribeStream",
+                    "dynamodb:ListStreams"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Tableehr",
+                        "StreamArn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "firehose:PutRecord",
+                    "firehose:PutRecordBatch"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "DeliveryStreamAuditDeliveryStream",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "DeliveryStreamOmopDeliveryStream",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "firehose:PutRecord",
+                    "firehose:PutRecordBatch"
+                  ],
+                  "Resource": [
+                    "*"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
     "FunctionehrOmopPipelineFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
@@ -845,7 +1278,7 @@
         "MemorySize": 128,
         "Role": {
           "Fn::GetAtt": [
-            "LambdaExecutionRole",
+            "RoleehrOmopPipelineFunction",
             "Arn"
           ]
         },
@@ -980,6 +1413,52 @@
         "Enabled": false
       }
     },
+    "RoleehrKillSwitchFunction": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ehrKillSwitchFunctionExecutionPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:*:*:*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "lambda:PutFunctionConcurrency",
+                    "lambda:DeleteFunctionConcurrency"
+                  ],
+                  "Resource": [
+                    "*"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
     "FunctionehrKillSwitchFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
@@ -993,7 +1472,7 @@
         "MemorySize": 128,
         "Role": {
           "Fn::GetAtt": [
-            "LambdaExecutionRole",
+            "RoleehrKillSwitchFunction",
             "Arn"
           ]
         },
@@ -1139,7 +1618,7 @@
     "AlarmEhrLambdaTrafficAlarm": {
       "Type": "AWS::CloudWatch::Alarm",
       "Properties": {
-        "AlarmDescription": "Triggers kill switch if Lambda invocations exceed DDoS threshold",
+        "AlarmDescription": "Triggered if backend Lambda requests (Invocations + Throttles) exceed 2000 in 1 minute. Triggers Kill Switch.",
         "EvaluationPeriods": 1,
         "Threshold": 2000,
         "ComparisonOperator": "GreaterThanOrEqualToThreshold",
@@ -1148,15 +1627,52 @@
             "Ref": "Topicehrkillswitch"
           }
         ],
-        "MetricName": "Invocations",
-        "Namespace": "AWS/Lambda",
-        "Period": 60,
-        "Statistic": "Sum",
-        "Dimensions": [
+        "TreatMissingData": "notBreaching",
+        "Metrics": [
           {
-            "Name": "FunctionName",
-            "Value": {
-              "Ref": "FunctionehrBackendFunction"
+            "Id": "e1",
+            "Expression": "m1 + m2",
+            "Label": "TotalRequests",
+            "ReturnData": true
+          },
+          {
+            "Id": "m1",
+            "ReturnData": false,
+            "MetricStat": {
+              "Metric": {
+                "Namespace": "AWS/Lambda",
+                "MetricName": "Invocations",
+                "Dimensions": [
+                  {
+                    "Name": "FunctionName",
+                    "Value": {
+                      "Ref": "FunctionehrBackendFunction"
+                    }
+                  }
+                ]
+              },
+              "Period": 60,
+              "Stat": "Sum"
+            }
+          },
+          {
+            "Id": "m2",
+            "ReturnData": false,
+            "MetricStat": {
+              "Metric": {
+                "Namespace": "AWS/Lambda",
+                "MetricName": "Throttles",
+                "Dimensions": [
+                  {
+                    "Name": "FunctionName",
+                    "Value": {
+                      "Ref": "FunctionehrBackendFunction"
+                    }
+                  }
+                ]
+              },
+              "Period": 60,
+              "Stat": "Sum"
             }
           }
         ]
