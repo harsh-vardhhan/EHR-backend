@@ -7,8 +7,16 @@ describe('App Security & Middleware', () => {
   const originalApiKey = process.env.API_KEY;
 
   afterEach(() => {
-    process.env.ORIGIN_VERIFY_SECRET = originalSecret;
-    process.env.API_KEY = originalApiKey;
+    if (originalSecret === undefined) {
+      delete process.env.ORIGIN_VERIFY_SECRET;
+    } else {
+      process.env.ORIGIN_VERIFY_SECRET = originalSecret;
+    }
+    if (originalApiKey === undefined) {
+      delete process.env.API_KEY;
+    } else {
+      process.env.API_KEY = originalApiKey;
+    }
   });
 
   test('GET / healthcheck returns status ok', async () => {
@@ -75,6 +83,7 @@ describe('App Security & Middleware', () => {
   });
 
   test('rejects request with 401 when API key is missing or invalid on protected route', async () => {
+    delete process.env.ORIGIN_VERIFY_SECRET;
     process.env.API_KEY = 'test_api_key_123';
 
     const response = await app.handle(
