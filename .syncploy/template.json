@@ -481,21 +481,6 @@
             },
             "OmopDeliveryStream": {
               "Ref": "DeliveryStreamOmopDeliveryStream"
-            },
-            "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
-              "Ref": "FunctionehrBackendFunction"
-            },
-            "FUNCTION_EHRBACKENDFUNCTION_NAME": {
-              "Ref": "FunctionehrBackendFunction"
-            },
-            "EHRBACKENDFUNCTION_FUNCTION_NAME": {
-              "Ref": "FunctionehrBackendFunction"
-            },
-            "ehrBackendFunction": {
-              "Ref": "FunctionehrBackendFunction"
-            },
-            "BACKEND_FUNCTION_NAME": {
-              "Ref": "FunctionehrBackendFunction"
             }
           }
         },
