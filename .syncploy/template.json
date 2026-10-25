@@ -496,9 +496,11 @@
         "FunctionName": {
           "Fn::Sub": "${AWS::StackName}-ehrBackendFunction"
         },
-        "Runtime": "nodejs20.x",
-        "Handler": "index.handler",
-        "Code": ".syncploy/build/ehrBackendFunction",
+        "Code": {
+          "ImageUri": {
+            "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AWS::StackName}-ehrBackendFunction:latest"
+          }
+        },
         "Timeout": 30,
         "MemorySize": 256,
         "Role": {
@@ -601,7 +603,13 @@
             }
           }
         },
-        "ReservedConcurrentExecutions": 2
+        "ReservedConcurrentExecutions": 2,
+        "PackageType": "Image"
+      },
+      "Metadata": {
+        "Dockerfile": "Dockerfile",
+        "DockerContext": ".",
+        "DockerTag": "latest"
       }
     },
     "FunctionUrlehrBackendFunction": {

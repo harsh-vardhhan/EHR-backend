@@ -9,6 +9,10 @@ export const ehrBackendFunction = api(
   {
     path: '/',
     ingress: 'function-url',
+    container: {
+      dockerfile: 'Dockerfile',
+      context: '.',
+    },
     timeout: '30s',
     concurrency: 2,
     cors: {
