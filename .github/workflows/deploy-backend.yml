@@ -74,6 +74,17 @@ jobs:
       - name: SAM Build
         run: sam build --no-cached --base-dir . -t .syncploy/template.json
 
+      - name: Recover stack if in rollback failed
+        run: |
+          STATUS=$(aws cloudformation describe-stacks --stack-name ehr-annotation-backend --query "Stacks[0].StackStatus" --output text 2>/dev/null || true)
+          echo "Current stack status: $STATUS"
+          if [ "$STATUS" = "UPDATE_ROLLBACK_FAILED" ]; then
+            echo "Stack is in UPDATE_ROLLBACK_FAILED. Calling continue-update-rollback..."
+            aws cloudformation continue-update-rollback --stack-name ehr-annotation-backend
+            aws cloudformation wait stack-rollback-complete --stack-name ehr-annotation-backend
+            echo "Stack recovered to UPDATE_ROLLBACK_COMPLETE."
+          fi
+
       - name: SAM Deploy
         run: |
           sam deploy --no-confirm-changeset \
