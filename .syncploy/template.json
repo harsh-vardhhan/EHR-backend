@@ -350,19 +350,11 @@
       }
     },
     "EhrAnnotationDLQ": {
-      "Type": "AWS::SQS::Queue",
-      "Properties": {
-        "QueueName": {
-          "Fn::Sub": "${AWS::StackName}-EhrAnnotationDLQ"
-        }
-      }
+      "Type": "AWS::SQS::Queue"
     },
     "EhrAnnotationQueue": {
       "Type": "AWS::SQS::Queue",
       "Properties": {
-        "QueueName": {
-          "Fn::Sub": "${AWS::StackName}-EhrAnnotationQueue"
-        },
         "VisibilityTimeout": 180,
         "RedrivePolicy": {
           "deadLetterTargetArn": {
@@ -633,10 +625,7 @@
       "Type": "AWS::Lambda::Url",
       "Properties": {
         "TargetFunctionArn": {
-          "Fn::GetAtt": [
-            "EhrBackendFunction",
-            "Arn"
-          ]
+          "Ref": "EhrBackendFunction"
         },
         "AuthType": "NONE",
         "Cors": {
