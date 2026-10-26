@@ -1,4 +1,5 @@
 import { ehrAnnotationQueue, ehrKillSwitchTopic, ehrTable } from "shared";
+import "../../shared/src/syncploy-ext";
 import { handler as workerHandler } from "./worker";
 import { handler as killSwitchHandler } from "./kill-switch";
 import { handler as auditConsumerHandler } from "./audit-consumer";
@@ -27,7 +28,7 @@ export const ehrAnnotationWorkerFunction = ehrAnnotationQueue.consumer(
       SAGEMAKER_ENDPOINT_NAME:
         process.env.SAGEMAKER_ENDPOINT_NAME || "gliner-relex-endpoint",
     },
-  } as any,
+  },
   async (_body, ctx) => {
     // Process single record and return failure result to preserve retry semantics
     return await workerHandler({ Records: [ctx.record] });
@@ -57,7 +58,7 @@ export const ehrKillSwitchFunction = ehrKillSwitchTopic.subscribe(
         resources: ["*"],
       },
     ],
-  } as any,
+  },
   async (_message, ctx) => {
     await killSwitchHandler(ctx.event);
   }
@@ -84,7 +85,7 @@ export const ehrAuditStreamFunction = ehrTable.stream(
         resources: ["*"],
       },
     ],
-  } as any,
+  },
   async (_record, ctx) => {
     return await auditConsumerHandler(ctx.event);
   }
@@ -111,7 +112,7 @@ export const ehrOmopPipelineFunction = ehrTable.stream(
         resources: ["*"],
       },
     ],
-  } as any,
+  },
   async (_record, ctx) => {
     await omopPipelineHandler(ctx.event);
   }

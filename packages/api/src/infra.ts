@@ -1,4 +1,5 @@
 import { api } from '@syncploy/sdk';
+import '../../shared/src/syncploy-ext';
 import { app } from './app';
 
 /**
@@ -40,7 +41,7 @@ export const ehrBackendFunction = api(
         ? { OMOPHUB_API_KEY: process.env.OMOPHUB_API_KEY }
         : {}),
     },
-  } as any,
+  },
   async (_req, ctx) => {
     return app.handle(ctx.request);
   },

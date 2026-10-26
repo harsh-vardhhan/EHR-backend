@@ -1,4 +1,5 @@
 import { Table, Bucket, Queue, Topic, Alarm, DeliveryStream, Auth } from "@syncploy/sdk";
+import "./syncploy-ext";
 
 // Cognito User Pool for Clinician Authentication (Clean 4 HIPAA Invariants)
 export const ehrAuth = new Auth("ehr", {
@@ -75,7 +76,7 @@ export const ehrAuditDeliveryStream = new DeliveryStream("AuditDeliveryStream", 
   bufferingInterval: "900s",
   bufferingSize: "5MB",
   compression: "GZIP",
-} as any);
+});
 
 // Kinesis Firehose Delivery Stream for OMOP CDM clinical data lake
 export const ehrOmopDeliveryStream = new DeliveryStream("OmopDeliveryStream", {
@@ -87,7 +88,7 @@ export const ehrOmopDeliveryStream = new DeliveryStream("OmopDeliveryStream", {
   bufferingInterval: "900s",
   bufferingSize: "5MB",
   compression: "GZIP",
-} as any);
+});
 
 // SQS Annotation Queue with Dead Letter Queue
 export const ehrAnnotationQueue = new Queue("ehr_annotation", {
@@ -104,7 +105,7 @@ documentsBucket.on("objectCreated", ehrAnnotationQueue, {
   prefix: "documents/",
   ruleLogicalId: "EhrAnnotationBusRule",
   queuePolicyLogicalId: "EhrAnnotationQueuePolicy",
-} as any);
+});
 
 // SNS Topic for DDoS Kill Switch alerts with email notification
 export const ehrKillSwitchTopic = new Topic("ehr_kill_switch", {
