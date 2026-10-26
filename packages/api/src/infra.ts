@@ -36,10 +36,12 @@ export const ehrBackendFunction = api(
       allowMethods: ['*'],
     },
     environment: {
-      ...(process.env.API_KEY ? { API_KEY: process.env.API_KEY } : {}),
-      ...(process.env.OMOPHUB_API_KEY
-        ? { OMOPHUB_API_KEY: process.env.OMOPHUB_API_KEY }
-        : {}),
+      PORT: '3000',
+      API_KEY:
+        process.env.API_KEY || 'A3zCOWmKgA3eQMvfev7unkY999oZw0X5bxBITz41',
+      OMOPHUB_API_KEY:
+        process.env.OMOPHUB_API_KEY ||
+        'oh_e4cb7f363bf50d166db0656e4acf48836a5b2d0df68b11c5da738d5d825e5f40',
     },
   },
   async (_req, ctx) => {
