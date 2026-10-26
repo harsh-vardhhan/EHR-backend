@@ -81,7 +81,7 @@ jobs:
           if [ "$STATUS" = "UPDATE_ROLLBACK_FAILED" ]; then
             echo "Stack is in UPDATE_ROLLBACK_FAILED. Calling continue-update-rollback..."
             aws cloudformation continue-update-rollback --stack-name ehr-annotation-backend
-            aws cloudformation wait stack-rollback-complete --stack-name ehr-annotation-backend
+            aws cloudformation wait stack-update-rollback-complete --stack-name ehr-annotation-backend
             echo "Stack recovered to UPDATE_ROLLBACK_COMPLETE."
           fi
 
