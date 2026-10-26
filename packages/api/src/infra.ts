@@ -1,4 +1,5 @@
 import { api } from '@syncploy/sdk';
+import '../../shared/src/syncploy-ext';
 import { app } from './app';
 
 /**
@@ -8,6 +9,8 @@ import { app } from './app';
 export const ehrBackendFunction = api(
   {
     logicalId: 'EhrBackendFunction',
+    roleLogicalId: 'EhrBackendFunctionRole',
+    permissionLogicalId: 'EhrBackendFunctionUrlPublicPermissions',
     path: '/',
     ingress: 'function-url',
     container: {

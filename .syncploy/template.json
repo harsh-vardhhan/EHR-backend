@@ -367,7 +367,7 @@
         }
       }
     },
-    "RoleEhrBackendFunction": {
+    "EhrBackendFunctionRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -496,7 +496,7 @@
         "MemorySize": 256,
         "Role": {
           "Fn::GetAtt": [
-            "RoleEhrBackendFunction",
+            "EhrBackendFunctionRole",
             "Arn"
           ]
         },
@@ -648,7 +648,7 @@
         }
       }
     },
-    "PermissionEhrBackendFunctionUrl": {
+    "EhrBackendFunctionUrlPublicPermissions": {
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "FunctionName": {
@@ -659,7 +659,7 @@
         "FunctionUrlAuthType": "NONE"
       }
     },
-    "RoleEhrAnnotationWorkerFunction": {
+    "EhrAnnotationWorkerFunctionRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -811,7 +811,7 @@
         "MemorySize": 256,
         "Role": {
           "Fn::GetAtt": [
-            "RoleEhrAnnotationWorkerFunction",
+            "EhrAnnotationWorkerFunctionRole",
             "Arn"
           ]
         },
@@ -946,7 +946,7 @@
         "ReservedConcurrentExecutions": 2
       }
     },
-    "EventSourceMappingEhrAnnotationWorkerFunction": {
+    "EhrAnnotationWorkerFunctionSQSEvent": {
       "Type": "AWS::Lambda::EventSourceMapping",
       "Properties": {
         "EventSourceArn": {
@@ -978,7 +978,7 @@
         ]
       }
     },
-    "RoleEhrAuditStreamFunction": {
+    "EhrAuditStreamFunctionRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -1072,7 +1072,7 @@
         "MemorySize": 128,
         "Role": {
           "Fn::GetAtt": [
-            "RoleEhrAuditStreamFunction",
+            "EhrAuditStreamFunctionRole",
             "Arn"
           ]
         },
@@ -1205,7 +1205,7 @@
         }
       }
     },
-    "EventSourceMappingEhrAuditStreamFunction": {
+    "EhrAuditStreamFunctionDynamoDBStream": {
       "Type": "AWS::Lambda::EventSourceMapping",
       "Properties": {
         "EventSourceArn": {
@@ -1225,7 +1225,7 @@
         "Enabled": false
       }
     },
-    "RoleEhrOmopPipelineFunction": {
+    "EhrOmopPipelineFunctionRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -1319,7 +1319,7 @@
         "MemorySize": 128,
         "Role": {
           "Fn::GetAtt": [
-            "RoleEhrOmopPipelineFunction",
+            "EhrOmopPipelineFunctionRole",
             "Arn"
           ]
         },
@@ -1452,7 +1452,7 @@
         }
       }
     },
-    "EventSourceMappingEhrOmopPipelineFunction": {
+    "EhrOmopPipelineFunctionDynamoDBStream": {
       "Type": "AWS::Lambda::EventSourceMapping",
       "Properties": {
         "EventSourceArn": {
@@ -1472,7 +1472,7 @@
         "Enabled": false
       }
     },
-    "RoleEhrLambdaKillSwitchFunction": {
+    "EhrLambdaKillSwitchFunctionRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -1528,7 +1528,7 @@
         "MemorySize": 128,
         "Role": {
           "Fn::GetAtt": [
-            "RoleEhrLambdaKillSwitchFunction",
+            "EhrLambdaKillSwitchFunctionRole",
             "Arn"
           ]
         },
@@ -1661,7 +1661,7 @@
         }
       }
     },
-    "PermissionEhrLambdaKillSwitchFunctionSns": {
+    "EhrLambdaKillSwitchFunctionSnsEventPermission": {
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "FunctionName": {
@@ -1674,7 +1674,7 @@
         }
       }
     },
-    "SubscriptionEhrLambdaKillSwitchFunction": {
+    "EhrLambdaKillSwitchFunctionSnsEvent": {
       "Type": "AWS::SNS::Subscription",
       "Properties": {
         "TopicArn": {
@@ -1752,7 +1752,7 @@
         ]
       }
     },
-    "EventRuledocumentsToehrannotation": {
+    "EhrAnnotationBusRule": {
       "Type": "AWS::Events::Rule",
       "Properties": {
         "Description": "Routes S3 events from documents to ehr_annotation",
@@ -1794,7 +1794,7 @@
         ]
       }
     },
-    "QueuePolicyehrannotationEventBridge": {
+    "EhrAnnotationQueuePolicy": {
       "Type": "AWS::SQS::QueuePolicy",
       "Properties": {
         "Queues": [
@@ -1821,7 +1821,7 @@
                 "ArnEquals": {
                   "aws:SourceArn": {
                     "Fn::GetAtt": [
-                      "EventRuledocumentsToehrannotation",
+                      "EhrAnnotationBusRule",
                       "Arn"
                     ]
                   }
@@ -1832,7 +1832,7 @@
         }
       }
     },
-    "FirehoseRoleEhrAuditDeliveryStream": {
+    "EhrFirehoseRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -1907,7 +1907,7 @@
           },
           "RoleARN": {
             "Fn::GetAtt": [
-              "FirehoseRoleEhrAuditDeliveryStream",
+              "EhrFirehoseRole",
               "Arn"
             ]
           },
@@ -1919,7 +1919,7 @@
         }
       }
     },
-    "FirehoseRoleEhrOmopDeliveryStream": {
+    "EhrOmopFirehoseRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -1994,7 +1994,7 @@
           },
           "RoleARN": {
             "Fn::GetAtt": [
-              "FirehoseRoleEhrOmopDeliveryStream",
+              "EhrOmopFirehoseRole",
               "Arn"
             ]
           },

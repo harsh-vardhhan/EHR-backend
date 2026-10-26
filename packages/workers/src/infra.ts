@@ -1,4 +1,5 @@
 import { ehrAnnotationQueue, ehrKillSwitchTopic, ehrTable } from "shared";
+import "../../shared/src/syncploy-ext";
 import { handler as workerHandler } from "./worker";
 import { handler as killSwitchHandler } from "./kill-switch";
 import { handler as auditConsumerHandler } from "./audit-consumer";
@@ -11,6 +12,8 @@ import { handler as omopPipelineHandler } from "./omop-pipeline";
 export const ehrAnnotationWorkerFunction = ehrAnnotationQueue.consumer(
   {
     logicalId: "EhrAnnotationWorkerFunction",
+    eventSourceMappingLogicalId: "EhrAnnotationWorkerFunctionSQSEvent",
+    roleLogicalId: "EhrAnnotationWorkerFunctionRole",
     batchSize: 5,
     timeout: "120s",
     concurrency: 2,
@@ -41,6 +44,9 @@ export const ehrAnnotationWorkerFunction = ehrAnnotationQueue.consumer(
 export const ehrKillSwitchFunction = ehrKillSwitchTopic.subscribe(
   {
     logicalId: "EhrLambdaKillSwitchFunction",
+    subscriptionLogicalId: "EhrLambdaKillSwitchFunctionSnsEvent",
+    permissionLogicalId: "EhrLambdaKillSwitchFunctionSnsEventPermission",
+    roleLogicalId: "EhrLambdaKillSwitchFunctionRole",
     timeout: "30s",
     memory: "128MB",
     policies: [
@@ -66,6 +72,8 @@ export const ehrKillSwitchFunction = ehrKillSwitchTopic.subscribe(
 export const ehrAuditStreamFunction = ehrTable.stream(
   {
     logicalId: "EhrAuditStreamFunction",
+    eventSourceMappingLogicalId: "EhrAuditStreamFunctionDynamoDBStream",
+    roleLogicalId: "EhrAuditStreamFunctionRole",
     batchSize: 100,
     startingPosition: "LATEST",
     enabled: false,
@@ -91,6 +99,8 @@ export const ehrAuditStreamFunction = ehrTable.stream(
 export const ehrOmopPipelineFunction = ehrTable.stream(
   {
     logicalId: "EhrOmopPipelineFunction",
+    eventSourceMappingLogicalId: "EhrOmopPipelineFunctionDynamoDBStream",
+    roleLogicalId: "EhrOmopPipelineFunctionRole",
     batchSize: 100,
     startingPosition: "LATEST",
     enabled: false,
