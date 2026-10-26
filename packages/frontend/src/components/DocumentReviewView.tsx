@@ -15,6 +15,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { ArrowLeft, BarChart3, AlertTriangle, Shield } from 'lucide-react';
 import styled from 'styled-components';
 import { AuditTrailPanel } from './AuditTrailPanel';
+import { ClinicianAuthBadge } from './ClinicianAuthBadge';
+import { useAuth } from '../context/useAuth';
+import { toast } from './ui/toast';
 
 interface Props {
   documentId: string;
@@ -79,7 +82,14 @@ export function DocumentReviewView({ documentId, onBack }: Props) {
     window.getSelection()?.removeAllRanges();
   };
 
+  const { isAuthenticated, openAuthModal } = useAuth();
+
   const handleUpdateAnnotation = (id: string, updates: Partial<Annotation>) => {
+    if (updates.status !== undefined && !isAuthenticated) {
+      toast.error('Clinician sign-in required to approve or decline clinical annotations.');
+      openAuthModal();
+      return;
+    }
     serverUpdateAnnotation({ id, updates });
   };
 
@@ -150,13 +160,16 @@ export function DocumentReviewView({ documentId, onBack }: Props) {
             <Button variant="outline" className="gap-2 h-9" onClick={onBack}>
               <ArrowLeft className="h-4 w-4" /> Back
             </Button>
-            <Button 
-              variant="default" 
-              className="gap-2 h-9"
-              onClick={() => setMobileDrawerVisible(true)}
-            >
-              <BarChart3 className="h-4 w-4" /> Metrics
-            </Button>
+            <div className="flex items-center gap-2">
+              <ClinicianAuthBadge />
+              <Button 
+                variant="default" 
+                className="gap-2 h-9"
+                onClick={() => setMobileDrawerVisible(true)}
+              >
+                <BarChart3 className="h-4 w-4" /> Metrics
+              </Button>
+            </div>
           </MobileHeader>
 
           <MainContent>
@@ -165,7 +178,7 @@ export function DocumentReviewView({ documentId, onBack }: Props) {
                 <ShieldIconActive />
                 <ControlText>HIPAA Data Protection Shield</ControlText>
               </ControlLeftGroup>
-
+              <ClinicianAuthBadge />
             </ControlBar>
 
             <DocumentViewer

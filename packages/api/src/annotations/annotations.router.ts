@@ -155,28 +155,29 @@ export const annotationsApp = new Elysia({ prefix: '/annotations' })
         throw new Error('startOffset must be less than or equal to endOffset');
       }
 
-      // Approving or declining clinical notes (status mutation) attributes clinician identity
+      // Approving or declining clinical notes (status mutation) requires authenticated clinician
       let clinician;
       if (body.status !== undefined) {
         const authHeader =
           request.headers.get('authorization') ||
           request.headers.get('Authorization');
-        if (authHeader) {
-          const authenticatedClinician = await verifyClinicianAuth(authHeader);
-          if (!authenticatedClinician) {
-            set.status = 401;
-            return {
-              error: 'Unauthorized',
-              message: 'Invalid or expired clinician authentication token',
-            };
-          }
-          clinician = authenticatedClinician;
-        } else {
-          // Graceful transition: allow API key authorized client with fallback attribution
-          clinician = {
-            username: 'api-key-clinician',
+        if (!authHeader) {
+          set.status = 401;
+          return {
+            error: 'Unauthorized',
+            message:
+              'Clinician authentication required to approve or decline annotations',
           };
         }
+        const authenticatedClinician = await verifyClinicianAuth(authHeader);
+        if (!authenticatedClinician) {
+          set.status = 401;
+          return {
+            error: 'Unauthorized',
+            message: 'Invalid or expired clinician authentication token',
+          };
+        }
+        clinician = authenticatedClinician;
       }
 
       const updatedAnnotation = await annotationsService.updateAnnotation(

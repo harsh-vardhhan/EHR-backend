@@ -8,6 +8,7 @@ import { FileText, Sparkles } from 'lucide-react';
 import { generateFhirResource } from '../lib/fhir';
 import { DocumentBrowseTab } from './DocumentBrowseTab';
 import { CohortQueryTab } from './CohortQueryTab';
+import { ClinicianAuthBadge } from './ClinicianAuthBadge';
 import type { Annotation, Document } from '../types';
 import {
   LoadingContainer,
@@ -82,21 +83,24 @@ export function DocumentListView({ onSelectDocument }: Props) {
   return (
     <StyledLayout>
       <StyledHeader>
-        <div className="flex justify-between items-center w-full h-full">
+        <div className="flex justify-between items-center w-full h-full gap-4">
           <div className="flex items-center gap-3">
             <StyledLogoIcon />
             <StyledBrandTitle>EHR Clinical Hub</StyledBrandTitle>
           </div>
-          <ViewTabs>
-            <TabButton $active={activeTab === 'browse'} onClick={() => setActiveTab('browse')}>
-              <FileText className="h-4 w-4" />
-              Browse Documents
-            </TabButton>
-            <TabButton $active={activeTab === 'cohort'} onClick={() => setActiveTab('cohort')}>
-              <Sparkles className="h-4 w-4" />
-              Cohort Queries
-            </TabButton>
-          </ViewTabs>
+          <div className="flex items-center gap-3">
+            <ViewTabs>
+              <TabButton $active={activeTab === 'browse'} onClick={() => setActiveTab('browse')}>
+                <FileText className="h-4 w-4" />
+                Browse Documents
+              </TabButton>
+              <TabButton $active={activeTab === 'cohort'} onClick={() => setActiveTab('cohort')}>
+                <Sparkles className="h-4 w-4" />
+                Cohort Queries
+              </TabButton>
+            </ViewTabs>
+            <ClinicianAuthBadge />
+          </div>
         </div>
       </StyledHeader>
 

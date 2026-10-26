@@ -241,72 +241,23 @@ describe('Cognito Clinician Authentication Guard', () => {
     });
   });
 
-  test('PATCH /annotations/:id allows unauthenticated status update during transition and attributes fallback clinician in audit log', async () => {
+  test('PATCH /annotations/:id rejects with 401 when status is updated without clinician Authorization header', async () => {
     process.env.API_KEY = testApiKey;
-    const origQuery = (AnnotationEntity as any).query;
-    const origPatch = (AnnotationEntity as any).patch;
-    const origAuditCreate = (AuditLogEntity as any).create;
-
-    let auditedDescription = '';
-    (AuditLogEntity as any).create = (payload: any) => ({
-      go: () => {
-        auditedDescription = payload.description || '';
-        return Promise.resolve({ data: payload });
-      },
-    });
-
-    const sampleAnnotation = {
-      documentId: 'doc-123',
-      annotationId: dummyUuid,
-      text: 'diabetes',
-      label: MEDICAL_ENTITIES.CONDITION,
-      startOffset: 0,
-      endOffset: 8,
-      source: 'human' as const,
-      status: 'suggested' as const,
-      createdAt: new Date().toISOString(),
-    };
-
-    (AnnotationEntity as any).query = {
-      bySk: () => ({
-        go: () =>
-          Promise.resolve({
-            data: [sampleAnnotation],
-          }),
+    const response = await app.handle(
+      new Request(`http://localhost/annotations/${dummyUuid}`, {
+        method: 'PATCH',
+        headers: defaultHeaders,
+        body: JSON.stringify({ status: 'accepted' }),
       }),
-    };
+    );
 
-    (AnnotationEntity as any).patch = () => ({
-      set: (updates: any) => ({
-        go: () =>
-          Promise.resolve({
-            data: {
-              ...sampleAnnotation,
-              ...updates,
-            },
-          }),
-      }),
+    expect(response.status).toBe(401);
+    const data = await response.json();
+    expect(data).toEqual({
+      error: 'Unauthorized',
+      message:
+        'Clinician authentication required to approve or decline annotations',
     });
-
-    try {
-      const response = await app.handle(
-        new Request(`http://localhost/annotations/${dummyUuid}`, {
-          method: 'PATCH',
-          headers: defaultHeaders,
-          body: JSON.stringify({ status: 'accepted' }),
-        }),
-      );
-
-      expect(response.status).toBe(200);
-      const data = await response.json();
-      expect(data.status).toBe('accepted');
-      expect(auditedDescription).toContain('api-key-clinician');
-      expect(auditedDescription).toContain('approved suggested');
-    } finally {
-      (AnnotationEntity as any).query = origQuery;
-      (AnnotationEntity as any).patch = origPatch;
-      (AuditLogEntity as any).create = origAuditCreate;
-    }
   });
 
   test('PATCH /annotations/:id accepts valid clinician Authorization token and records clinician audit log', async () => {
