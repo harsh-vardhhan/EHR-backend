@@ -1,4 +1,26 @@
-import { Table, Bucket, Queue, Topic, Alarm, DeliveryStream } from "@syncploy/sdk";
+import { Table, Bucket, Queue, Topic, Alarm, DeliveryStream, Auth } from "@syncploy/sdk";
+
+// Cognito User Pool for Clinician Authentication (Clean 4 HIPAA Invariants)
+export const ehrAuth = new Auth("ehr", {
+  logicalId: "EhrUserPool",
+  userPoolName: "${AWS::StackName}-UserPool",
+  adminOnly: true,
+  signInMethod: "email",
+  passwordPolicy: {
+    minLength: 12,
+  },
+  client: {
+    clientLogicalId: "EhrUserPoolClient",
+    clientName: "${AWS::StackName}-UserPoolClient",
+    generateSecret: false,
+    explicitAuthFlows: [
+      "ALLOW_USER_SRP_AUTH",
+      "ALLOW_REFRESH_TOKEN_AUTH",
+      "ALLOW_USER_PASSWORD_AUTH",
+    ],
+    preventUserExistenceErrors: true,
+  },
+});
 
 // Single-table DynamoDB for all EHR data
 export const ehrTable = new Table("ehr", {

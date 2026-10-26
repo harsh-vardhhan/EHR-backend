@@ -39,11 +39,20 @@ jobs:
           role-to-assume: arn:aws:iam::479650866443:role/github-actions-deploy-role
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Pre-pull Lambda Adapter with retry
+      - name: Ensure Lambda Adapter image is available
         run: |
-          for i in 1 2 3 4 5; do
-            docker pull public.ecr.aws/awsguru/aws-lambda-adapter:0.8.3 && break || sleep 5
-          done
+          aws ecr-public get-login-password --region us-east-1 2>/dev/null | docker login --username AWS --password-stdin public.ecr.aws 2>/dev/null || true
+          if ! docker pull public.ecr.aws/awsguru/aws-lambda-adapter:0.8.3; then
+            echo "Public ECR pull rate-limited; building local fallback image..."
+            mkdir -p /tmp/adapter
+            TOKEN=$(curl -s "https://public.ecr.aws/token/" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+            curl -s -L -H "Authorization: Bearer $TOKEN" \
+              https://public.ecr.aws/v2/awsguru/aws-lambda-adapter/blobs/sha256:791ef1b0d16f5fc7a194d852da9e87175617f034a299291f34b5bdf1cf6cab04 \
+              | tar -xz -C /tmp/adapter/
+            chmod +x /tmp/adapter/lambda-adapter
+            printf 'FROM scratch\nCOPY lambda-adapter /lambda-adapter\n' > /tmp/adapter/Dockerfile
+            docker build -t public.ecr.aws/awsguru/aws-lambda-adapter:0.8.3 /tmp/adapter
+          fi
 
       - name: Install esbuild globally
         run: npm install -g esbuild

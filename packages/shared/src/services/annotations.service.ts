@@ -235,6 +235,7 @@ export class AnnotationsService {
   async updateAnnotation(
     annotationId: string,
     updates: Partial<Annotation>,
+    clinician?: { sub?: string; email?: string; username?: string },
   ): Promise<Annotation> {
     // 1. Query the GSI to find the documentId for this annotationId
     const findResponse = await AnnotationEntity.query
@@ -292,18 +293,25 @@ export class AnnotationsService {
         throw new Error(`Annotation with id ${annotationId} not found`);
       }
 
+      const clinicianInfo =
+        clinician?.email || clinician?.username || clinician?.sub
+          ? ` (${clinician.email || clinician.username || clinician.sub})`
+          : '';
       let actionType = 'ANNOTATION_UPDATED';
-      let desc = `Clinician updated annotation "${response.data.text}"`;
+      let desc = `Clinician${clinicianInfo} updated annotation "${response.data.text}"`;
       if (updates.status === 'accepted') {
         actionType = 'ANNOTATION_ACCEPTED';
-        desc = `Clinician accepted suggested ${response.data.label}: "${response.data.text}"`;
+        desc = `Clinician${clinicianInfo} approved suggested ${response.data.label}: "${response.data.text}"`;
       } else if (updates.status === 'rejected') {
         actionType = 'ANNOTATION_REJECTED';
-        desc = `Clinician rejected suggested ${response.data.label}: "${response.data.text}"`;
-        await this.relationships.deleteRelationshipsByAnnotation(documentId, annotationId);
+        desc = `Clinician${clinicianInfo} declined suggested ${response.data.label}: "${response.data.text}"`;
+        await this.relationships.deleteRelationshipsByAnnotation(
+          documentId,
+          annotationId,
+        );
       } else if (updates.status === 'corrected') {
         actionType = 'ANNOTATION_CORRECTED';
-        desc = `Clinician corrected suggested ${response.data.label}: "${response.data.text}"`;
+        desc = `Clinician${clinicianInfo} corrected suggested ${response.data.label}: "${response.data.text}"`;
       }
 
       await this.audit.createAuditLog(documentId, actionType, desc);

@@ -2,12 +2,23 @@ import { treaty } from '@elysiajs/eden';
 import type { App } from 'api';
 import type { Document, Annotation, Relationship, AuditLog } from '../types';
 import type { MedicalEntityLabel } from '../constants/labels';
+import { getAuthToken } from '../lib/auth';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const API_KEY = import.meta.env.VITE_API_KEY || '';
 
 const client = treaty<App>(API_URL, {
-  headers: API_KEY ? { 'x-api-key': API_KEY } : {},
+  headers: () => {
+    const headers: Record<string, string> = {};
+    if (API_KEY) {
+      headers['x-api-key'] = API_KEY;
+    }
+    const token = getAuthToken();
+    if (token) {
+      headers['authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  },
 });
 
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -69,12 +80,17 @@ export const api = {
     id: string,
     updates: Partial<Annotation>,
   ): Promise<Annotation> => {
-    const { data, error } = await client.annotations({ id }).patch({
+    const { data, error, status } = await client.annotations({ id }).patch({
       ...updates,
       confidence: updates.confidence ?? undefined,
       assertion: updates.assertion ?? undefined,
       conceptCode: updates.conceptCode ?? undefined,
     });
+    if (status === 401) {
+      throw new Error(
+        'Clinician authentication required to approve or decline annotations. Please sign in.',
+      );
+    }
     if (error || !data) {
       throw new Error(getErrorMessage(error, 'Failed to update annotation'));
     }

@@ -607,6 +607,24 @@
             "OmopDeliveryStream": {
               "Ref": "EhrOmopDeliveryStream"
             },
+            "SYNCPLOY_AUTH_EHR_USER_POOL_ID": {
+              "Ref": "EhrUserPool"
+            },
+            "SYNCPLOY_AUTH_EHR_CLIENT_ID": {
+              "Ref": "EhrUserPoolClient"
+            },
+            "COGNITO_USER_POOL_ID": {
+              "Ref": "EhrUserPool"
+            },
+            "COGNITO_CLIENT_ID": {
+              "Ref": "EhrUserPoolClient"
+            },
+            "EHR_USER_POOL_ID": {
+              "Ref": "EhrUserPool"
+            },
+            "EHR_CLIENT_ID": {
+              "Ref": "EhrUserPoolClient"
+            },
             "API_KEY": "development-api-key"
           }
         },
@@ -911,6 +929,24 @@
             "OmopDeliveryStream": {
               "Ref": "EhrOmopDeliveryStream"
             },
+            "SYNCPLOY_AUTH_EHR_USER_POOL_ID": {
+              "Ref": "EhrUserPool"
+            },
+            "SYNCPLOY_AUTH_EHR_CLIENT_ID": {
+              "Ref": "EhrUserPoolClient"
+            },
+            "COGNITO_USER_POOL_ID": {
+              "Ref": "EhrUserPool"
+            },
+            "COGNITO_CLIENT_ID": {
+              "Ref": "EhrUserPoolClient"
+            },
+            "EHR_USER_POOL_ID": {
+              "Ref": "EhrUserPool"
+            },
+            "EHR_CLIENT_ID": {
+              "Ref": "EhrUserPoolClient"
+            },
             "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
               "Ref": "EhrBackendFunction"
             },
@@ -1157,6 +1193,24 @@
             "OmopDeliveryStream": {
               "Ref": "EhrOmopDeliveryStream"
             },
+            "SYNCPLOY_AUTH_EHR_USER_POOL_ID": {
+              "Ref": "EhrUserPool"
+            },
+            "SYNCPLOY_AUTH_EHR_CLIENT_ID": {
+              "Ref": "EhrUserPoolClient"
+            },
+            "COGNITO_USER_POOL_ID": {
+              "Ref": "EhrUserPool"
+            },
+            "COGNITO_CLIENT_ID": {
+              "Ref": "EhrUserPoolClient"
+            },
+            "EHR_USER_POOL_ID": {
+              "Ref": "EhrUserPool"
+            },
+            "EHR_CLIENT_ID": {
+              "Ref": "EhrUserPoolClient"
+            },
             "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
               "Ref": "EhrBackendFunction"
             },
@@ -1389,6 +1443,24 @@
             "OmopDeliveryStream": {
               "Ref": "EhrOmopDeliveryStream"
             },
+            "SYNCPLOY_AUTH_EHR_USER_POOL_ID": {
+              "Ref": "EhrUserPool"
+            },
+            "SYNCPLOY_AUTH_EHR_CLIENT_ID": {
+              "Ref": "EhrUserPoolClient"
+            },
+            "COGNITO_USER_POOL_ID": {
+              "Ref": "EhrUserPool"
+            },
+            "COGNITO_CLIENT_ID": {
+              "Ref": "EhrUserPoolClient"
+            },
+            "EHR_USER_POOL_ID": {
+              "Ref": "EhrUserPool"
+            },
+            "EHR_CLIENT_ID": {
+              "Ref": "EhrUserPoolClient"
+            },
             "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
               "Ref": "EhrBackendFunction"
             },
@@ -1582,6 +1654,24 @@
             },
             "OmopDeliveryStream": {
               "Ref": "EhrOmopDeliveryStream"
+            },
+            "SYNCPLOY_AUTH_EHR_USER_POOL_ID": {
+              "Ref": "EhrUserPool"
+            },
+            "SYNCPLOY_AUTH_EHR_CLIENT_ID": {
+              "Ref": "EhrUserPoolClient"
+            },
+            "COGNITO_USER_POOL_ID": {
+              "Ref": "EhrUserPool"
+            },
+            "COGNITO_CLIENT_ID": {
+              "Ref": "EhrUserPoolClient"
+            },
+            "EHR_USER_POOL_ID": {
+              "Ref": "EhrUserPool"
+            },
+            "EHR_CLIENT_ID": {
+              "Ref": "EhrUserPoolClient"
             },
             "SYNCPLOY_FUNCTION_EHRBACKENDFUNCTION": {
               "Ref": "EhrBackendFunction"
@@ -1948,6 +2038,50 @@
           "ErrorOutputPrefix": "omop-failures/"
         }
       }
+    },
+    "EhrUserPool": {
+      "Type": "AWS::Cognito::UserPool",
+      "Properties": {
+        "UserPoolName": {
+          "Fn::Sub": "${AWS::StackName}-UserPool"
+        },
+        "UsernameAttributes": [
+          "email"
+        ],
+        "AutoVerifiedAttributes": [
+          "email"
+        ],
+        "Policies": {
+          "PasswordPolicy": {
+            "MinimumLength": 12,
+            "RequireUppercase": true,
+            "RequireLowercase": true,
+            "RequireNumbers": true,
+            "RequireSymbols": true
+          }
+        },
+        "AdminCreateUserConfig": {
+          "AllowAdminCreateUserOnly": true
+        }
+      }
+    },
+    "EhrUserPoolClient": {
+      "Type": "AWS::Cognito::UserPoolClient",
+      "Properties": {
+        "ClientName": {
+          "Fn::Sub": "${AWS::StackName}-UserPoolClient"
+        },
+        "UserPoolId": {
+          "Ref": "EhrUserPool"
+        },
+        "GenerateSecret": false,
+        "ExplicitAuthFlows": [
+          "ALLOW_USER_SRP_AUTH",
+          "ALLOW_REFRESH_TOKEN_AUTH",
+          "ALLOW_USER_PASSWORD_AUTH"
+        ],
+        "PreventUserExistenceErrors": "ENABLED"
+      }
     }
   },
   "Outputs": {
@@ -1985,6 +2119,50 @@
       "Description": "Name of the OmopDeliveryStream Kinesis Firehose Delivery Stream",
       "Value": {
         "Ref": "EhrOmopDeliveryStream"
+      }
+    },
+    "EhrUserPoolId": {
+      "Description": "Cognito User Pool ID for ehr",
+      "Value": {
+        "Ref": "EhrUserPool"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-EhrUserPoolId"
+        }
+      }
+    },
+    "EhrUserPoolClientId": {
+      "Description": "Cognito User Pool Client ID for ehr",
+      "Value": {
+        "Ref": "EhrUserPoolClient"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-EhrUserPoolClientId"
+        }
+      }
+    },
+    "CognitoUserPoolId": {
+      "Description": "Cognito User Pool ID",
+      "Value": {
+        "Ref": "EhrUserPool"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-UserPoolId"
+        }
+      }
+    },
+    "CognitoUserPoolClientId": {
+      "Description": "Cognito User Pool Client ID",
+      "Value": {
+        "Ref": "EhrUserPoolClient"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-UserPoolClientId"
+        }
       }
     }
   }
