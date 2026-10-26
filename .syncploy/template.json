@@ -495,9 +495,6 @@
     "EhrBackendFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
-        "FunctionName": {
-          "Fn::Sub": "${AWS::StackName}-ehrBackendFunction"
-        },
         "Code": {
           "ImageUri": {
             "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AWS::StackName}-ehrbackendfunction:latest"
@@ -818,9 +815,6 @@
     "EhrAnnotationWorkerFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
-        "FunctionName": {
-          "Fn::Sub": "${AWS::StackName}-ehrAnnotationWorkerFunction"
-        },
         "Runtime": "nodejs20.x",
         "Handler": "index.handler",
         "Code": ".syncploy/build/ehrAnnotationWorkerFunction",
@@ -1082,9 +1076,6 @@
     "EhrAuditStreamFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
-        "FunctionName": {
-          "Fn::Sub": "${AWS::StackName}-ehrAuditStreamFunction"
-        },
         "Runtime": "nodejs20.x",
         "Handler": "index.handler",
         "Code": ".syncploy/build/ehrAuditStreamFunction",
@@ -1332,9 +1323,6 @@
     "EhrOmopPipelineFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
-        "FunctionName": {
-          "Fn::Sub": "${AWS::StackName}-ehrOmopPipelineFunction"
-        },
         "Runtime": "nodejs20.x",
         "Handler": "index.handler",
         "Code": ".syncploy/build/ehrOmopPipelineFunction",
@@ -1544,9 +1532,6 @@
     "EhrLambdaKillSwitchFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
-        "FunctionName": {
-          "Fn::Sub": "${AWS::StackName}-ehrKillSwitchFunction"
-        },
         "Runtime": "nodejs20.x",
         "Handler": "index.handler",
         "Code": ".syncploy/build/ehrKillSwitchFunction",
