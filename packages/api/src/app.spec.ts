@@ -1,4 +1,4 @@
-import { describe, expect, test, afterEach } from 'bun:test';
+import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
 import { app } from './app';
 import {
   validateEnv,
@@ -12,8 +12,16 @@ describe('App Security & Middleware', () => {
   const originalApiKey = process.env.API_KEY;
 
   afterEach(() => {
-    process.env.ORIGIN_VERIFY_SECRET = originalSecret;
-    process.env.API_KEY = originalApiKey;
+    if (originalSecret !== undefined) {
+      process.env.ORIGIN_VERIFY_SECRET = originalSecret;
+    } else {
+      delete process.env.ORIGIN_VERIFY_SECRET;
+    }
+    if (originalApiKey !== undefined) {
+      process.env.API_KEY = originalApiKey;
+    } else {
+      delete process.env.API_KEY;
+    }
   });
 
   test('GET / healthcheck returns status ok', async () => {
@@ -192,8 +200,28 @@ describe('Cognito Clinician Authentication Guard', () => {
     'x-api-key': testApiKey,
   };
 
-  test('PATCH /annotations/:id to approve (status: accepted) rejects without Authorization header with 401', async () => {
+  const originalApiKey = process.env.API_KEY;
+  const originalSecret = process.env.ORIGIN_VERIFY_SECRET;
+
+  beforeEach(() => {
+    delete process.env.ORIGIN_VERIFY_SECRET;
     process.env.API_KEY = testApiKey;
+  });
+
+  afterEach(() => {
+    if (originalApiKey !== undefined) {
+      process.env.API_KEY = originalApiKey;
+    } else {
+      delete process.env.API_KEY;
+    }
+    if (originalSecret !== undefined) {
+      process.env.ORIGIN_VERIFY_SECRET = originalSecret;
+    } else {
+      delete process.env.ORIGIN_VERIFY_SECRET;
+    }
+  });
+
+  test('PATCH /annotations/:id to approve (status: accepted) rejects without Authorization header with 401', async () => {
     const response = await app.handle(
       new Request(`http://localhost/annotations/${dummyUuid}`, {
         method: 'PATCH',
