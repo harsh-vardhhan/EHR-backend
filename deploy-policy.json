@@ -255,7 +255,7 @@
                 "ecr:UntagResource"
             ],
             "Resource": [
-                "arn:aws:ecr:ap-south-1:<AWS_ACCOUNT_ID>:repository/ehr-annotation-backend*"
+                "arn:aws:ecr:ap-south-1:<AWS_ACCOUNT_ID>:repository/*"
             ]
         },
         {
