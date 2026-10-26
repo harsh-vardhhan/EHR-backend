@@ -4,6 +4,8 @@ import { ThemeProvider } from 'styled-components';
 import styled from 'styled-components';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toaster } from './components/ui/toast';
+import { AuthProvider } from './context/AuthContext';
+import { ClinicianLoginDialog } from './components/ClinicianLoginDialog';
 import './index.css';
 
 // Lazy load components for code splitting
@@ -82,21 +84,24 @@ export default function App() {
   }, [isDarkMode]);
 
   return (
-    <StyledThemeProvider isDarkMode={isDarkMode}>
-      <div className={isDarkMode ? 'dark-mode dark min-h-screen bg-background text-foreground' : 'light-mode min-h-screen bg-background text-foreground'}>
-        <ErrorBoundary>
-          <BrowserRouter>
-            <Suspense fallback={<LoadingFallback isDarkMode={isDarkMode} />}>
-              <Routes>
-                <Route path="/" element={<DocumentListWrapper />} />
-                <Route path="/document/:id" element={<DocumentReviewWrapper />} />
-              </Routes>
-            </Suspense>
-          </BrowserRouter>
-        </ErrorBoundary>
-        <Toaster />
-      </div>
-    </StyledThemeProvider>
+    <AuthProvider>
+      <StyledThemeProvider isDarkMode={isDarkMode}>
+        <div className={isDarkMode ? 'dark-mode dark min-h-screen bg-background text-foreground' : 'light-mode min-h-screen bg-background text-foreground'}>
+          <ErrorBoundary>
+            <BrowserRouter>
+              <Suspense fallback={<LoadingFallback isDarkMode={isDarkMode} />}>
+                <Routes>
+                  <Route path="/" element={<DocumentListWrapper />} />
+                  <Route path="/document/:id" element={<DocumentReviewWrapper />} />
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+          </ErrorBoundary>
+          <ClinicianLoginDialog />
+          <Toaster />
+        </div>
+      </StyledThemeProvider>
+    </AuthProvider>
   );
 }
 
