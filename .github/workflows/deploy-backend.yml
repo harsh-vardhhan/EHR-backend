@@ -50,10 +50,7 @@ jobs:
               https://public.ecr.aws/v2/awsguru/aws-lambda-adapter/blobs/sha256:791ef1b0d16f5fc7a194d852da9e87175617f034a299291f34b5bdf1cf6cab04 \
               | tar -xz -C /tmp/adapter/
             chmod +x /tmp/adapter/lambda-adapter
-            cat << 'EOF' > /tmp/adapter/Dockerfile
-FROM scratch
-COPY lambda-adapter /lambda-adapter
-EOF
+            printf 'FROM scratch\nCOPY lambda-adapter /lambda-adapter\n' > /tmp/adapter/Dockerfile
             docker build -t public.ecr.aws/awsguru/aws-lambda-adapter:0.8.3 /tmp/adapter
           fi
 
