@@ -20,6 +20,7 @@
             ],
             "Resource": [
                 "arn:aws:cloudformation:ap-south-1:<AWS_ACCOUNT_ID>:stack/ehr-annotation-backend*",
+                "arn:aws:cloudformation:ap-south-1:<AWS_ACCOUNT_ID>:stack/aws-sam-cli-managed-default*",
                 "arn:aws:cloudformation:*:aws:transform/*"
             ]
         },
@@ -143,7 +144,8 @@
                 "sns:UntagResource"
             ],
             "Resource": [
-                "arn:aws:sns:ap-south-1:<AWS_ACCOUNT_ID>:ehr-annotation-backend-*"
+                "arn:aws:sns:ap-south-1:<AWS_ACCOUNT_ID>:ehr-annotation-backend-*",
+                "arn:aws:sns:ap-south-1:<AWS_ACCOUNT_ID>:EhrKillSwitchTopic-*"
             ]
         },
         {

@@ -112,7 +112,7 @@ export const ehrKillSwitchTopic = new Topic("ehr_kill_switch", {
   subscriptions: [
     {
       protocol: "email",
-      endpoint: process.env.NOTIFICATION_EMAIL || "alert-notifications@example.com",
+      endpoint: process.env.NOTIFICATION_EMAIL || "harsh.vardhan.611@gmail.com",
     },
   ],
 });
