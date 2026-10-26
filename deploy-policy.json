@@ -41,9 +41,11 @@
                 "s3:DeleteBucketPolicy"
             ],
             "Resource": [
+                "arn:aws:s3:::ehr-demo-docs-bucket",
                 "arn:aws:s3:::ehr-annotation-backend-documents",
                 "arn:aws:s3:::ehr-annotation-backend-audit-logs-<AWS_ACCOUNT_ID>",
-                "arn:aws:s3:::ehr-annotation-backend-*"
+                "arn:aws:s3:::ehr-annotation-backend-*",
+                "arn:aws:s3:::aws-sam-cli-managed-default-*"
             ]
         },
         {
@@ -55,9 +57,11 @@
                 "s3:DeleteObject"
             ],
             "Resource": [
+                "arn:aws:s3:::ehr-demo-docs-bucket/*",
                 "arn:aws:s3:::ehr-annotation-backend-documents/*",
                 "arn:aws:s3:::ehr-annotation-backend-audit-logs-<AWS_ACCOUNT_ID>/*",
-                "arn:aws:s3:::ehr-annotation-backend-*/*"
+                "arn:aws:s3:::ehr-annotation-backend-*/*",
+                "arn:aws:s3:::aws-sam-cli-managed-default-*/*"
             ]
         },
         {
@@ -74,8 +78,10 @@
                 "dynamodb:UpdateTimeToLive"
             ],
             "Resource": [
-                "arn:aws:dynamodb:ap-south-1:<AWS_ACCOUNT_ID>:table/ehr-annotation-backend-ehr",
-                "arn:aws:dynamodb:ap-south-1:<AWS_ACCOUNT_ID>:table/ehr-annotation-backend-ehr/index/*"
+                "arn:aws:dynamodb:ap-south-1:<AWS_ACCOUNT_ID>:table/ehr-table",
+                "arn:aws:dynamodb:ap-south-1:<AWS_ACCOUNT_ID>:table/ehr-table/index/*",
+                "arn:aws:dynamodb:ap-south-1:<AWS_ACCOUNT_ID>:table/ehr-annotation-backend-*",
+                "arn:aws:dynamodb:ap-south-1:<AWS_ACCOUNT_ID>:table/ehr-annotation-backend-*/index/*"
             ]
         },
         {

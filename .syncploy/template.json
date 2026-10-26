@@ -235,9 +235,7 @@
       "DeletionPolicy": "Retain",
       "UpdateReplacePolicy": "Retain",
       "Properties": {
-        "TableName": {
-          "Fn::Sub": "${AWS::StackName}-ehr"
-        },
+        "TableName": "ehr-table",
         "BillingMode": "PAY_PER_REQUEST",
         "AttributeDefinitions": [
           {
@@ -311,9 +309,7 @@
       "DeletionPolicy": "Retain",
       "UpdateReplacePolicy": "Retain",
       "Properties": {
-        "BucketName": {
-          "Fn::Sub": "${AWS::StackName}-documents"
-        },
+        "BucketName": "ehr-demo-docs-bucket",
         "NotificationConfiguration": {
           "EventBridgeConfiguration": {
             "EventBridgeEnabled": true
@@ -357,7 +353,7 @@
       "Type": "AWS::SQS::Queue",
       "Properties": {
         "QueueName": {
-          "Fn::Sub": "${AWS::StackName}-ehr-annotation-dlq"
+          "Fn::Sub": "${AWS::StackName}-EhrAnnotationDLQ"
         }
       }
     },
@@ -365,7 +361,7 @@
       "Type": "AWS::SQS::Queue",
       "Properties": {
         "QueueName": {
-          "Fn::Sub": "${AWS::StackName}-ehr-annotation"
+          "Fn::Sub": "${AWS::StackName}-EhrAnnotationQueue"
         },
         "VisibilityTimeout": 180,
         "RedrivePolicy": {
@@ -990,7 +986,7 @@
       "Type": "AWS::SNS::Topic",
       "Properties": {
         "TopicName": {
-          "Fn::Sub": "${AWS::StackName}-ehr-kill-switch"
+          "Fn::Sub": "EhrKillSwitchTopic-${AWS::StackName}"
         },
         "Subscription": [
           {

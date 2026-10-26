@@ -25,6 +25,8 @@ export const ehrAuth = new Auth("ehr", {
 // Single-table DynamoDB for all EHR data
 export const ehrTable = new Table("ehr", {
   logicalId: "EhrTable",
+  tableName: process.env.EHR_TABLE_NAME || "ehr-table",
+  deletionPolicy: "Retain",
   partitionKey: { name: "PK", type: "string" },
   sortKey: { name: "SK", type: "string" },
   billingMode: "PAY_PER_REQUEST",
@@ -46,6 +48,8 @@ export const ehrTable = new Table("ehr", {
 // S3 Bucket for medical documents with EventBridge notification enabled
 export const documentsBucket = new Bucket("documents", {
   logicalId: "DocumentsBucket",
+  bucketName: process.env.DOCUMENTS_BUCKET_NAME || "ehr-demo-docs-bucket",
+  deletionPolicy: "Retain",
   eventBridge: true,
   publicAccessBlock: true,
 });
@@ -53,6 +57,7 @@ export const documentsBucket = new Bucket("documents", {
 // S3 Object-Locked Bucket for HIPAA compliance audit trail (account-scoped for global uniqueness)
 export const ehrAuditLogsBucket = new Bucket("audit-logs", {
   logicalId: "EhrAuditLogsBucket",
+  deletionPolicy: "Retain",
   objectLock: {
     mode: "COMPLIANCE",
     days: 1,
@@ -84,10 +89,12 @@ export const ehrOmopDeliveryStream = new DeliveryStream("OmopDeliveryStream", {
 // SQS Annotation Queue with Dead Letter Queue
 export const ehrAnnotationQueue = new Queue("ehr-annotation", {
   logicalId: "EhrAnnotationQueue",
+  queueName: "${AWS::StackName}-EhrAnnotationQueue",
   visibilityTimeout: "180s",
   deadLetterQueue: {
     maxReceiveCount: 3,
     logicalId: "EhrAnnotationDLQ",
+    queueName: "${AWS::StackName}-EhrAnnotationDLQ",
   },
 });
 
@@ -99,6 +106,7 @@ documentsBucket.on("objectCreated", ehrAnnotationQueue, {
 // SNS Topic for DDoS Kill Switch alerts with email notification
 export const ehrKillSwitchTopic = new Topic("ehr-kill-switch", {
   logicalId: "EhrKillSwitchTopic",
+  topicName: "EhrKillSwitchTopic-${AWS::StackName}",
   fifo: false,
   subscriptions: [
     {
