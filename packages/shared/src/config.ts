@@ -30,6 +30,8 @@ export const EnvSchema = t.Object(
     LOCAL_ML_URL: t.Optional(t.String()),
     SAGEMAKER_ENDPOINT_NAME: t.Optional(t.String()),
     ALLOWED_ORIGINS: t.Optional(t.String()),
+    COGNITO_USER_POOL_ID: t.Optional(t.String()),
+    COGNITO_CLIENT_ID: t.Optional(t.String()),
   },
   { additionalProperties: true },
 );
@@ -162,6 +164,14 @@ export const config = {
 
   get localMlUrl(): string | undefined {
     return process.env.LOCAL_ML_URL;
+  },
+
+  get cognitoUserPoolId(): string | undefined {
+    return process.env.COGNITO_USER_POOL_ID;
+  },
+
+  get cognitoClientId(): string | undefined {
+    return process.env.COGNITO_CLIENT_ID;
   },
 
   get sagemakerEndpointName(): string {

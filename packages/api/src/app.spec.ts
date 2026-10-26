@@ -1,14 +1,27 @@
-import { describe, expect, test, afterEach } from 'bun:test';
+import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
 import { app } from './app';
-import { validateEnv } from 'shared';
+import {
+  validateEnv,
+  AnnotationEntity,
+  AuditLogEntity,
+  MEDICAL_ENTITIES,
+} from 'shared';
 
 describe('App Security & Middleware', () => {
   const originalSecret = process.env.ORIGIN_VERIFY_SECRET;
   const originalApiKey = process.env.API_KEY;
 
   afterEach(() => {
-    process.env.ORIGIN_VERIFY_SECRET = originalSecret;
-    process.env.API_KEY = originalApiKey;
+    if (originalSecret !== undefined) {
+      process.env.ORIGIN_VERIFY_SECRET = originalSecret;
+    } else {
+      delete process.env.ORIGIN_VERIFY_SECRET;
+    }
+    if (originalApiKey !== undefined) {
+      process.env.API_KEY = originalApiKey;
+    } else {
+      delete process.env.API_KEY;
+    }
   });
 
   test('GET / healthcheck returns status ok', async () => {
@@ -176,5 +189,196 @@ describe('Boot-Time Environment Variable Validation (TypeBox)', () => {
     });
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
+  });
+});
+
+describe('Cognito Clinician Authentication Guard', () => {
+  const dummyUuid = '123e4567-e89b-12d3-a456-426614174000';
+  const testApiKey = 'valid_test_api_key_456';
+  const defaultHeaders = {
+    'Content-Type': 'application/json',
+    'x-api-key': testApiKey,
+  };
+
+  const originalApiKey = process.env.API_KEY;
+  const originalSecret = process.env.ORIGIN_VERIFY_SECRET;
+
+  beforeEach(() => {
+    delete process.env.ORIGIN_VERIFY_SECRET;
+    process.env.API_KEY = testApiKey;
+  });
+
+  afterEach(() => {
+    if (originalApiKey !== undefined) {
+      process.env.API_KEY = originalApiKey;
+    } else {
+      delete process.env.API_KEY;
+    }
+    if (originalSecret !== undefined) {
+      process.env.ORIGIN_VERIFY_SECRET = originalSecret;
+    } else {
+      delete process.env.ORIGIN_VERIFY_SECRET;
+    }
+  });
+
+  test('PATCH /annotations/:id rejects with 401 when Authorization token is invalid', async () => {
+    process.env.API_KEY = testApiKey;
+    const response = await app.handle(
+      new Request(`http://localhost/annotations/${dummyUuid}`, {
+        method: 'PATCH',
+        headers: {
+          ...defaultHeaders,
+          Authorization: 'Bearer invalid-token',
+        },
+        body: JSON.stringify({ status: 'accepted' }),
+      }),
+    );
+    expect(response.status).toBe(401);
+    const data = await response.json();
+    expect(data).toEqual({
+      error: 'Unauthorized',
+      message: 'Invalid or expired clinician authentication token',
+    });
+  });
+
+  test('PATCH /annotations/:id allows unauthenticated status update during transition and attributes fallback clinician in audit log', async () => {
+    process.env.API_KEY = testApiKey;
+    const origQuery = (AnnotationEntity as any).query;
+    const origPatch = (AnnotationEntity as any).patch;
+    const origAuditCreate = (AuditLogEntity as any).create;
+
+    let auditedDescription = '';
+    (AuditLogEntity as any).create = (payload: any) => ({
+      go: () => {
+        auditedDescription = payload.description || '';
+        return Promise.resolve({ data: payload });
+      },
+    });
+
+    const sampleAnnotation = {
+      documentId: 'doc-123',
+      annotationId: dummyUuid,
+      text: 'diabetes',
+      label: MEDICAL_ENTITIES.CONDITION,
+      startOffset: 0,
+      endOffset: 8,
+      source: 'human' as const,
+      status: 'suggested' as const,
+      createdAt: new Date().toISOString(),
+    };
+
+    (AnnotationEntity as any).query = {
+      bySk: () => ({
+        go: () =>
+          Promise.resolve({
+            data: [sampleAnnotation],
+          }),
+      }),
+    };
+
+    (AnnotationEntity as any).patch = () => ({
+      set: (updates: any) => ({
+        go: () =>
+          Promise.resolve({
+            data: {
+              ...sampleAnnotation,
+              ...updates,
+            },
+          }),
+      }),
+    });
+
+    try {
+      const response = await app.handle(
+        new Request(`http://localhost/annotations/${dummyUuid}`, {
+          method: 'PATCH',
+          headers: defaultHeaders,
+          body: JSON.stringify({ status: 'accepted' }),
+        }),
+      );
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.status).toBe('accepted');
+      expect(auditedDescription).toContain('api-key-clinician');
+      expect(auditedDescription).toContain('approved suggested');
+    } finally {
+      (AnnotationEntity as any).query = origQuery;
+      (AnnotationEntity as any).patch = origPatch;
+      (AuditLogEntity as any).create = origAuditCreate;
+    }
+  });
+
+  test('PATCH /annotations/:id accepts valid clinician Authorization token and records clinician audit log', async () => {
+    process.env.API_KEY = testApiKey;
+    const origQuery = (AnnotationEntity as any).query;
+    const origPatch = (AnnotationEntity as any).patch;
+    const origAuditCreate = (AuditLogEntity as any).create;
+
+    let auditedDescription = '';
+    (AuditLogEntity as any).create = (payload: any) => ({
+      go: () => {
+        auditedDescription = payload.description || '';
+        return Promise.resolve({ data: payload });
+      },
+    });
+
+    const sampleAnnotation = {
+      documentId: 'doc-123',
+      annotationId: dummyUuid,
+      text: 'diabetes',
+      label: MEDICAL_ENTITIES.CONDITION,
+      startOffset: 0,
+      endOffset: 8,
+      source: 'human' as const,
+      status: 'suggested' as const,
+      createdAt: new Date().toISOString(),
+    };
+
+    (AnnotationEntity as any).query = {
+      bySk: () => ({
+        go: () =>
+          Promise.resolve({
+            data: [sampleAnnotation],
+          }),
+      }),
+    };
+
+    (AnnotationEntity as any).patch = () => ({
+      set: (updates: any) => ({
+        go: () =>
+          Promise.resolve({
+            data: {
+              ...sampleAnnotation,
+              ...updates,
+            },
+          }),
+      }),
+    });
+
+    try {
+      const response = await app.handle(
+        new Request(`http://localhost/annotations/${dummyUuid}`, {
+          method: 'PATCH',
+          headers: {
+            ...defaultHeaders,
+            Authorization: 'Bearer valid-clinician-token',
+          },
+          body: JSON.stringify({ status: 'accepted' }),
+        }),
+      );
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.status).toBe('accepted');
+      expect(auditedDescription).toContain('dr.smith@hospital.org');
+      expect(auditedDescription).toContain('approved suggested');
+    } finally {
+      (AnnotationEntity as any).query = origQuery;
+      (AnnotationEntity as any).patch = origPatch;
+      if (origAuditCreate) {
+        (AuditLogEntity as any).create = origAuditCreate;
+      }
+    }
   });
 });

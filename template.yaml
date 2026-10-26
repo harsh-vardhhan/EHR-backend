@@ -80,6 +80,8 @@ Resources:
           DOCUMENTS_BUCKET_NAME: !Ref DocumentsBucketName
           API_KEY: !Ref EhrApiKeyVal
           OMOPHUB_API_KEY: !Ref OmopHubApiKey
+          COGNITO_USER_POOL_ID: !Ref EhrUserPool
+          COGNITO_CLIENT_ID: !Ref EhrUserPoolClient
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref DocumentsBucketName
@@ -232,6 +234,35 @@ Resources:
             ProjectionType: ALL
       BillingMode: PAY_PER_REQUEST
 
+  EhrUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "${AWS::StackName}-UserPool"
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+
+  EhrUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub "${AWS::StackName}-UserPoolClient"
+      UserPoolId: !Ref EhrUserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
+      PreventUserExistenceErrors: ENABLED
 
   DocumentsBucket:
     Type: AWS::S3::Bucket
@@ -559,6 +590,14 @@ Outputs:
   ApiEndpoint:
     Description: "Lambda Function URL"
     Value: !GetAtt EhrBackendFunctionUrl.FunctionUrl
+
+  CognitoUserPoolId:
+    Description: "Cognito User Pool ID"
+    Value: !Ref EhrUserPool
+
+  CognitoUserPoolClientId:
+    Description: "Cognito User Pool Client ID"
+    Value: !Ref EhrUserPoolClient
 
   EhrAnnotationQueueUrl:
     Description: "URL of the Annotation SQS Queue"
