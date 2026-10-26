@@ -22,6 +22,7 @@
         "@aws-sdk/lib-dynamodb": "^3.1045.0",
         "@elysiajs/cors": "^1.1.1",
         "@sinclair/typebox": "^0.34.52",
+        "aws-jwt-verify": "^5.2.1",
         "aws-lambda": "^1.0.7",
         "dotenv": "^17.4.2",
         "electrodb": "^3.9.1",
@@ -590,6 +591,8 @@
     "autoprefixer": ["autoprefixer@10.5.4", "", { "dependencies": { "browserslist": "^4.28.6", "caniuse-lite": "^1.0.30001806", "fraction.js": "^5.3.4", "picocolors": "^1.1.1", "postcss-value-parser": "^4.2.0" }, "peerDependencies": { "postcss": "^8.1.0" }, "bin": { "autoprefixer": "bin/autoprefixer" } }, "sha512-MaU0U/za7N3r6brxD4YB/l4NSrFzLPlANv6wEuQVaIPlD3L4W9rFcQPbL/EilY9BHhHvhfcz3gInDLrEtWT4EA=="],
 
     "available-typed-arrays": ["available-typed-arrays@1.0.7", "", { "dependencies": { "possible-typed-array-names": "^1.0.0" } }, "sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ=="],
+
+    "aws-jwt-verify": ["aws-jwt-verify@5.2.1", "", {}, "sha512-J+buA4M+qvQDk58WXFBLkDodkEX3DDL1ac5XFQPW3opxAsaLXYu5hYnlSHsaBRDBUXBAn695kE/cw/mdyJKwJg=="],
 
     "aws-lambda": ["aws-lambda@1.0.7", "", { "dependencies": { "aws-sdk": "^2.814.0", "commander": "^3.0.2", "js-yaml": "^3.14.1", "watchpack": "^2.0.0-beta.10" }, "bin": { "lambda": "bin/lambda" } }, "sha512-9GNFMRrEMG5y3Jvv+V4azWvc+qNWdWLTjDdhf/zgMlz8haaaLWv0xeAIWxz9PuWUBawsVxy0zZotjCdR3Xq+2w=="],
 
