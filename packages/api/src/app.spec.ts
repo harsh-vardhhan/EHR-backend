@@ -88,6 +88,7 @@ describe('App Security & Middleware', () => {
   });
 
   test('rejects request with 401 when API key is missing or invalid on protected route', async () => {
+    delete process.env.ORIGIN_VERIFY_SECRET;
     process.env.API_KEY = 'test_api_key_123';
 
     const response = await app.handle(
