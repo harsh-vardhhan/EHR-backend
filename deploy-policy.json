@@ -192,6 +192,9 @@
                 "iam:DeleteRolePolicy",
                 "iam:AttachRolePolicy",
                 "iam:DetachRolePolicy",
+                "iam:UpdateAssumeRolePolicy",
+                "iam:UpdateRole",
+                "iam:UpdateRoleDescription",
                 "iam:TagRole",
                 "iam:UntagRole",
                 "iam:PassRole"
