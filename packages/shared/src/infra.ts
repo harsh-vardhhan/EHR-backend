@@ -90,12 +90,10 @@ export const ehrOmopDeliveryStream = new DeliveryStream("OmopDeliveryStream", {
 // SQS Annotation Queue with Dead Letter Queue
 export const ehrAnnotationQueue = new Queue("ehr_annotation", {
   logicalId: "EhrAnnotationQueue",
-  queueName: "${AWS::StackName}-EhrAnnotationQueue",
   visibilityTimeout: "180s",
   deadLetterQueue: {
     maxReceiveCount: 3,
     logicalId: "EhrAnnotationDLQ",
-    queueName: "${AWS::StackName}-EhrAnnotationDLQ",
   },
 });
 
