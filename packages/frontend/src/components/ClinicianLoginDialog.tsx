@@ -11,7 +11,7 @@ import {
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { toast } from './ui/toast';
-import { ShieldCheck, Lock, AlertCircle, UserCheck } from 'lucide-react';
+import { ShieldCheck, Lock, AlertCircle } from 'lucide-react';
 
 export function ClinicianLoginDialog() {
   const {
@@ -19,7 +19,6 @@ export function ClinicianLoginDialog() {
     closeAuthModal,
     login,
     completeNewPassword,
-    loginAsDemo,
     isLoading,
     authError,
     newPasswordRequired,
@@ -46,7 +45,7 @@ export function ClinicianLoginDialog() {
       }
       try {
         await completeNewPassword(newPassword);
-        toast.success('Permanent password set successfully! Logged in as clinician.');
+        toast.success('Permanent password set successfully! Signed in.');
       } catch (err: unknown) {
         setLocalError(err instanceof Error ? err.message : 'Failed to set password');
       }
@@ -60,15 +59,10 @@ export function ClinicianLoginDialog() {
 
     try {
       await login(email, password);
-      toast.success(`Welcome, authenticated clinician ${email}`);
+      toast.success(`Welcome, signed in as ${email}`);
     } catch (err: unknown) {
       setLocalError(err instanceof Error ? err.message : 'Invalid credentials');
     }
-  };
-
-  const handleDemoLogin = () => {
-    loginAsDemo();
-    toast.success('Signed in as Clinician (Demo: dr.smith@hospital.org)');
   };
 
   return (
@@ -79,12 +73,12 @@ export function ClinicianLoginDialog() {
             <div className="p-2 rounded-lg bg-primary/10 text-primary">
               <ShieldCheck className="h-5 w-5" />
             </div>
-            <DialogTitle>Clinician Authentication</DialogTitle>
+            <DialogTitle>Sign in</DialogTitle>
           </div>
           <DialogDescription>
             {newPasswordRequired
-              ? 'First sign-in detected. Please establish your permanent clinician password.'
-              : 'Sign in to verify your clinician identity and approve or decline clinical note annotations.'}
+              ? 'First sign-in detected. Please establish your permanent password.'
+              : 'Enter your clinician email and password to sign in.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -167,32 +161,15 @@ export function ClinicianLoginDialog() {
               {isLoading ? (
                 <>
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
-                  Authenticating...
+                  Signing in...
                 </>
               ) : (
                 <>
                   <Lock className="h-4 w-4" />
-                  {newPasswordRequired ? 'Set Password & Sign In' : 'Sign In with AWS Cognito'}
+                  Sign in
                 </>
               )}
             </Button>
-
-            {!newPasswordRequired && (
-              <div className="pt-2 border-t flex flex-col gap-2 w-full">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-muted-foreground">Local development & review:</span>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleDemoLogin}
-                  className="w-full gap-2 text-xs h-8 border-dashed"
-                >
-                  <UserCheck className="h-3.5 w-3.5 text-emerald-500" />
-                  Quick Demo Clinician (dr.smith@hospital.org)
-                </Button>
-              </div>
-            )}
           </DialogFooter>
         </form>
       </DialogContent>

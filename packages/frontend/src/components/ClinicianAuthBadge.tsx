@@ -36,7 +36,7 @@ export function ClinicianAuthBadge() {
       className="h-8 gap-1.5 text-xs font-semibold border-primary/40 text-primary hover:bg-primary/10 transition-colors"
     >
       <Lock className="h-3.5 w-3.5" />
-      <span>Sign In (Clinician)</span>
+      <span>Sign in</span>
     </Button>
   );
 }

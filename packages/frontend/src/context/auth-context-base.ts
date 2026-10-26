@@ -13,7 +13,6 @@ export interface AuthContextType {
   closeAuthModal: () => void;
   login: (email: string, password: string) => Promise<void>;
   completeNewPassword: (newPassword: string) => Promise<void>;
-  loginAsDemo: () => void;
   logout: () => void;
 }
 

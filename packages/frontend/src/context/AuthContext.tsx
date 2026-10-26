@@ -67,16 +67,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setStoredSession(idToken, userObj);
   };
 
-  const loginAsDemo = () => {
-    const demoUser: ClinicianUser = {
-      sub: 'clinician-uuid-001',
-      email: 'dr.smith@hospital.org',
-      username: 'dr_smith',
-    };
-    storeSession('valid-clinician-token', demoUser);
-    closeAuthModal();
-  };
-
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     setAuthError(null);
@@ -163,7 +153,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         closeAuthModal,
         login,
         completeNewPassword,
-        loginAsDemo,
         logout,
       }}
     >
