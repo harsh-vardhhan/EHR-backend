@@ -1,6 +1,11 @@
 import { describe, expect, test, afterEach } from 'bun:test';
 import { app } from './app';
-import { validateEnv, AnnotationEntity, AuditLogEntity, MEDICAL_ENTITIES } from 'shared';
+import {
+  validateEnv,
+  AnnotationEntity,
+  AuditLogEntity,
+  MEDICAL_ENTITIES,
+} from 'shared';
 
 describe('App Security & Middleware', () => {
   const originalSecret = process.env.ORIGIN_VERIFY_SECRET;
@@ -243,15 +248,15 @@ describe('Cognito Clinician Authentication Guard', () => {
 
   test('PATCH /annotations/:id accepts valid clinician Authorization token and records clinician audit log', async () => {
     process.env.API_KEY = testApiKey;
-    const origQuery = AnnotationEntity.query;
-    const origPatch = AnnotationEntity.patch;
+    const origQuery = (AnnotationEntity as any).query;
+    const origPatch = (AnnotationEntity as any).patch;
     const origAuditCreate = (AuditLogEntity as any).create;
 
     let auditedDescription = '';
     (AuditLogEntity as any).create = (payload: any) => ({
-      go: async () => {
+      go: () => {
         auditedDescription = payload.description || '';
-        return { data: payload };
+        return Promise.resolve({ data: payload });
       },
     });
 
@@ -269,20 +274,22 @@ describe('Cognito Clinician Authentication Guard', () => {
 
     (AnnotationEntity as any).query = {
       bySk: () => ({
-        go: async () => ({
-          data: [sampleAnnotation],
-        }),
+        go: () =>
+          Promise.resolve({
+            data: [sampleAnnotation],
+          }),
       }),
     };
 
     (AnnotationEntity as any).patch = () => ({
       set: (updates: any) => ({
-        go: async () => ({
-          data: {
-            ...sampleAnnotation,
-            ...updates,
-          },
-        }),
+        go: () =>
+          Promise.resolve({
+            data: {
+              ...sampleAnnotation,
+              ...updates,
+            },
+          }),
       }),
     });
 

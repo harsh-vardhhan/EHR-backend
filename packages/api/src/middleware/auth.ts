@@ -51,7 +51,10 @@ export async function verifyClinicianAuth(
   const jwtVerifier = getCognitoVerifier();
   if (!jwtVerifier) {
     // If running in development without a Cognito pool configured
-    if (!config.isProduction && (token === 'valid-clinician-token' || token.startsWith('mock-'))) {
+    if (
+      !config.isProduction &&
+      (token === 'valid-clinician-token' || token.startsWith('mock-'))
+    ) {
       return {
         sub: 'dev-clinician-uuid',
         email: 'dev-clinician@hospital.org',
@@ -66,7 +69,8 @@ export async function verifyClinicianAuth(
     return {
       sub: payload.sub,
       email: payload.email as string | undefined,
-      username: (payload['cognito:username'] || payload.username) as string | undefined,
+      username: (payload['cognito:username'] || payload.username) as
+        string | undefined,
     };
   } catch {
     return null;
