@@ -55,8 +55,9 @@ export const documentsBucket = new Bucket("documents", {
 });
 
 // S3 Object-Locked Bucket for HIPAA compliance audit trail (account-scoped for global uniqueness)
-export const ehrAuditLogsBucket = new Bucket("audit-logs", {
+export const ehrAuditLogsBucket = new Bucket("audit_logs", {
   logicalId: "EhrAuditLogsBucket",
+  bucketName: "${AWS::StackName}-audit-logs-${AWS::AccountId}",
   deletionPolicy: "Retain",
   objectLock: {
     mode: "COMPLIANCE",
@@ -87,7 +88,7 @@ export const ehrOmopDeliveryStream = new DeliveryStream("OmopDeliveryStream", {
 });
 
 // SQS Annotation Queue with Dead Letter Queue
-export const ehrAnnotationQueue = new Queue("ehr-annotation", {
+export const ehrAnnotationQueue = new Queue("ehr_annotation", {
   logicalId: "EhrAnnotationQueue",
   queueName: "${AWS::StackName}-EhrAnnotationQueue",
   visibilityTimeout: "180s",
@@ -104,7 +105,7 @@ documentsBucket.on("objectCreated", ehrAnnotationQueue, {
 });
 
 // SNS Topic for DDoS Kill Switch alerts with email notification
-export const ehrKillSwitchTopic = new Topic("ehr-kill-switch", {
+export const ehrKillSwitchTopic = new Topic("ehr_kill_switch", {
   logicalId: "EhrKillSwitchTopic",
   topicName: "EhrKillSwitchTopic-${AWS::StackName}",
   fifo: false,

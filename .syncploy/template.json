@@ -546,7 +546,7 @@
             "AUDIT_LOGS_BUCKET_NAME": {
               "Ref": "EhrAuditLogsBucket"
             },
-            "audit-logs": {
+            "audit_logs": {
               "Ref": "EhrAuditLogsBucket"
             },
             "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
@@ -558,7 +558,7 @@
             "EHR_ANNOTATION_QUEUE_URL": {
               "Ref": "EhrAnnotationQueue"
             },
-            "ehr-annotation": {
+            "ehr_annotation": {
               "Ref": "EhrAnnotationQueue"
             },
             "SYNCPLOY_TOPIC_EHR_KILL_SWITCH": {
@@ -570,7 +570,7 @@
             "EHR_KILL_SWITCH_TOPIC_ARN": {
               "Ref": "EhrKillSwitchTopic"
             },
-            "ehr-kill-switch": {
+            "ehr_kill_switch": {
               "Ref": "EhrKillSwitchTopic"
             },
             "SYNCPLOY_DELIVERY_STREAM_AUDITDELIVERYSTREAM": {
@@ -620,8 +620,7 @@
             },
             "EHR_CLIENT_ID": {
               "Ref": "EhrUserPoolClient"
-            },
-            "API_KEY": "development-api-key"
+            }
           }
         },
         "ReservedConcurrentExecutions": 2,
@@ -868,7 +867,7 @@
             "AUDIT_LOGS_BUCKET_NAME": {
               "Ref": "EhrAuditLogsBucket"
             },
-            "audit-logs": {
+            "audit_logs": {
               "Ref": "EhrAuditLogsBucket"
             },
             "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
@@ -880,7 +879,7 @@
             "EHR_ANNOTATION_QUEUE_URL": {
               "Ref": "EhrAnnotationQueue"
             },
-            "ehr-annotation": {
+            "ehr_annotation": {
               "Ref": "EhrAnnotationQueue"
             },
             "SYNCPLOY_TOPIC_EHR_KILL_SWITCH": {
@@ -892,7 +891,7 @@
             "EHR_KILL_SWITCH_TOPIC_ARN": {
               "Ref": "EhrKillSwitchTopic"
             },
-            "ehr-kill-switch": {
+            "ehr_kill_switch": {
               "Ref": "EhrKillSwitchTopic"
             },
             "SYNCPLOY_DELIVERY_STREAM_AUDITDELIVERYSTREAM": {
@@ -1132,7 +1131,7 @@
             "AUDIT_LOGS_BUCKET_NAME": {
               "Ref": "EhrAuditLogsBucket"
             },
-            "audit-logs": {
+            "audit_logs": {
               "Ref": "EhrAuditLogsBucket"
             },
             "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
@@ -1144,7 +1143,7 @@
             "EHR_ANNOTATION_QUEUE_URL": {
               "Ref": "EhrAnnotationQueue"
             },
-            "ehr-annotation": {
+            "ehr_annotation": {
               "Ref": "EhrAnnotationQueue"
             },
             "SYNCPLOY_TOPIC_EHR_KILL_SWITCH": {
@@ -1156,7 +1155,7 @@
             "EHR_KILL_SWITCH_TOPIC_ARN": {
               "Ref": "EhrKillSwitchTopic"
             },
-            "ehr-kill-switch": {
+            "ehr_kill_switch": {
               "Ref": "EhrKillSwitchTopic"
             },
             "SYNCPLOY_DELIVERY_STREAM_AUDITDELIVERYSTREAM": {
@@ -1382,7 +1381,7 @@
             "AUDIT_LOGS_BUCKET_NAME": {
               "Ref": "EhrAuditLogsBucket"
             },
-            "audit-logs": {
+            "audit_logs": {
               "Ref": "EhrAuditLogsBucket"
             },
             "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
@@ -1394,7 +1393,7 @@
             "EHR_ANNOTATION_QUEUE_URL": {
               "Ref": "EhrAnnotationQueue"
             },
-            "ehr-annotation": {
+            "ehr_annotation": {
               "Ref": "EhrAnnotationQueue"
             },
             "SYNCPLOY_TOPIC_EHR_KILL_SWITCH": {
@@ -1406,7 +1405,7 @@
             "EHR_KILL_SWITCH_TOPIC_ARN": {
               "Ref": "EhrKillSwitchTopic"
             },
-            "ehr-kill-switch": {
+            "ehr_kill_switch": {
               "Ref": "EhrKillSwitchTopic"
             },
             "SYNCPLOY_DELIVERY_STREAM_AUDITDELIVERYSTREAM": {
@@ -1594,7 +1593,7 @@
             "AUDIT_LOGS_BUCKET_NAME": {
               "Ref": "EhrAuditLogsBucket"
             },
-            "audit-logs": {
+            "audit_logs": {
               "Ref": "EhrAuditLogsBucket"
             },
             "SYNCPLOY_QUEUE_EHR_ANNOTATION": {
@@ -1606,7 +1605,7 @@
             "EHR_ANNOTATION_QUEUE_URL": {
               "Ref": "EhrAnnotationQueue"
             },
-            "ehr-annotation": {
+            "ehr_annotation": {
               "Ref": "EhrAnnotationQueue"
             },
             "SYNCPLOY_TOPIC_EHR_KILL_SWITCH": {
@@ -1618,7 +1617,7 @@
             "EHR_KILL_SWITCH_TOPIC_ARN": {
               "Ref": "EhrKillSwitchTopic"
             },
-            "ehr-kill-switch": {
+            "ehr_kill_switch": {
               "Ref": "EhrKillSwitchTopic"
             },
             "SYNCPLOY_DELIVERY_STREAM_AUDITDELIVERYSTREAM": {
@@ -1782,7 +1781,7 @@
     "EventRuledocumentsToehrannotation": {
       "Type": "AWS::Events::Rule",
       "Properties": {
-        "Description": "Routes S3 events from documents to ehr-annotation",
+        "Description": "Routes S3 events from documents to ehr_annotation",
         "State": "ENABLED",
         "EventPattern": {
           "source": [
@@ -2100,7 +2099,7 @@
       }
     },
     "EhrKillSwitchTopicTopicArn": {
-      "Description": "ARN of SNS Topic ehr-kill-switch",
+      "Description": "ARN of SNS Topic ehr_kill_switch",
       "Value": {
         "Ref": "EhrKillSwitchTopic"
       }

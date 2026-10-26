@@ -33,7 +33,7 @@ export const ehrBackendFunction = api(
       allowMethods: ['*'],
     },
     environment: {
-      API_KEY: process.env.API_KEY || 'development-api-key',
+      ...(process.env.API_KEY ? { API_KEY: process.env.API_KEY } : {}),
       ...(process.env.OMOPHUB_API_KEY
         ? { OMOPHUB_API_KEY: process.env.OMOPHUB_API_KEY }
         : {}),
