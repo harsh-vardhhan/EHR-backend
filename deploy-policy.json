@@ -5,18 +5,7 @@
             "Sid": "CloudFormationStackManagement",
             "Effect": "Allow",
             "Action": [
-                "cloudformation:CreateStack",
-                "cloudformation:UpdateStack",
-                "cloudformation:DeleteStack",
-                "cloudformation:DescribeStacks",
-                "cloudformation:DescribeStackEvents",
-                "cloudformation:DescribeStackResources",
-                "cloudformation:GetTemplate",
-                "cloudformation:ValidateTemplate",
-                "cloudformation:CreateChangeSet",
-                "cloudformation:DescribeChangeSet",
-                "cloudformation:ExecuteChangeSet",
-                "cloudformation:DeleteChangeSet"
+                "cloudformation:*"
             ],
             "Resource": [
                 "arn:aws:cloudformation:ap-south-1:<AWS_ACCOUNT_ID>:stack/ehr-annotation-backend*",
