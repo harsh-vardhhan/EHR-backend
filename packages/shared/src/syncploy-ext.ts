@@ -4,6 +4,7 @@ declare module "@syncploy/sdk" {
   export interface ApiOptions {
     roleLogicalId?: string;
     permissionLogicalId?: string;
+    invokePermissionLogicalId?: string;
   }
 
   export interface ConsumerOptions {

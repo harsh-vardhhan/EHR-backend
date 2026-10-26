@@ -659,6 +659,17 @@
         "FunctionUrlAuthType": "NONE"
       }
     },
+    "EhrBackendFunctionURLInvokeAllowPublicAccess": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "EhrBackendFunction"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "*",
+        "InvokedViaFunctionUrl": true
+      }
+    },
     "EhrAnnotationWorkerFunctionRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
