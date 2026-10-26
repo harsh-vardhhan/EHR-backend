@@ -271,6 +271,24 @@
                 "ecr:TagResource"
             ],
             "Resource": "*"
+        },
+        {
+            "Sid": "CognitoManagement",
+            "Effect": "Allow",
+            "Action": [
+                "cognito-idp:CreateUserPool",
+                "cognito-idp:DeleteUserPool",
+                "cognito-idp:DescribeUserPool",
+                "cognito-idp:UpdateUserPool",
+                "cognito-idp:CreateUserPoolClient",
+                "cognito-idp:DeleteUserPoolClient",
+                "cognito-idp:DescribeUserPoolClient",
+                "cognito-idp:UpdateUserPoolClient",
+                "cognito-idp:TagResource",
+                "cognito-idp:UntagResource",
+                "cognito-idp:ListTagsForResource"
+            ],
+            "Resource": "*"
         }
     ]
 }
