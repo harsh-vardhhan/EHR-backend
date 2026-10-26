@@ -38,7 +38,10 @@ export async function verifyClinicianAuth(
   if (!token) return null;
 
   // Test and non-production fallback for local development & unit testing
-  if (!config.cognitoUserPoolId || config.nodeEnv === 'test') {
+  if (
+    !config.isProduction &&
+    (!config.cognitoUserPoolId || config.nodeEnv === 'test')
+  ) {
     if (token === 'valid-clinician-token' || token.startsWith('mock-')) {
       return {
         sub: 'clinician-uuid-001',
