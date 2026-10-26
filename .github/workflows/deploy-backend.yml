@@ -8,6 +8,7 @@ on:
       - 'packages/api/**'
       - 'packages/shared/**'
       - 'packages/workers/**'
+      - '.syncploy/**'
       - '.github/workflows/deploy-backend.yml'
       - 'template.yaml'
       - 'Dockerfile'
@@ -33,6 +34,22 @@ jobs:
       - name: Build backend application
         run: bun run --filter api build
 
+      - name: Setup Syncploy CLI
+        run: |
+          git clone --depth 1 https://github.com/harsh-vardhhan/syncploy.git /tmp/syncploy
+          cd /tmp/syncploy && bun install
+          chmod +x /tmp/syncploy/packages/cli/src/index.ts
+          sudo ln -s /tmp/syncploy/packages/cli/src/index.ts /usr/local/bin/syncploy
+
+      - name: Compile Syncploy Infrastructure
+        env:
+          EHR_TABLE_NAME: ${{ secrets.EHR_TABLE_NAME }}
+          DOCUMENTS_BUCKET_NAME: ${{ secrets.DOCUMENTS_BUCKET_NAME }}
+          NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
+          API_KEY: ${{ secrets.VITE_API_KEY }}
+          OMOPHUB_API_KEY: ${{ secrets.OMOPHUB_API_KEY }}
+        run: syncploy build
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -54,11 +71,8 @@ jobs:
             docker build -t public.ecr.aws/awsguru/aws-lambda-adapter:0.8.3 /tmp/adapter
           fi
 
-      - name: Install esbuild globally
-        run: npm install -g esbuild
-
       - name: SAM Build
-        run: sam build --no-cached
+        run: sam build --no-cached --base-dir . -t .syncploy/template.json
 
       - name: SAM Deploy
         run: |
@@ -67,12 +81,4 @@ jobs:
             --stack-name ehr-annotation-backend \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
             --resolve-s3 \
-            --resolve-image-repos \
-            --parameter-overrides \
-              DocumentsBucketName=${{ secrets.DOCUMENTS_BUCKET_NAME }} \
-              EhrTableName=${{ secrets.EHR_TABLE_NAME }} \
-              NotificationEmail=${{ secrets.NOTIFICATION_EMAIL }} \
-              EhrApiKeyVal=${{ secrets.VITE_API_KEY }} \
-              OmopHubApiKey=${{ secrets.OMOPHUB_API_KEY }} \
-              SageMakerModelDataUrl=s3://${{ secrets.DOCUMENTS_BUCKET_NAME }}/models/gliner-relex/model-base-v1.0.tar.gz \
-              DdosRequestThreshold=15000
+            --resolve-image-repos
