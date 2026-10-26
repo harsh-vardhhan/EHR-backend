@@ -8,6 +8,8 @@ import { app } from './app';
 export const ehrBackendFunction = api(
   {
     logicalId: 'EhrBackendFunction',
+    roleLogicalId: 'EhrBackendFunctionRole',
+    permissionLogicalId: 'EhrBackendFunctionUrlPublicPermissions',
     path: '/',
     ingress: 'function-url',
     container: {
@@ -38,7 +40,7 @@ export const ehrBackendFunction = api(
         ? { OMOPHUB_API_KEY: process.env.OMOPHUB_API_KEY }
         : {}),
     },
-  },
+  } as any,
   async (_req, ctx) => {
     return app.handle(ctx.request);
   },

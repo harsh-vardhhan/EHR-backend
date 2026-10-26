@@ -11,6 +11,8 @@ import { handler as omopPipelineHandler } from "./omop-pipeline";
 export const ehrAnnotationWorkerFunction = ehrAnnotationQueue.consumer(
   {
     logicalId: "EhrAnnotationWorkerFunction",
+    eventSourceMappingLogicalId: "EhrAnnotationWorkerFunctionSQSEvent",
+    roleLogicalId: "EhrAnnotationWorkerFunctionRole",
     batchSize: 5,
     timeout: "120s",
     concurrency: 2,
@@ -25,7 +27,7 @@ export const ehrAnnotationWorkerFunction = ehrAnnotationQueue.consumer(
       SAGEMAKER_ENDPOINT_NAME:
         process.env.SAGEMAKER_ENDPOINT_NAME || "gliner-relex-endpoint",
     },
-  },
+  } as any,
   async (_body, ctx) => {
     // Process single record and return failure result to preserve retry semantics
     return await workerHandler({ Records: [ctx.record] });
@@ -41,6 +43,9 @@ export const ehrAnnotationWorkerFunction = ehrAnnotationQueue.consumer(
 export const ehrKillSwitchFunction = ehrKillSwitchTopic.subscribe(
   {
     logicalId: "EhrLambdaKillSwitchFunction",
+    subscriptionLogicalId: "EhrLambdaKillSwitchFunctionSnsEvent",
+    permissionLogicalId: "EhrLambdaKillSwitchFunctionSnsEventPermission",
+    roleLogicalId: "EhrLambdaKillSwitchFunctionRole",
     timeout: "30s",
     memory: "128MB",
     policies: [
@@ -52,7 +57,7 @@ export const ehrKillSwitchFunction = ehrKillSwitchTopic.subscribe(
         resources: ["*"],
       },
     ],
-  },
+  } as any,
   async (_message, ctx) => {
     await killSwitchHandler(ctx.event);
   }
@@ -66,6 +71,8 @@ export const ehrKillSwitchFunction = ehrKillSwitchTopic.subscribe(
 export const ehrAuditStreamFunction = ehrTable.stream(
   {
     logicalId: "EhrAuditStreamFunction",
+    eventSourceMappingLogicalId: "EhrAuditStreamFunctionDynamoDBStream",
+    roleLogicalId: "EhrAuditStreamFunctionRole",
     batchSize: 100,
     startingPosition: "LATEST",
     enabled: false,
@@ -77,7 +84,7 @@ export const ehrAuditStreamFunction = ehrTable.stream(
         resources: ["*"],
       },
     ],
-  },
+  } as any,
   async (_record, ctx) => {
     return await auditConsumerHandler(ctx.event);
   }
@@ -91,6 +98,8 @@ export const ehrAuditStreamFunction = ehrTable.stream(
 export const ehrOmopPipelineFunction = ehrTable.stream(
   {
     logicalId: "EhrOmopPipelineFunction",
+    eventSourceMappingLogicalId: "EhrOmopPipelineFunctionDynamoDBStream",
+    roleLogicalId: "EhrOmopPipelineFunctionRole",
     batchSize: 100,
     startingPosition: "LATEST",
     enabled: false,
@@ -102,7 +111,7 @@ export const ehrOmopPipelineFunction = ehrTable.stream(
         resources: ["*"],
       },
     ],
-  },
+  } as any,
   async (_record, ctx) => {
     await omopPipelineHandler(ctx.event);
   }

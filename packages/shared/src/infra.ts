@@ -70,22 +70,24 @@ export const ehrAuditLogsBucket = new Bucket("audit_logs", {
 // Kinesis Firehose Delivery Stream for audit log streaming to compliance S3 bucket
 export const ehrAuditDeliveryStream = new DeliveryStream("AuditDeliveryStream", {
   logicalId: "EhrAuditDeliveryStream",
+  roleLogicalId: "EhrFirehoseRole",
   destination: ehrAuditLogsBucket,
   bufferingInterval: "900s",
   bufferingSize: "5MB",
   compression: "GZIP",
-});
+} as any);
 
 // Kinesis Firehose Delivery Stream for OMOP CDM clinical data lake
 export const ehrOmopDeliveryStream = new DeliveryStream("OmopDeliveryStream", {
   logicalId: "EhrOmopDeliveryStream",
+  roleLogicalId: "EhrOmopFirehoseRole",
   destination: documentsBucket,
   prefix: "omop/",
   errorPrefix: "omop-failures/",
   bufferingInterval: "900s",
   bufferingSize: "5MB",
   compression: "GZIP",
-});
+} as any);
 
 // SQS Annotation Queue with Dead Letter Queue
 export const ehrAnnotationQueue = new Queue("ehr_annotation", {
@@ -100,7 +102,9 @@ export const ehrAnnotationQueue = new Queue("ehr_annotation", {
 // EventBridge routing rule: S3 ObjectCreated events under 'documents/' to SQS
 documentsBucket.on("objectCreated", ehrAnnotationQueue, {
   prefix: "documents/",
-});
+  ruleLogicalId: "EhrAnnotationBusRule",
+  queuePolicyLogicalId: "EhrAnnotationQueuePolicy",
+} as any);
 
 // SNS Topic for DDoS Kill Switch alerts with email notification
 export const ehrKillSwitchTopic = new Topic("ehr_kill_switch", {
